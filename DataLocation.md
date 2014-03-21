@@ -1,25 +1,40 @@
 Data
 =====
 
-Searching for appropriate data set for project
+Goal: Find appropriate data set for project
 
 Requirements:
-------------
-Multiple individuals/populations of a single species
-Body mass for individuals/populations
-Sufficient temporal resolution (50+ years)
-Sufficient spatial resolution (continent-wide?)
+-------------
+* Multiple individuals/populations of a single species
+* Body mass for individuals/populations
+* Sufficient temporal resolution (50+ years)
+* Sufficient spatial resolution (continent-wide?)
 
 
+
+Possible datasets:
+--------------
 * GBIF: only occurrence data, no mass/body size information
+http://www.gbif.org/occurrence
 
-* Berkeley Museum data via Ecoengine API (http://ropensci.org/blog/2014/01/29/ecoengine/ ), no mass/body size information? 
+* Berkeley Museum data via Ecoengine API, no mass/body size information? 
+http://ropensci.org/blog/2014/01/29/ecoengine/
 
-* Museum of Vertebrate Zoology at Berkely via Berkeley Museum API, no mass/body size information, but it’s difficult to use their collections search (http://mvz.berkeley.edu/Mammal_Collection.html )
+* Museum of Vertebrate Zoology at Berkely via Berkeley Museum API, no mass/body size information, but it’s difficult to use their collections search 
+http://mvz.berkeley.edu/Mammal_Collection.html
 
-Smithsonian National Museum of Natural History collections via Hallgrimsson & Maiorana (1999), should have body mass, but how to filter by that? Looked at mammal collection (http://collections.nmnh.si.edu/search/mammals/ ). Have mass and location (lat & long) info for some. Can export data as CSV. 
+* Smithsonian National Museum of Natural History collections via Hallgrimsson & Maiorana (1999), should have body mass, but how to filter by that? Looked at mammal collection. Have mass and location (lat & long) info for some. Can export data as CSV. 
+Mammal collection: http://collections.nmnh.si.edu/search/mammals/ 
 
-* how many witih mass 
+* The LTER database was recommended by Morgan 3/21/14. Haven't looked at it much yet. 
+https://portal.lternet.edu/nis/discover.jsp
+
+
+
+R code exploration:
+----------------
+Purpose: find a species with a sufficient number of individuals from the Smithsonian database by importing CSV files into R and looking for # of occurrences of following things:
+* how many with mass 
 * how many with decimal degrees (Lat / Long)
 * how many with county level or more specific locality info (need county)
 * how many with mass and locaality
@@ -27,6 +42,3 @@ Smithsonian National Museum of Natural History collections via Hallgrimsson & Ma
 * spatial extent
 
 
-Search terms: mass, weight, body size, body length
-
-- [ ] sdf
