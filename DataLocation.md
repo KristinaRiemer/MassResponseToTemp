@@ -17,7 +17,9 @@ Sufficient spatial resolution (continent-wide?)
 
 * Museum of Vertebrate Zoology at Berkely via Berkeley Museum API, no mass/body size information, but it’s difficult to use their collections search (http://mvz.berkeley.edu/Mammal_Collection.html )
 
-Smithsonian National Museum of Natural History collections via Hallgrimsson & Maiorana (1999), should have body mass, but how to filter by that? Looked at mammal collection (http://collections.nmnh.si.edu/search/mammals/ ). Have mass and location (lat & long) info for some. Can export data as CSV. 
+* Smithsonian National Museum of Natural History collections via Hallgrimsson & Maiorana (1999), should have body mass, but how to filter by that? Looked at mammal collection (http://collections.nmnh.si.edu/search/mammals/ ). Have mass and location (lat & long) info for some. Can export data as CSV. 
+
+* The LTER database (https://portal.lternet.edu/nis/discover.jsp) was recommended by Morgan 3/21/14
 
 * how many witih mass 
 * how many with decimal degrees (Lat / Long)
