@@ -42,3 +42,12 @@ Purpose: find a species with a sufficient number of individuals from the Smithso
 * spatial extent
 
 
+Possible species:
+--------------
+List from Morgan, email 3/24/14
+
+* Peromyscus maniculatus
+* Dipodomys ordii
+* Sciurus carolinensis
+* Tamiasciurus hudsonicus
+* Tamias striatus
