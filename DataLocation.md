@@ -46,8 +46,8 @@ Possible species:
 --------------
 List from Morgan, email 3/24/14
 
-* Peromyscus maniculatus
-* Dipodomys ordii
-* Sciurus carolinensis
-* Tamiasciurus hudsonicus
-* Tamias striatus
+* _Peromyscus maniculatus_
+* _Dipodomys ordii_
+* _Sciurus carolinensis_
+* _Tamiasciurus hudsonicus_
+* _Tamias striatus_
