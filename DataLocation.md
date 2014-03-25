@@ -46,8 +46,13 @@ Possible species:
 --------------
 List from Morgan, email 3/24/14
 
-* _Peromyscus maniculatus_
-* _Dipodomys ordii_
-* _Sciurus carolinensis_
-* _Tamiasciurus hudsonicus_
-* _Tamias striatus_
+1. _Peromyscus maniculatus_
+  * In NMNH database, search for Scientific Name ("Peromyscus maniculatus"), Country ("United States"), Measurements ("Weight"); got 1000+ hits
+  * Export as CSV
+  * Filter list using "Data Collected" column according to oldest to newest. Date range: 1919-2011
+  * Determine how many hits have mass (282), latitude (32), county (915)
+  * Need to determine what the spatial spread is like, and how to determine species that have multiple desired information (e.g., how many species have both mass and county info)
+2. _Dipodomys ordii_
+3. _Sciurus carolinensis_
+4. _Tamiasciurus hudsonicus_
+5. _Tamias striatus_
