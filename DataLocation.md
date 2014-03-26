@@ -52,6 +52,8 @@ List from Morgan, email 3/24/14
   * Filter list using "Data Collected" column according to oldest to newest. Date range: 1919-2011
   * Determine how many hits have mass (282), latitude (32), county (915)
   * Need to determine what the spatial spread is like, and how to determine species that have multiple desired information (e.g., how many species have both mass and county info)
+  * Have almost 300 specimens that have mass and county or latitude info. Need to determine spatial and temporal spread of this data to determine if this species will suffice. Change county into latitude? Some way to visually display location?
+  * Could use specimens from outside of the United States. 300 specimens from Canada and Mexico, may be useful to include. 
 2. _Dipodomys ordii_
 3. _Sciurus carolinensis_
 4. _Tamiasciurus hudsonicus_
