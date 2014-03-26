@@ -30,7 +30,12 @@ tst = grep('[0-9]g', dat$Measurements)
 dat$Measurements[tst][1:5]
 
 
+
+
 ###### looking at species 1 (Peromyscus maniculatus) from NMNH
+## set working directory
+setwd("C:/Users/Kristina/Dropbox/Macbook Documents/Documents/Graduate School/Year 1/BergRuleClimateProject")
+
 ## read in csv with data
 species1 = read.csv('./PeromyscusmanDataNMNH.csv')
 
@@ -39,15 +44,18 @@ species1$Measurements = as.character(species1$Measurements)
 species1_mass = grep('[0-9]g', species1$Measurements)
 length(species1_mass)
 
-## subset lat column, determine how many rows contain latitude information
-species1$Centroid.Latitude = as.character(species1$Centroid.Latitude)
-species1_lat = grep('[1-9]', species1$Centroid.Latitude)
+## determine how many rows contain latitude information
+species1_lat = which(species1$Centroid.Latitude > 0)
 length(species1_lat)
 
-
-## subset county column, determine how many rows contain county information
-## there has to be an easier way to do this!
+## make county column values into strings, determine how many rows contain county information
 species1$District.County = as.character(species1$District.County)
-species1_county = grep('^$', species1$District.County)
-length(species1$District.County) - length(species1_county)
+species1_county = which(species1$District.County > 0)
+length(species1_county)
 
+## determine how many specimens have lat and county information (using and operator)
+species1_latcoun = which(species1$Centroid.Latitude > 0 & species1$District.County > 0)
+## if they have latitude, they have county
+
+## determine how many species have mass and county information
+species1_masscoun = which(species1_mass == species1_county)
