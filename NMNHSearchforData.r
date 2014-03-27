@@ -1,7 +1,7 @@
 ##### useful functions and example data from NMNHfrom meeting w/ Dan 3/21/14
 ##### NMNH website: http://collections.nmnh.si.edu/search/mammals/
 
-## read in csv with example data from misc California rodents
+## read in csv with example data from misc California rodents---------------
 dat = read.csv('./ExampleDataNMNH.csv')
 
 ## str function retrieves types of information in each column of dataset
@@ -33,8 +33,6 @@ dat$Measurements[tst][1:5]
 
 
 ###### looking at species 1 (Peromyscus maniculatus) from NMNH
-## set working directory
-setwd("C:/Users/Kristina/Dropbox/Macbook Documents/Documents/Graduate School/Year 1/BergRuleClimateProject")
 
 ## read in csv with data
 species1 = read.csv('./PeromyscusmanDataNMNH.csv')
@@ -61,3 +59,33 @@ species1_latcoun = which(species1$Centroid.Latitude > 0 & species1$District.Coun
 species1_masscoun = grepl('[0-9]g', species1$Measurements) & species1$District.County > 0
 length(which(species1_masscoun == TRUE))
 ## specimens with mass info have county info
+
+## Map records ------------------------------------------------------------------
+library(maps)
+?map
+map('usa')
+points(species1$Centroid.Longitude, species1$Centroid.Latitude, col='red', pch=19)
+#points(Centroid.Latitude ~ Centroid.Longitude, data=species1, col='red', pch=19)
+
+lm(y ~ x, data) ## formula style
+
+## create county database
+counties = map('county', fill=T, plot=F)
+
+sp_counties = paste(species1$Province.State, species1$District.County, sep=',')
+sp_counties = tolower(sp_counties)
+sp_counties = sub(' county', '', sp_counties)
+
+sum(sp_counties %in% counties$names)
+sp_counties[!(sp_counties %in% counties$names)]
+
+## if a county in our county database occurs in the species database make it red
+col = ifelse(counties$names %in% sp_counties, 'red', NA)
+map('county', fill=T, col=col)
+
+## export to pdf
+dir.create('./figs/')
+pdf('./figs/species1_county_pres_abs_map.pdf')
+map('county', fill=T, col=col)
+dev.off()
+
