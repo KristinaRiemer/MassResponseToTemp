@@ -55,7 +55,9 @@ length(species1_county)
 
 ## determine how many specimens have lat and county information (using and operator)
 species1_latcoun = which(species1$Centroid.Latitude > 0 & species1$District.County > 0)
-## if they have latitude, they have county
+## specimens with latitude info have county info
 
 ## determine how many species have mass and county information
-species1_masscoun = which(species1_mass == species1_county)
+species1_masscoun = grepl('[0-9]g', species1$Measurements) & species1$District.County > 0
+length(which(species1_masscoun == TRUE))
+## specimens with mass info have county info
