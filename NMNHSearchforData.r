@@ -1,7 +1,7 @@
-##### useful functions and example data from NMNHfrom meeting w/ Dan 3/21/14
-##### NMNH website: http://collections.nmnh.si.edu/search/mammals/
+## useful functions and example data from NMNHfrom meeting w/ Dan 3/21/14 -------
+# NMNH website: http://collections.nmnh.si.edu/search/mammals/
 
-## read in csv with example data from misc California rodents---------------
+## read in csv with example data from misc California rodents--------------------
 dat = read.csv('./ExampleDataNMNH.csv')
 
 ## str function retrieves types of information in each column of dataset
@@ -32,7 +32,7 @@ dat$Measurements[tst][1:5]
 
 
 
-###### looking at species 1 (Peromyscus maniculatus) from NMNH
+###### looking at species 1 (Peromyscus maniculatus) from NMNH -------------------
 
 ## read in csv with data
 species1 = read.csv('./PeromyscusmanDataNMNH.csv')
@@ -60,23 +60,29 @@ species1_masscoun = grepl('[0-9]g', species1$Measurements) & species1$District.C
 length(which(species1_masscoun == TRUE))
 ## specimens with mass info have county info
 
-## Map records ------------------------------------------------------------------
+## mapping species 1 to determine spatial spread ------------------------------
+# read in libary for maps
 library(maps)
-?map
+
+# map to show all locations of specimens w/ latitude and longitude
 map('usa')
 points(species1$Centroid.Longitude, species1$Centroid.Latitude, col='red', pch=19)
-#points(Centroid.Latitude ~ Centroid.Longitude, data=species1, col='red', pch=19)
+# alternative way to do this
+# points(Centroid.Latitude ~ Centroid.Longitude, data=species1, col='red', pch=19)
 
 lm(y ~ x, data) ## formula style
 
-## create county database
+## create county database that is in correct format for map 
 counties = map('county', fill=T, plot=F)
-
+# put state and county columns together, separate by comma
 sp_counties = paste(species1$Province.State, species1$District.County, sep=',')
+# lowercase all
 sp_counties = tolower(sp_counties)
+# remove "county" at end
 sp_counties = sub(' county', '', sp_counties)
-
+# determine how many counties from NMNH list are in maps county list
 sum(sp_counties %in% counties$names)
+# use ! to show how many counties from NMNH list are NOT in maps county list
 sp_counties[!(sp_counties %in% counties$names)]
 
 ## if a county in our county database occurs in the species database make it red
@@ -87,5 +93,6 @@ map('county', fill=T, col=col)
 dir.create('./figs/')
 pdf('./figs/species1_county_pres_abs_map.pdf')
 map('county', fill=T, col=col)
+# why?
 dev.off()
 
