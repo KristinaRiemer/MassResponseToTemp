@@ -47,13 +47,18 @@ Possible species:
 List from Morgan, email 3/24/14
 
 1. _Peromyscus maniculatus_
+Done:
   * In NMNH database, search for Scientific Name ("Peromyscus maniculatus"), Country ("United States"), Measurements ("Weight"); got 1000+ hits
   * Export as CSV
   * Filter list using "Data Collected" column according to oldest to newest. Date range: 1919-2011
-  * Determine how many hits have mass (282), latitude (32), county (915)
-  * Need to determine what the spatial spread is like, and how to determine species that have multiple desired information (e.g., how many species have both mass and county info)
-  * Have almost 300 specimens that have mass and county or latitude info. Need to determine spatial and temporal spread of this data to determine if this species will suffice. Change county into latitude? Some way to visually display location?
-  * Could use specimens from outside of the United States. 300 specimens from Canada and Mexico, may be useful to include. 
+  * Size or location: Determine how many hits have mass (282), latitude (32), county (915)
+  * Size and location: Have 282 specimens that have mass and county or latitude info
+  * Spatial spread: Create map that shades in counties that have specimens
+To do:
+  * Need to determine temporal spread
+  * Need to determine if temporal plus spatial spread is sufficient, e.g., can't have only data from 50 years ago in a single location
+  * Change county into latitude and longitude
+  * Incorporate specimens from outside United States--300 specimens from Canada and Mexico.
 2. _Dipodomys ordii_
 3. _Sciurus carolinensis_
 4. _Tamiasciurus hudsonicus_
