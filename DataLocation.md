@@ -57,7 +57,7 @@ Done:
 To do:
   * Need to determine temporal spread
   * Need to determine if temporal plus spatial spread is sufficient, e.g., can't have only data from 50 years ago in a single location
-  * Change county into latitude and longitude
+  * Change county into latitude and longitude (use Google Maps to do this, "georeferencing")
   * Incorporate specimens from outside United States--300 specimens from Canada and Mexico.
 2. _Dipodomys ordii_
 3. _Sciurus carolinensis_
