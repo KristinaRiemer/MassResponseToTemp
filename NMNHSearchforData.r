@@ -58,6 +58,7 @@ species1_latcoun = which(species1$Centroid.Latitude > 0 & species1$District.Coun
 ## determine how many species have mass and county information
 species1_masscoun = grepl('[0-9]g', species1$Measurements) & species1$District.County > 0
 length(which(species1_masscoun == TRUE))
+species1_masscoun = which(species1_masscoun == TRUE)
 ## specimens with mass info have county info
 
 ## mapping species 1 to determine spatial spread ------------------------------
@@ -96,3 +97,17 @@ map('county', fill=T, col=col)
 # why?
 dev.off()
 
+
+## convert county info to latitude/longitude -----------------------------------
+library(ggmap)
+latlon = geocode(species1$District.County, output = 'latlon')
+write.table(latlon, "LatLonSpecies1.csv", sep = ",")
+LatLonSpecies1 <- read.csv("~/BergRuleClimateProject/LatLonSpecies1.csv")
+
+# failed attempt to map specimen locations based on latitude and longitude
+map(LatLonSpecies1[1], LatLonSpecies1[2], col = 'red')
+
+
+## add collection date to county fill map ---------------------------------------
+library(mapplots)
+# something similar to add.pie, see http://uchicagoconsulting.wordpress.com/2011/04/18/how-to-draw-good-looking-maps-in-r/
