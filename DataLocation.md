@@ -55,7 +55,7 @@ List from Morgan, email 3/24/14
   * Size or location: Determine how many hits have mass (282), latitude (32), county (915)
   * Size and location: Have 282 specimens that have mass and county or latitude info
   * Spatial spread: Create map that shades in counties that have specimens
-  * Change county into latitude and longitude - see LatLonSpecies1.csv
+  * Change county into latitude and longitude, range of latitude is 20*
 
    To do:
   * Need to determine temporal spread
