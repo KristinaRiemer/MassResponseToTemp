@@ -69,3 +69,15 @@ List from Morgan, email 3/24/14
 4. _Tamiasciurus hudsonicus_
 
 5. _Tamias striatus_
+
+
+Abiotic data:
+-----------
+Need temperature data. Requirements: 
+1. Determine temperature using latitude/longitude data
+2. County-level at minimum
+3. Need temperature data that goes back to 1950s at minimum
+4. Be able to put data into R
+
+Possible temperature sources:
+* US Historical Climatology Network http://cdiac.esd.ornl.gov/epubs/ndp/ushcn/ushcn.html 
