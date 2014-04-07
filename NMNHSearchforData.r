@@ -102,12 +102,24 @@ dev.off()
 library(ggmap)
 latlon = geocode(species1$District.County, output = 'latlon')
 write.table(latlon, "LatLonSpecies1.csv", sep = ",")
-LatLonSpecies1 <- read.csv("~/BergRuleClimateProject/LatLonSpecies1.csv")
+LatLonSpecies1 = read.csv("./LatLonSpecies1.csv")
 
 # failed attempt to map specimen locations based on latitude and longitude
-map(LatLonSpecies1[1], LatLonSpecies1[2], col = 'red')
+#map(LatLonSpecies1[1], LatLonSpecies1[2], col = 'red')
 
 
 ## add collection date to county fill map ---------------------------------------
-library(mapplots)
+#library(mapplots)
 # something similar to add.pie, see http://uchicagoconsulting.wordpress.com/2011/04/18/how-to-draw-good-looking-maps-in-r/
+
+
+## summary matrix of relevant info (lat/long, date, mass) ---------------------
+# need to strip everything but mass value from species1 'Measurements' column
+# use function gsub -- regular expressions, replacement = '[0-9]g', but what is pattern?
+# pattern = '^Specimen Weight:', or 'Specimen.'
+# regular expressions website http://www.zytrax.com/tech/web/regex.htm 
+species1mass = agrep('Specimen', 'HAHAHA', species1$Measurements)
+species1mass = gsub('Specimen.', 'HAHAHA', species1$Measurements, fixed = F, ignore.case = T)
+species1mass = gsub("", if('[0-9]g',NA), species1$Measurements)
+
+SummaryTable = cbind(species1[13], LatLonSpecies1, species1[32])
