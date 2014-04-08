@@ -85,3 +85,8 @@ Possible temperature sources:
 * List of temperature resources from NOAA: http://www.esrl.noaa.gov/psd/data/faq/
     - Most of these datasets go back 20 years or less
     - Automated weather observing systems (http://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-weather-observing-system-awos)has data starting from 1901; have files in .gz format under "Direct FTP Format"
+* Looked for datasets with Dan 4/8/14, but didn't work for reasons in parentheses: WorldClim (50 yr average temp), CRU (don't remember), Tree Ring Grid (only Western US)
+* NOAA Gridded Climate Datasets listed here: http://www.esrl.noaa.gov/psd/data/gridded/tables/temperature.html
+    - GHCN_CAMS seemed right (sufficient spatial and temporal resolution), but dataset doesn't appear to be there, email about it
+    - University of Delaware precipitation dataset will probably also work
+    - For .nc files, use rgdal package to read into R
