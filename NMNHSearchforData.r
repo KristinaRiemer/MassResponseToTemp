@@ -118,8 +118,20 @@ LatLonSpecies1 = read.csv("./LatLonSpecies1.csv")
 # use function gsub -- regular expressions, replacement = '[0-9]g', but what is pattern?
 # pattern = '^Specimen Weight:', or 'Specimen.'
 # regular expressions website http://www.zytrax.com/tech/web/regex.htm 
+
+# Dan recommended splitting up the Measurements column by its separator and then searching
+# for the mass info
 species1mass = agrep('Specimen', 'HAHAHA', species1$Measurements)
 species1mass = gsub('Specimen.', 'HAHAHA', species1$Measurements, fixed = F, ignore.case = T)
 species1mass = gsub("", if('[0-9]g',NA), species1$Measurements)
 
 SummaryTable = cbind(species1[13], LatLonSpecies1, species1[32])
+
+## getting temperature data ----------------------------------------------------
+# use University of Delaware air temp data? 
+# use rgdal package to read in .nc file
+library(rdgal)
+
+# code from Dan to get temp from lat/lon/date summary table info 4/8/14
+library(raster)
+extract(bioStack, cbind(datTemp$Longitude,datTemp$Latitude))
