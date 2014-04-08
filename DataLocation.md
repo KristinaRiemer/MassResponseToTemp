@@ -82,3 +82,6 @@ Need temperature data. Requirements:
 
 Possible temperature sources:
 * US Historical Climatology Network http://cdiac.esd.ornl.gov/epubs/ndp/ushcn/ushcn.html 
+* List of temperature resources from NOAA: http://www.esrl.noaa.gov/psd/data/faq/
+    - Most of these datasets go back 20 years or less
+    - Automated weather observing systems (http://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-weather-observing-system-awos)has data starting from 1901; have files in .gz format under "Direct FTP Format"
