@@ -89,4 +89,6 @@ Possible temperature sources:
 * NOAA Gridded Climate Datasets listed here: http://www.esrl.noaa.gov/psd/data/gridded/tables/temperature.html
     - GHCN_CAMS seemed right (sufficient spatial and temporal resolution), but dataset doesn't appear to be there, email about it
     - University of Delaware precipitation dataset will probably also work
-    - For .nc files, use rgdal package to read into R
+    - For .nc files, use ~~rgdal package~~ ncdf package to read into R
+      - Can use Ncview program (http://meteora.ucsd.edu/~pierce/ncview_home_page.html) to look at and do simple visualizations of .nc netCDF files
+      - Description of netCDF files here: https://www.image.ucar.edu/GSP/Software/Netcdf/ 
