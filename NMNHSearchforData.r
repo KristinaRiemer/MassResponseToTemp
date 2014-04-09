@@ -115,22 +115,31 @@ LatLonSpecies1 = read.csv("./LatLonSpecies1.csv")
 
 ## summary matrix of relevant info (lat/long, date, mass) ---------------------
 # need to strip everything but mass value from species1 'Measurements' column
-# use function gsub -- regular expressions, replacement = '[0-9]g', but what is pattern?
-# pattern = '^Specimen Weight:', or 'Specimen.'
-# regular expressions website http://www.zytrax.com/tech/web/regex.htm 
-
 # Dan recommended splitting up the Measurements column by its separator and then searching
 # for the mass info
-species1mass = agrep('Specimen', 'HAHAHA', species1$Measurements)
-species1mass = gsub('Specimen.', 'HAHAHA', species1$Measurements, fixed = F, ignore.case = T)
-species1mass = gsub("", if('[0-9]g',NA), species1$Measurements)
+splitmeas = strsplit(species1$Measurements, ';')
 
-SummaryTable = cbind(species1[13], LatLonSpecies1, species1[32])
+
+mass = substr(splitmeas,grep('[0-9]g',splitmeas),grep('[0-9]g',splitmeas))
+
+# isolate year from Date.Collected column
+year = substr(species1$Date.Collected, nchar(species1$Date.Collected)-3, nchar(species1$Date.Collected))
+
+
+SummaryTable = cbind(year, LatLonSpecies1, species1[32])
 
 ## getting temperature data ----------------------------------------------------
 # use University of Delaware air temp data? 
-# use rgdal package to read in .nc file
-library(rdgal)
+
+# must install netCDF library on machine to use ncdf package
+# use ncdf package to read University of Delaware netCDF file in
+# can use to convert to ASCII but not recommended because file will be very large
+library(ncdf)
+TemperatureFile = open.ncdf('air.mon.mean.v301.nc')
+var1 = get.var.ncdf(TemperatureFile, "lat")
+var2 = get.var.ncdf(TemperatureFile, "lon")
+var3 = get.var.ncdf(TemperatureFile, "time")
+# need to unpack data? http://www.esrl.noaa.gov/psd/data/gridded/faq.html#2
 
 # code from Dan to get temp from lat/lon/date summary table info 4/8/14
 library(raster)
