@@ -123,6 +123,7 @@ splitmeas = strsplit(species1$Measurements, ';')
 mass = substr(splitmeas,grep('[0-9]g',splitmeas),grep('[0-9]g',splitmeas))
 
 # isolate year from Date.Collected column
+species1$Date.Collected = as.character(species1$Date.Collected)
 year = substr(species1$Date.Collected, nchar(species1$Date.Collected)-3, nchar(species1$Date.Collected))
 
 
@@ -134,13 +135,32 @@ SummaryTable = cbind(year, LatLonSpecies1, species1[32])
 # must install netCDF library on machine to use ncdf package
 # use ncdf package to read University of Delaware netCDF file in
 # can use to convert to ASCII but not recommended because file will be very large
+library(raster)
+# band v. layer for choosing year from file
+temp_stack = raster('air.mon.mean.v301.nc', band=1)
+# use for loop to make brick out of JUST July averages for all 111 years
+for (i in seq(7, 1332, 12)){
+  temp_stack = stack(temp_stack, raster('air.mon.mean.v301.nc', band=i))
+}
+
+# plot(stack) v. plot('name')
+
+## to do convert 32767 to NA
+
+
+# raster is easier and more useful than ncdf package
 library(ncdf)
+# TemperatureFile is metadata for netCDF file
 TemperatureFile = open.ncdf('air.mon.mean.v301.nc')
+#ncdump -h air.mon.mean.v301.nc
+print.ncdf(TemperatureFile)
 var1 = get.var.ncdf(TemperatureFile, "lat")
 var2 = get.var.ncdf(TemperatureFile, "lon")
 var3 = get.var.ncdf(TemperatureFile, "time")
+plot(var1,var2[1:360])
 # need to unpack data? http://www.esrl.noaa.gov/psd/data/gridded/faq.html#2
 
-# code from Dan to get temp from lat/lon/date summary table info 4/8/14
+# code from Dan to get temp from lat/lon/date info (SummaryTable) 4/8/14
 library(raster)
+# use extract function to get temperature for lat and lon in SummaryTable
 extract(bioStack, cbind(datTemp$Longitude,datTemp$Latitude))
