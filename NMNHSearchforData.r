@@ -130,20 +130,18 @@ LatLonSpecies1 = read.csv("./LatLonSpecies1.csv")
 #splitmeas = strsplit(species1$Measurements, ';')
 #mass = substr(splitmeas,grep('[0-9]g',splitmeas),grep('[0-9]g',splitmeas))
 
-# loop to remove everything from Measurments column except mass
-mass = vector(length = nrow(SummaryTable))
-for (i in 1:nrow(SummaryTable)){
-  separate_meas = strsplit(SummaryTable$Measurements, ';')
-  # locate_pattern outputs rows which have mass in them
-  locate_pattern = grep("[0-9]g", separate_meas)
-  if (SummaryTable$Measurements[i] == locate_pattern){
-    mass = substring(SummaryTable$Measurements, 17, 19)
+# loop to remove everything from Measurements column except mass
+mass = vector(length = nrow(species1))
+for (i in 1:nrow(species1)){
+  #separate_meas = strsplit(species1$Measurements, ';')
+  #locate_pattern = grep("[0-9]g", species1$Measurements)
+  if (grep('[0-9]g', species1$Measurements)){
+    mass[i] = substring(species1$Measurements[i], 17, 19)
   } else {
-    mass = NA
+    mass[i] = NA
   }
- 
+  
 }
-
 
 # remove everything but year from Date.Collected column
 species1$Date.Collected = as.character(species1$Date.Collected)
@@ -155,7 +153,7 @@ stackID = year * 12 - 22793
 
 # final summary with year, stackID, lat/lon, mass
 SummaryTable = cbind(year, stackID, LatLonSpecies1, species1[32])
-
+SummaryTable = cbind(year, stackID, LatLonSpecies1, mass)
 
 ## getting temperature data ----------------------------------------------------
 # use University of Delaware temperature dataset
@@ -173,9 +171,10 @@ for (i in seq(7, 1332, 12)){
   temp_stack = stack(temp_stack, raster('air.mon.mean.v301.nc', band=i))
 }
 
+stackID = as.vector(stackID)
 # loop to make rasterstack out of specimen years (i.e., stackID) using July temps
 select_tempstack = raster('air.mon.mean.v301.nc', band=1)
-for (i in stackID){
+for (i in stackID[1:length(stackID)]){
   select_tempstack = stack(select_tempstack, raster('air.mon.mean.v301.nc', band=i))
 }
 
@@ -189,8 +188,11 @@ library(raster)
 
 # use extract function to get temperature for lat and lon in SummaryTable
 # original from Dan: extract(bioStack, cbind(datTemp$Longitude,datTemp$Latitude))
+# need to index raster because it's a stack?
+# don't have same number of rasterstack and coordinates?
 finaltemps = extract(temp_stack, cbind(SummaryTable$lon, SummaryTable$lat))
 
+# sapply example: http://stackoverflow.com/questions/14682606/extract-value-from-raster-stack-from-spatialpolygondataframe
 
 ## NCDF leftovers --------------------------------------------------------------
 # raster is easier and more useful than ncdf package
