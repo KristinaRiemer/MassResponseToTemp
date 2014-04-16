@@ -114,6 +114,8 @@ species1 = read.csv('./PeromyscusmanDataNMNH.csv')
 
 
 ## convert county info to latitude/longitude, only run last line ---------------
+# improve accuracy by including state name with geocode function
+# improve accuracy even more by using state & county to get FIPS and then get coordinates
 library(ggmap)
 latlon = geocode(species1$District.County, output = 'latlon')
 write.table(latlon, "LatLonSpecies1.csv", sep = ",")
@@ -154,10 +156,18 @@ year = as.numeric(year)
 stackID = year * 12 - 22793
 
 # final summary with year, stackID, lat/lon, mass
-PrelimSummaryTable = cbind(year, LatLonSpecies1, species1[32])
+PrelimSummaryTable = cbind(year, stackID, LatLonSpecies1, species1[32])
 FinalSummaryTable = cbind(stackID, LatLonSpecies1, masses)
 # remove specimens that lack mass
 FinalSummaryTable = na.omit(FinalSummaryTable)
+# remove specimens with collection date after 2010 because temp data not available
+FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$stackID < 1327)
+# remove specimens with coordinates outside of US: geocode chose wrong coordinates from county info
+FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$lon > -150)
+FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$lon < -50)
+FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$lat > 25)
+FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$lat < 50)
+
 
 ## getting temperature data ----------------------------------------------------
 # use University of Delaware temperature dataset
@@ -170,10 +180,10 @@ library(raster)
 #temp_stack_2 = raster('air.mon.mean.v301.nc', band=19)
 
 # loop to make rasterstack out of July temperatures for all 111 years
-temp_stack = raster('air.mon.mean.v301.nc', band=1)
-for (i in seq(7, 1332, 12)){
-  temp_stack = stack(temp_stack, raster('air.mon.mean.v301.nc', band=i))
-}
+# temp_stack = raster('air.mon.mean.v301.nc', band=1)
+# for (i in seq(7, 1332, 12)){
+#   temp_stack = stack(temp_stack, raster('air.mon.mean.v301.nc', band=i))
+# }
 
 
 # # can't make the following loop because need loop counter to be in numbers
@@ -203,23 +213,33 @@ library(raster)
 # need to index raster because it's a stack?
 # don't have same number of rasterstack and coordinates?
 # sapply example: http://stackoverflow.com/questions/14682606/extract-value-from-raster-stack-from-spatialpolygondataframe
-finaltemps = extract(temp_stack, cbind(SummaryTable$lon, SummaryTable$lat))
-
-
-coordinates = SpatialPoints(cbind(FinalSummaryTable$lon, FinalSummaryTable$lat))
 
 # determining temperature for single specimen
-get_layer = raster('air.mon.mean.v301.nc', band=FinalSummaryTable$stackID[1])
-single_specimen_temp = extract(get_layer, coordinates[1])
+#temp = raster('air.mon.mean.v301.nc', band=FinalSummaryTable$stackID[1])
+#single_specimen_temp = extract(temp, matrix(coordinates[1, ], ncol=2))
+
 
 # use loop to determine temperature for all specimens
-
-for (i in 1:length(FinalSummaryTable)){
-  
+extracted_temps = NULL
+for (i in 1:nrow(FinalSummaryTable)){
+  temp = raster('air.mon.mean.v301.nc', band=FinalSummaryTable$stackID[i])
+  coordinate = cbind(FinalSummaryTable$lon[i] + 360, FinalSummaryTable$lat[i])
+  single_specimen_temp = extract(temp, coordinate)
+  extracted_temps = append(extracted_temps, single_specimen_temp)
 }
 
 
+## plot temperature-mass relationship -----------------------------------------
+# create matrix with temps and corresponding masses
+plot_table = cbind(extracted_temps, FinalSummaryTable$masses)
 
+# plot this
+plot(plot_table, xlab = "Temperature (*C)", ylab = "Body Mass (g)")
+
+# plot linear regression of temp and mass
+linreg = lm(plot_table[,2] ~ plot_table[,1])
+summary(linreg)
+abline(linreg)
 
 ## NCDF leftovers --------------------------------------------------------------
 # raster is easier and more useful than ncdf package
