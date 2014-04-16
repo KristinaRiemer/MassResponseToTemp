@@ -88,7 +88,8 @@ Possible temperature sources:
 * Looked for datasets with Dan 4/8/14, but didn't work for reasons in parentheses: WorldClim (50 yr average temp), CRU (don't remember), Tree Ring Grid (only Western US)
 * NOAA Gridded Climate Datasets listed here: http://www.esrl.noaa.gov/psd/data/gridded/tables/temperature.html
     - GHCN_CAMS seemed right (sufficient spatial and temporal resolution), but dataset doesn't appear to be there, email about it
-    - University of Delaware precipitation dataset will probably also work
-    - For .nc files, use ~~rgdal package~~ ncdf package to read into R
+    - Using University of Delaware temperature dataset: http://www.esrl.noaa.gov/psd/data/gridded/data.UDel_AirT_Precip.html 
+    - For .nc files, use ~~rgdal package~~ ~~ncdf package~~ raster to read into R
       - Can use Ncview program (http://meteora.ucsd.edu/~pierce/ncview_home_page.html) to look at and do simple visualizations of .nc netCDF files
       - Description of netCDF files here: https://www.image.ucar.edu/GSP/Software/Netcdf/ 
+      - Must download netCDF library to read in netCDF files, first link here (Java library v4): http://www.unidata.ucar.edu/downloads/netcdf/index.jsp
