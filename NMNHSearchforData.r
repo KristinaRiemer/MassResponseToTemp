@@ -143,6 +143,35 @@ for (i in 1:nrow(species1)){
   
 }
 
+
+test_measurement = species1$Measurements[1]
+grep(‘[0-9]g’, test_measurement)
+library(stringr)
+str_match(test_measurement, “([0-9])g”)
+#didn’t quite work
+str_match(test_measurement, “(*[0-9])g”)
+#same return
+str_match(test_measurement, “(*{0-9})g”)
+# this works! number outputs as a string
+myval = str_match(test_measurement, "Specimen Weight: ([0-9.]*)g")
+as.numeric(myval[2])
+
+mass = vector(length = nrow(species1))
+for (i in 1:nrow(species1)){
+  mass[i] = str_match(species1$Measurements[i], 'regex')
+  as.numeric(mass[2])
+}
+
+for (current_row in species1$Measurements){print(current_row)}
+
+masses = vector()
+for (current_row in species1$Measurements){
+  mass_match = str_match(current_row, "Specimen Weight: ([0-9.]*)g")
+  mass = as.numeric(mass_match[2])
+  masses = append(masses, mass)
+}
+
+
 # remove everything but year from Date.Collected column
 species1$Date.Collected = as.character(species1$Date.Collected)
 year = substr(species1$Date.Collected, nchar(species1$Date.Collected)-3, nchar(species1$Date.Collected))
@@ -176,6 +205,13 @@ stackID = as.vector(stackID)
 select_tempstack = raster('air.mon.mean.v301.nc', band=1)
 for (i in stackID[1:length(stackID)]){
   select_tempstack = stack(select_tempstack, raster('air.mon.mean.v301.nc', band=i))
+}
+
+select_tempstack = raster('air.mon.mean.v301.nc', band=1)
+for (current_specimen in SummaryTable$stackID){
+  current_raster = raster('air.mon.mean.v301.nc', band=current_specimen)
+  select_tempstack = stack(select_tempstack, current_raster)
+  #select_tempstack = stack(select_tempstack, raster('air.mon.mean.v301.nc', band=current_specimen))
 }
 
 
