@@ -130,40 +130,13 @@ LatLonSpecies1 = read.csv("./LatLonSpecies1.csv")
 #splitmeas = strsplit(species1$Measurements, ';')
 #mass = substr(splitmeas,grep('[0-9]g',splitmeas),grep('[0-9]g',splitmeas))
 
+
+# example of a for loop
+# for (current_row in species1$Measurements){print(current_row)}
+
 # loop to remove everything from Measurements column except mass
-mass = vector(length = nrow(species1))
-for (i in 1:nrow(species1)){
-  #separate_meas = strsplit(species1$Measurements, ';')
-  #locate_pattern = grep("[0-9]g", species1$Measurements)
-  if (grep('[0-9]g', species1$Measurements)){
-    mass[i] = substring(species1$Measurements[i], 17, 19)
-  } else {
-    mass[i] = NA
-  }
-  
-}
-
-
-test_measurement = species1$Measurements[1]
-grep(‘[0-9]g’, test_measurement)
+# str_match example: http://stackoverflow.com/questions/952275/regex-group-capture-in-r
 library(stringr)
-str_match(test_measurement, “([0-9])g”)
-#didn’t quite work
-str_match(test_measurement, “(*[0-9])g”)
-#same return
-str_match(test_measurement, “(*{0-9})g”)
-# this works! number outputs as a string
-myval = str_match(test_measurement, "Specimen Weight: ([0-9.]*)g")
-as.numeric(myval[2])
-
-mass = vector(length = nrow(species1))
-for (i in 1:nrow(species1)){
-  mass[i] = str_match(species1$Measurements[i], 'regex')
-  as.numeric(mass[2])
-}
-
-for (current_row in species1$Measurements){print(current_row)}
-
 masses = vector()
 for (current_row in species1$Measurements){
   mass_match = str_match(current_row, "Specimen Weight: ([0-9.]*)g")
@@ -181,8 +154,10 @@ year = as.numeric(year)
 stackID = year * 12 - 22793
 
 # final summary with year, stackID, lat/lon, mass
-SummaryTable = cbind(year, stackID, LatLonSpecies1, species1[32])
-SummaryTable = cbind(year, stackID, LatLonSpecies1, mass)
+PrelimSummaryTable = cbind(year, LatLonSpecies1, species1[32])
+FinalSummaryTable = cbind(stackID, LatLonSpecies1, masses)
+# remove specimens that lack mass
+FinalSummaryTable = na.omit(FinalSummaryTable)
 
 ## getting temperature data ----------------------------------------------------
 # use University of Delaware temperature dataset
@@ -191,8 +166,8 @@ SummaryTable = cbind(year, stackID, LatLonSpecies1, mass)
 library(raster)
 
 # examples of raster function for July 1900 and July 1901
-temp_stack_1 = raster('air.mon.mean.v301.nc', band=7)
-temp_stack_2 = raster('air.mon.mean.v301.nc', band=19)
+#temp_stack_1 = raster('air.mon.mean.v301.nc', band=7)
+#temp_stack_2 = raster('air.mon.mean.v301.nc', band=19)
 
 # loop to make rasterstack out of July temperatures for all 111 years
 temp_stack = raster('air.mon.mean.v301.nc', band=1)
@@ -200,20 +175,21 @@ for (i in seq(7, 1332, 12)){
   temp_stack = stack(temp_stack, raster('air.mon.mean.v301.nc', band=i))
 }
 
-stackID = as.vector(stackID)
-# loop to make rasterstack out of specimen years (i.e., stackID) using July temps
-select_tempstack = raster('air.mon.mean.v301.nc', band=1)
-for (i in stackID[1:length(stackID)]){
-  select_tempstack = stack(select_tempstack, raster('air.mon.mean.v301.nc', band=i))
-}
 
-select_tempstack = raster('air.mon.mean.v301.nc', band=1)
-for (current_specimen in SummaryTable$stackID){
-  current_raster = raster('air.mon.mean.v301.nc', band=current_specimen)
-  select_tempstack = stack(select_tempstack, current_raster)
-  #select_tempstack = stack(select_tempstack, raster('air.mon.mean.v301.nc', band=current_specimen))
-}
-
+# # can't make the following loop because need loop counter to be in numbers
+# # loop to make rasterstack out of specimen years (i.e., stackID) using July temps
+# stackID = as.vector(stackID)
+# select_tempstack = raster('air.mon.mean.v301.nc', band=1)
+# for (i in stackID[1:length(stackID)]){
+#   select_tempstack = stack(select_tempstack, raster('air.mon.mean.v301.nc', band=i))
+# }
+# 
+# select_tempstack = raster('air.mon.mean.v301.nc', band=1)
+# for (current_specimen in SummaryTable$stackID){
+#   current_raster = raster('air.mon.mean.v301.nc', band=current_specimen)
+#   select_tempstack = stack(select_tempstack, current_raster)
+#   #select_tempstack = stack(select_tempstack, raster('air.mon.mean.v301.nc', band=current_specimen))
+# }
 
 
 ## need to convert 32767 (missing value) to NA? 
@@ -226,9 +202,24 @@ library(raster)
 # original from Dan: extract(bioStack, cbind(datTemp$Longitude,datTemp$Latitude))
 # need to index raster because it's a stack?
 # don't have same number of rasterstack and coordinates?
+# sapply example: http://stackoverflow.com/questions/14682606/extract-value-from-raster-stack-from-spatialpolygondataframe
 finaltemps = extract(temp_stack, cbind(SummaryTable$lon, SummaryTable$lat))
 
-# sapply example: http://stackoverflow.com/questions/14682606/extract-value-from-raster-stack-from-spatialpolygondataframe
+
+coordinates = SpatialPoints(cbind(FinalSummaryTable$lon, FinalSummaryTable$lat))
+
+# determining temperature for single specimen
+get_layer = raster('air.mon.mean.v301.nc', band=FinalSummaryTable$stackID[1])
+single_specimen_temp = extract(get_layer, coordinates[1])
+
+# use loop to determine temperature for all specimens
+
+for (i in 1:length(FinalSummaryTable)){
+  
+}
+
+
+
 
 ## NCDF leftovers --------------------------------------------------------------
 # raster is easier and more useful than ncdf package
