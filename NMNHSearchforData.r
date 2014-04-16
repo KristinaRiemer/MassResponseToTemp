@@ -61,7 +61,7 @@ length(which(species1_masscoun == TRUE))
 species1_masscoun = which(species1_masscoun == TRUE)
 ## specimens with mass info have county info
 
-## mapping species 1 to determine spatial spread ------------------------------
+## mapping species 1 to determine spatial spread
 # read in libary for maps
 library(maps)
 
@@ -97,70 +97,113 @@ map('county', fill=T, col=col)
 # why?
 dev.off()
 
+# failed attempt to map specimen locations based on latitude and longitude
+#map(LatLonSpecies1[1], LatLonSpecies1[2], col = 'red')
 
-## convert county info to latitude/longitude -----------------------------------
+
+## add collection date to county fill map 
+#library(mapplots)
+# something similar to add.pie, see http://uchicagoconsulting.wordpress.com/2011/04/18/how-to-draw-good-looking-maps-in-r/
+
+
+
+
+######## if species has sufficient data, start here to get temp v. mass plot ----------
+# read in csv with data
+species1 = read.csv('./PeromyscusmanDataNMNH.csv')
+
+
+## convert county info to latitude/longitude, only run last line ---------------
 library(ggmap)
 latlon = geocode(species1$District.County, output = 'latlon')
 write.table(latlon, "LatLonSpecies1.csv", sep = ",")
 LatLonSpecies1 = read.csv("./LatLonSpecies1.csv")
 
-# failed attempt to map specimen locations based on latitude and longitude
-#map(LatLonSpecies1[1], LatLonSpecies1[2], col = 'red')
-
-
-## add collection date to county fill map ---------------------------------------
-#library(mapplots)
-# something similar to add.pie, see http://uchicagoconsulting.wordpress.com/2011/04/18/how-to-draw-good-looking-maps-in-r/
 
 
 ## summary matrix of relevant info (lat/long, date, mass) ---------------------
 # need to strip everything but mass value from species1 'Measurements' column
 # Dan recommended splitting up the Measurements column by its separator and then searching
 # for the mass info
-splitmeas = strsplit(species1$Measurements, ';')
+
+# code that didn't work
+#splitmeas = strsplit(species1$Measurements, ';')
+#mass = substr(splitmeas,grep('[0-9]g',splitmeas),grep('[0-9]g',splitmeas))
+
+# loop to remove everything from Measurments column except mass
+mass = vector(length = nrow(SummaryTable))
+for (i in 1:nrow(SummaryTable)){
+  separate_meas = strsplit(SummaryTable$Measurements, ';')
+  # locate_pattern outputs rows which have mass in them
+  locate_pattern = grep("[0-9]g", separate_meas)
+  if (SummaryTable$Measurements[i] == locate_pattern){
+    mass = substring(SummaryTable$Measurements, 17, 19)
+  } else {
+    mass = NA
+  }
+ 
+}
 
 
-mass = substr(splitmeas,grep('[0-9]g',splitmeas),grep('[0-9]g',splitmeas))
-
-# isolate year from Date.Collected column
+# remove everything but year from Date.Collected column
 species1$Date.Collected = as.character(species1$Date.Collected)
 year = substr(species1$Date.Collected, nchar(species1$Date.Collected)-3, nchar(species1$Date.Collected))
 
+# convert year to stackID (time format used in temperature dataset)
+year = as.numeric(year)
+stackID = year * 12 - 22793
 
-SummaryTable = cbind(year, LatLonSpecies1, species1[32])
+# final summary with year, stackID, lat/lon, mass
+SummaryTable = cbind(year, stackID, LatLonSpecies1, species1[32])
+
 
 ## getting temperature data ----------------------------------------------------
-# use University of Delaware air temp data? 
+# use University of Delaware temperature dataset
 
-# must install netCDF library on machine to use ncdf package
-# use ncdf package to read University of Delaware netCDF file in
-# can use to convert to ASCII but not recommended because file will be very large
+# must install netCDF library on machine to use ncdf
 library(raster)
-# band v. layer for choosing year from file
+
+# examples of raster function for July 1900 and July 1901
+temp_stack_1 = raster('air.mon.mean.v301.nc', band=7)
+temp_stack_2 = raster('air.mon.mean.v301.nc', band=19)
+
+# loop to make rasterstack out of July temperatures for all 111 years
 temp_stack = raster('air.mon.mean.v301.nc', band=1)
-# use for loop to make brick out of JUST July averages for all 111 years
 for (i in seq(7, 1332, 12)){
   temp_stack = stack(temp_stack, raster('air.mon.mean.v301.nc', band=i))
 }
 
-# plot(stack) v. plot('name')
+# loop to make rasterstack out of specimen years (i.e., stackID) using July temps
+select_tempstack = raster('air.mon.mean.v301.nc', band=1)
+for (i in stackID){
+  select_tempstack = stack(select_tempstack, raster('air.mon.mean.v301.nc', band=i))
+}
 
-## to do convert 32767 to NA
 
 
-# raster is easier and more useful than ncdf package
-library(ncdf)
-# TemperatureFile is metadata for netCDF file
-TemperatureFile = open.ncdf('air.mon.mean.v301.nc')
-#ncdump -h air.mon.mean.v301.nc
-print.ncdf(TemperatureFile)
-var1 = get.var.ncdf(TemperatureFile, "lat")
-var2 = get.var.ncdf(TemperatureFile, "lon")
-var3 = get.var.ncdf(TemperatureFile, "time")
-plot(var1,var2[1:360])
-# need to unpack data? http://www.esrl.noaa.gov/psd/data/gridded/faq.html#2
+## need to convert 32767 (missing value) to NA? 
 
-# code from Dan to get temp from lat/lon/date info (SummaryTable) 4/8/14
+## use temperature data to determine temperatures for lat/lon/date of specimens -----
+# code from Dan 4/8/14
 library(raster)
+
 # use extract function to get temperature for lat and lon in SummaryTable
-extract(bioStack, cbind(datTemp$Longitude,datTemp$Latitude))
+# original from Dan: extract(bioStack, cbind(datTemp$Longitude,datTemp$Latitude))
+finaltemps = extract(temp_stack, cbind(SummaryTable$lon, SummaryTable$lat))
+
+
+## NCDF leftovers --------------------------------------------------------------
+# raster is easier and more useful than ncdf package
+
+# use ncdf package to read University of Delaware netCDF file in
+# can use to convert to ASCII but not recommended because file will be very large
+# library(ncdf)
+# # TemperatureFile is metadata for netCDF file
+# TemperatureFile = open.ncdf('air.mon.mean.v301.nc')
+# #ncdump -h air.mon.mean.v301.nc
+# print.ncdf(TemperatureFile)
+# var1 = get.var.ncdf(TemperatureFile, "lat")
+# var2 = get.var.ncdf(TemperatureFile, "lon")
+# var3 = get.var.ncdf(TemperatureFile, "time")
+# plot(var1,var2[1:360])
+# need to unpack data? http://www.esrl.noaa.gov/psd/data/gridded/faq.html#2
