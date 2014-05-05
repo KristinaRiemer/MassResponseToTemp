@@ -93,3 +93,13 @@ Possible temperature sources:
       - Can use Ncview program (http://meteora.ucsd.edu/~pierce/ncview_home_page.html) to look at and do simple visualizations of .nc netCDF files
       - Description of netCDF files here: https://www.image.ucar.edu/GSP/Software/Netcdf/ 
       - Must download netCDF library to read in netCDF files, first link here (Java library v4): http://www.unidata.ucar.edu/downloads/netcdf/index.jsp
+
+Summer to do:
+----------
+* Improve existing code from Plant Community Eco project
+    - Fix code to find lat/lon from county information with Google function to ensure it's accurate. Some county info lead to wrong lat/lons in England and US, just removed these values from the analysis for presentation but other coordinates could be wrong with no way to tell. 
+    - Update code to strip out mass values from Measurements string in the better way
+* Add in Mexico & Canada data for Peromyscus 
+* Separate out temporal and spatial scale data
+* Repeat with more common species (see "Possible species" list above)
+* Plant Community Eco presentation suggestion: average temperatures for locations for more reasonable ecological time period (e.g., 5 years, 10 years?) than just using current time. Organisms will be responding to past temperatures. 
