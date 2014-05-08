@@ -99,16 +99,23 @@ Summer to do:
 * Improve existing code from Plant Community Eco project
     - Fix code to find lat/lon from county information with Google function to ensure it's accurate. Some county info lead to wrong lat/lons in England and US, just removed these values from the analysis for presentation but other coordinates could be wrong with no way to tell. 
     - Update code to strip out mass values from Measurements string in the better way
+    - Add code to strip out length values if mass not available, use allometric relationship to convert to mass
 * Add in Mexico & Canada data for Peromyscus 
 * Separate out temporal and spatial scale data
 * Repeat with more common species (see "Possible species" list above)
 * Plant Community Eco presentation suggestion: average temperatures for locations for more reasonable ecological time period (e.g., 5 years, 10 years?) than just using current time. Organisms will be responding to past temperatures. 
 
-Getting lat/lon coordinates:
+Getting coordinates:
 -----------
 * Geocode function in R goes through Google Maps, and they limit queries to 2,500 a day. This isn't currently a problem with a single species, but it will be a problem with many species because will definitely exceed that limit. 
 * Possible solutions:
     - Combo of createMaps and memoise? Don't quite understand how that would work yet. See third bullet here: http://cran.r-project.org/web/packages/toaster/NEWS 
     - Geonames file and MySQL? See Steve's comment: http://rollingyours.wordpress.com/2013/03/20/geocoding-r-and-the-rolling-stones-part-1/
     - Geopy in Python using Yahoo instead because the limit is 50,0000. http://stackoverflow.com/questions/8713309/r-yahoo-bing-or-other-alternatives-to-google-earth-for-geocoding
+* Geocode also takes a long time (~15 minutes for ~1,000 queries)
+* For now, just used geocode function but added in all location information (just had county before which resulted in a few coordinates outside the US), seems to have fixed the problem. 
+    - Still had a few unusual temperatures outputs in the end, with temps below 0*C. These were because the collection date was after the time range available for the temperature. I already put some code in to deal with this but hadn't run it. 
+
+
+
 
