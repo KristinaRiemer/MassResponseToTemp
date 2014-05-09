@@ -110,7 +110,7 @@ Getting coordinates:
 * Geocode function in R goes through Google Maps, and they limit queries to 2,500 a day. This isn't currently a problem with a single species, but it will be a problem with many species because will definitely exceed that limit. 
 * Possible solutions:
     - Combo of createMaps and memoise? Don't quite understand how that would work yet. See third bullet here: http://cran.r-project.org/web/packages/toaster/NEWS 
-    - Geonames file and MySQL? See Steve's comment: http://rollingyours.wordpress.com/2013/03/20/geocoding-r-and-the-rolling-stones-part-1/
+    - Geonames file and MySQL? See Steve's comment: http://rollingyours.wordpress.com/2013/03/20/geocoding-r-and-the-rolling-stones-part-1/  He also mentions that there are unlimited geocoding services. 
     - Geopy in Python using Yahoo instead because the limit is 50,0000. http://stackoverflow.com/questions/8713309/r-yahoo-bing-or-other-alternatives-to-google-earth-for-geocoding
 * Geocode also takes a long time (~15 minutes for ~1,000 queries)
 * For now, just used geocode function but added in all location information (just had county before which resulted in a few coordinates outside the US), seems to have fixed the problem. 
