@@ -117,11 +117,18 @@ species1 = read.csv('./PeromyscusmanDataNMNH.csv')
 # improve accuracy by including state name with geocode function
 # improve accuracy even more by using state & county to get FIPS and then get coordinates
 library(ggmap)
-latlon = geocode(species1$District.County, output = 'latlon')
+# Google limits use of geocode to 2,500 queries per day--could be a problem later on, see
+# markdown file about this
+latlon = geocode(paste(species1$Country, species1$Province.State, species1$District.County), output = 'latlon')
 write.table(latlon, "LatLonSpecies1.csv", sep = ",")
 LatLonSpecies1 = read.csv("./LatLonSpecies1.csv")
 
-
+# check coordinates to make sure they're all in the USA
+library(maps)
+map('world')
+points(LatLonSpecies1, col = 'red')
+map('usa')
+points(LatLonSpecies1, col = 'red')
 
 ## summary matrix of relevant info (lat/long, date, mass) ---------------------
 # need to strip everything but mass value from species1 'Measurements' column
@@ -162,12 +169,6 @@ FinalSummaryTable = cbind(stackID, LatLonSpecies1, masses)
 FinalSummaryTable = na.omit(FinalSummaryTable)
 # remove specimens with collection date after 2010 because temp data not available
 FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$stackID < 1327)
-# remove specimens with coordinates outside of US: geocode chose wrong coordinates from county info
-FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$lon > -150)
-FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$lon < -50)
-FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$lat > 25)
-FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$lat < 50)
-
 
 ## getting temperature data ----------------------------------------------------
 # use University of Delaware temperature dataset
