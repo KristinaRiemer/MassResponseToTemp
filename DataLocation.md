@@ -116,6 +116,9 @@ Getting coordinates:
 * For now, just used geocode function but added in all location information (just had county before which resulted in a few coordinates outside the US), seems to have fixed the problem. 
     - Still had a few unusual temperatures outputs in the end, with temps below 0*C. These were because the collection date was after the time range available for the temperature. I already put some code in to deal with this but hadn't run it. 
 
-
+Getting size info:
+----------
+* If specimens have length but not mass, need to convert from length to mass. Use allometric equation. Develop from datasets for each species? At least for _P. maniculatus_, some specimens have both mass and length. Otherwise get from lit?
+* Need to improve code that extracts mass from Measurements string. Want to separate all parts of each string and run loop through each of those. Can then also extract length info, if mass isn't available. 
 
 
