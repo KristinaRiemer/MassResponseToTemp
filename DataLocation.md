@@ -120,5 +120,13 @@ Getting size info:
 ----------
 * If specimens have length but not mass, need to convert from length to mass. Use allometric equation. Develop from datasets for each species? At least for _P. maniculatus_, some specimens have both mass and length. Otherwise get from lit?
 * Need to improve code that extracts mass from Measurements string. Want to separate all parts of each string and run loop through each of those. Can then also extract length info, if mass isn't available. 
+* The _P. maniculatus_ dataset specimens that have length also have mass. 
+
+
+Space-for-time substitutions lit:
+------------
+* Subs have mostly not been successful for secondary succession in forests (Pickett 1989) or grassland production-precipitation relationships (Lauenroth & Sala 1992, Paruelo et al. 1999). The latter is because only a single system was looked at spatially and compared to multiple systems temporally. 
+* Using subs for successional studies is a little different because these processes have a start, end, and a presumed order of events. 
+
 
 
