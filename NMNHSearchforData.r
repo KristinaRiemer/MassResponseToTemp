@@ -153,6 +153,18 @@ for (current_row in species1$Measurements){
   masses = append(masses, mass)
 }
 
+# loop to remove total length value from Measurements column
+lengths = vector()
+for (current_row in species1$Measurements){
+  length_match = str_match(current_row, "Total Length: ([0-9.]*)mm")
+  length = as.numeric(length_match[2])
+  lengths = append(lengths, length)
+}
+
+# find specimens that have length but not mass
+size_values = cbind(masses, lengths)
+which(size_values[,1] == FALSE)
+& size_values[,2] = TRUE)
 
 # remove everything but year from Date.Collected column
 species1$Date.Collected = as.character(species1$Date.Collected)
