@@ -163,8 +163,23 @@ for (current_row in species1$Measurements){
 
 # find specimens that have length but not mass
 size_values = cbind(masses, lengths)
-which(size_values[,1] == FALSE)
-& size_values[,2] = TRUE)
+length_nomass = is.na(size_values[,1]) & !is.na(size_values[,2])
+
+calc_mass = vector()
+for (current_row in size_values)
+  if(is.na(size_values[,1]) & !is.na(size_values[,2])) {} 
+
+if(is.na(size_values[1,1]) & !is.na(size_values[1,2])) {
+  calc_mass = size_values[1,2] * 0.14
+} else {
+  print(2)
+}
+
+# test of length but not mass
+test_sizes = matrix(c(10,NA,10,NA,10,10), nrow = 3)
+test_sizes
+length_nomass_test = is.na(test_sizes[,1]) & !is.na(test_sizes[,2])
+
 
 # remove everything but year from Date.Collected column
 species1$Date.Collected = as.character(species1$Date.Collected)
