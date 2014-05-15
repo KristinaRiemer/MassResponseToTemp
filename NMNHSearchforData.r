@@ -130,6 +130,10 @@ points(LatLonSpecies1, col = 'red')
 map('usa')
 points(LatLonSpecies1, col = 'red')
 
+# read in county-coordinate table from US Census website http://www.census.gov/geo/maps-data/data/gazetteer2013.html
+all_latlon = read.table("2013_Gaz_counties_national.txt", sep = "", fill = TRUE, row.names = NULL)
+
+
 ## summary matrix of relevant info (lat/long, date, mass) ---------------------
 # need to strip everything but mass value from species1 'Measurements' column
 # Dan recommended splitting up the Measurements column by its separator and then searching
