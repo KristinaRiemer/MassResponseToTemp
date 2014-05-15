@@ -115,6 +115,10 @@ Getting coordinates:
 * Geocode also takes a long time (~15 minutes for ~1,000 queries)
 * For now, just used geocode function but added in all location information (just had county before which resulted in a few coordinates outside the US), seems to have fixed the problem. 
     - Still had a few unusual temperatures outputs in the end, with temps below 0*C. These were because the collection date was after the time range available for the temperature. I already put some code in to deal with this but hadn't run it. 
+* Instead of using geocode fx, read in file that contains coordinates for all US counties and use that to determine coordinates for specimens
+    - US Census file, downloaded "Counties" file: http://www.census.gov/geo/maps-data/data/gazetteer2013.html
+    - Attempted to read in this file, but some of the rows were messed up because of county names longer than one word (doesn't distinguish between space and tab separators)
+
 
 Getting size info:
 ----------
