@@ -131,8 +131,7 @@ map('usa')
 points(LatLonSpecies1, col = 'red')
 
 # read in county-coordinate table from US Census website http://www.census.gov/geo/maps-data/data/gazetteer2013.html
-all_latlon = read.table("2013_Gaz_counties_national.txt", sep = "", fill = TRUE, row.names = NULL)
-
+county_to_coord = read.table("2013_Gaz_counties_national.txt", sep = "\t")
 
 ## summary matrix of relevant info (lat/long, date, mass) ---------------------
 # need to strip everything but mass value from species1 'Measurements' column
@@ -169,20 +168,47 @@ for (current_row in species1$Measurements){
 size_values = cbind(masses, lengths)
 length_nomass = is.na(size_values[,1]) & !is.na(size_values[,2])
 
+# loop attempt #1
 calc_mass = vector()
 for (current_row in size_values)
   if(is.na(size_values[,1]) & !is.na(size_values[,2])) {} 
 
+# loop attempt #2
+calc_mass = vector()
+for (i in 1:nrow(size_values))
+  if(is.na(size_values[i,1]) & !is.na(size_values[i,2])) {
+    calc_mass = size_values[i,2] * 0.14
+  } else {
+    calc_mass = size_values[i,1] * 100
+  }
+
+# loop attempt #3 (closest one)
+calc_mass = vector()
+for (i in 1:nrow(size_values))
+  if(is.na(size_values[i,1]) & !is.na(size_values[i,2])) {
+    calc_mass = print(1)
+  } else {
+    calc_mass = size_values * 100
+  }
+
+# loop attempt #4
 if(is.na(size_values[1,1]) & !is.na(size_values[1,2])) {
   calc_mass = size_values[1,2] * 0.14
 } else {
   print(2)
 }
 
-# test of length but not mass
+# test of loop b/c current dataset doesn't fulfill length but no mass
 test_sizes = matrix(c(10,NA,10,NA,10,10), nrow = 3)
 test_sizes
-length_nomass_test = is.na(test_sizes[,1]) & !is.na(test_sizes[,2])
+
+test_mass = vector()
+for (i in 1:nrow(test_sizes))
+  if(is.na(test_sizes[i,1]) & !is.na(test_sizes[i,2])) {
+    test_mass = print(1)
+  } else {
+    test_mass = test_sizes * 100
+  }
 
 
 # remove everything but year from Date.Collected column
