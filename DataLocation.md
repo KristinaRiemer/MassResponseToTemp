@@ -73,6 +73,25 @@ List from Morgan, email 3/24/14
 5. _Tamias striatus_
 
 
+### All species extraction:
+
+Manually getting all specimens from Smithsonian Mammals Collection database
+
+1. Create list of all mammal families
+    - File called MammalFamilyNames.csv
+    - Came from Wilson & Reeder's Mammal Species of the World (Smithsonian online): http://www.vertebrates.si.edu/msw/mswcfapp/msw/index.cfm
+2. Put each family name into "Family" search field in Smithsonian mammal records database
+3. If <5000 records: 
+    - Click "Export All Results as CSV" button and hit "OK" button
+    - Go to Downloads folder
+    - Rename file with family name
+    - Move file to SmithsonianFamilyData folder
+    - Check off that family in MammalFamilyNames.csv
+4. If >5000 records:
+    - Complete after 3 is done (split up by year?)
+5. Combine all exported CSV files using R
+    - Figured out code using following link: https://stat.ethz.ch/pipermail/r-help/2010-October/255593.html 
+
 
 2. Temperature dataset
 =====
