@@ -1,19 +1,22 @@
 Data
 =====
 
-Goal: Find appropriate data set for project
+Goal: Find appropriate datasets (specimen mass and temperature) for project
 
-Requirements:
--------------
+
+1. Specimen mass dataset
+======
+
+### Requirements:
+
 * Multiple individuals/populations of a single species
 * Body mass for individuals/populations
 * Sufficient temporal resolution (50+ years)
 * Sufficient spatial resolution (continent-wide?)
 
 
+### Possible species datasets:
 
-Possible datasets:
---------------
 * GBIF: only occurrence data, no mass/body size information
 http://www.gbif.org/occurrence
 
@@ -23,16 +26,15 @@ http://ropensci.org/blog/2014/01/29/ecoengine/
 * Museum of Vertebrate Zoology at Berkely via Berkeley Museum API, no mass/body size information, but it’s difficult to use their collections search 
 http://mvz.berkeley.edu/Mammal_Collection.html
 
-* Smithsonian National Museum of Natural History collections via Hallgrimsson & Maiorana (1999), should have body mass, but how to filter by that? Looked at mammal collection. Have mass and location (lat & long) info for some. Can export data as CSV. 
+* **USING THIS DATASET** Smithsonian National Museum of Natural History collections via Hallgrimsson & Maiorana (1999), should have body mass, but how to filter by that? Looked at mammal collection. Have mass and location (lat & long) info for some. Can export data as CSV. 
 Mammal collection: http://collections.nmnh.si.edu/search/mammals/ 
 
 * The LTER database was recommended by Morgan 3/21/14. Haven't looked at it much yet. 
 https://portal.lternet.edu/nis/discover.jsp
 
 
+### R code exploration:
 
-R code exploration:
-----------------
 Purpose: find a species with a sufficient number of individuals from the Smithsonian database by importing CSV files into R and looking for # of occurrences of following things:
 * how many with mass 
 * how many with decimal degrees (Lat / Long)
@@ -42,11 +44,11 @@ Purpose: find a species with a sufficient number of individuals from the Smithso
 * spatial extent
 
 
-Possible species:
---------------
+### Possible species:
+
 List from Morgan, email 3/24/14
 
-1. _Peromyscus maniculatus_
+1. **USING THIS SPECIES** _Peromyscus maniculatus_
 
    Done:
   * In NMNH database, search for Scientific Name ("Peromyscus maniculatus"), Country ("United States"), Measurements ("Weight"); got 1000+ hits
@@ -71,16 +73,20 @@ List from Morgan, email 3/24/14
 5. _Tamias striatus_
 
 
-Abiotic data:
------------
-Need temperature data. Requirements: 
+
+2. Temperature dataset
+=====
+
+### Requirements: 
 
 1. Determine temperature using latitude/longitude and date?
 2. County-level at minimum
 3. Need temperature data that goes back to 1950s at minimum
 4. Be able to put data into R
 
-Possible temperature sources:
+
+### Possible temperature sources:
+
 * US Historical Climatology Network http://cdiac.esd.ornl.gov/epubs/ndp/ushcn/ushcn.html 
 * List of temperature resources from NOAA: http://www.esrl.noaa.gov/psd/data/faq/
     - Most of these datasets go back 20 years or less
@@ -88,14 +94,19 @@ Possible temperature sources:
 * Looked for datasets with Dan 4/8/14, but didn't work for reasons in parentheses: WorldClim (50 yr average temp), CRU (don't remember), Tree Ring Grid (only Western US)
 * NOAA Gridded Climate Datasets listed here: http://www.esrl.noaa.gov/psd/data/gridded/tables/temperature.html
     - GHCN_CAMS seemed right (sufficient spatial and temporal resolution), but dataset doesn't appear to be there, email about it
-    - Using University of Delaware temperature dataset: http://www.esrl.noaa.gov/psd/data/gridded/data.UDel_AirT_Precip.html 
+    - **USING THIS DATASET** Using University of Delaware temperature dataset: http://www.esrl.noaa.gov/psd/data/gridded/data.UDel_AirT_Precip.html 
     - For .nc files, use ~~rgdal package~~ ~~ncdf package~~ raster to read into R
       - Can use Ncview program (http://meteora.ucsd.edu/~pierce/ncview_home_page.html) to look at and do simple visualizations of .nc netCDF files
       - Description of netCDF files here: https://www.image.ucar.edu/GSP/Software/Netcdf/ 
       - Must download netCDF library to read in netCDF files, first link here (Java library v4): http://www.unidata.ucar.edu/downloads/netcdf/index.jsp
 
-Summer to do:
-----------
+
+
+3. Summer objectives
+====
+
+### Objectives:
+
 * Improve existing code from Plant Community Eco project
     - Fix code to find lat/lon from county information with Google function to ensure it's accurate. Some county info lead to wrong lat/lons in England and US, just removed these values from the analysis for presentation but other coordinates could be wrong with no way to tell. 
     - Update code to strip out mass values from Measurements string in the better way
@@ -105,8 +116,8 @@ Summer to do:
 * Repeat with more common species (see "Possible species" list above)
 * Plant Community Eco presentation suggestion: average temperatures for locations for more reasonable ecological time period (e.g., 5 years, 10 years?) than just using current time. Organisms will be responding to past temperatures. 
 
-Getting coordinates:
------------
+### Getting coordinates:
+
 * Geocode function in R goes through Google Maps, and they limit queries to 2,500 a day. This isn't currently a problem with a single species, but it will be a problem with many species because will definitely exceed that limit. 
 * Possible solutions:
     - Combo of createMaps and memoise? Don't quite understand how that would work yet. See third bullet here: http://cran.r-project.org/web/packages/toaster/NEWS 
@@ -120,15 +131,15 @@ Getting coordinates:
     - Attempted to read in this file, but some of the rows were messed up because of county names longer than one word (doesn't distinguish between space and tab separators)
 
 
-Getting size info:
-----------
+### Getting size info:
+
 * If specimens have length but not mass, need to convert from length to mass. Use allometric equation. Develop from datasets for each species? At least for _P. maniculatus_, some specimens have both mass and length. Otherwise get from lit?
 * Need to improve code that extracts mass from Measurements string. Want to separate all parts of each string and run loop through each of those. Can then also extract length info, if mass isn't available. 
 * The _P. maniculatus_ dataset specimens that have length also have mass. 
 
 
-Space-for-time substitutions lit:
-------------
+### Space-for-time substitutions lit:
+
 * Subs have mostly not been successful for secondary succession in forests (Pickett 1989) or grassland production-precipitation relationships (Lauenroth & Sala 1992, Paruelo et al. 1999). The latter is because only a single system was looked at spatially and compared to multiple systems temporally. 
 * Using subs for successional studies is a little different because these processes have a start, end, and a presumed order of events. 
 
