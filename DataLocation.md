@@ -88,7 +88,14 @@ Manually getting all specimens from Smithsonian Mammals Collection database
     - Move file to SmithsonianFamilyData folder
     - Check off that family in MammalFamilyNames.csv
 4. If >5000 records:
-    - Complete after 3 is done (split up by year?)
+    - Complete after 3 is done
+    - Put years into "Year" search field. Start with 1900-1919, then increase or decrease range if necessary based on how many records are returned. 
+    - Click "Export All Results as CSV" button and hit "OK" button
+    - Go to Downloads folder
+    - Rename file with family name and year range (e.g., "Canidae1900_1910.csv")
+    - Move file to SmithsonianFamilyData folder
+    - In MammalFamilyNames.csv, add new family name that includes year range (e.g., "Canidae1900_1910") and check off
+    - Repeat with family until years 1900-2013 are all downloaded. Avoid overlap in years by doing 1900-1909, 1910-1919, etc. 
 5. Combine all exported CSV files using R
     - Figured out code using following link: https://stat.ethz.ch/pipermail/r-help/2010-October/255593.html 
 
