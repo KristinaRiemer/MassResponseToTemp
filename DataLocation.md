@@ -75,7 +75,7 @@ List from Morgan, email 3/24/14
 
 ### All species extraction:
 
-Manually getting all specimens from Smithsonian Mammals Collection database
+Manually getting all specimens from Smithsonian Mammals Collection database, **FINISHED 5/26/14**
 
 1. Create list of all mammal families
     - File called MammalFamilyNames.csv
