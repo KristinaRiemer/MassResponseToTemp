@@ -306,8 +306,17 @@ abline(linreg)
 ## creating file with all specimens from Smithsonian mammals collection --------
 
 # combine individual family files into single file
+
+# create list of all family file names in SmithsonianFamilyData folder
 filenames = list.files(path = "/Users/kristinariemer/Documents/Documents/Graduate School/Year 1/BergRuleClimateProject/SmithsonianFamilyData/")
+# change directory to SmithsonianFamilyData folder
 setwd("/Users/kristinariemer/Documents/Documents/Graduate School/Year 1/BergRuleClimateProject/SmithsonianFamilyData/")
-all_species = do.call("rbind", lapply(filenames, read.csv, header = TRUE))
+# read in all family files and concatenate into single file
+all_species = do.call("rbind", lapply(filenames, read.csv, header = TRUE, row.names = NULL))
+# change directory back to BergRuleClimateProject folder to put new .csv file there
+setwd("/Users/kristinariemer/Documents/Documents/Graduate School/Year 1/BergRuleClimateProject/")
+# create dataframe containing all species files info
+write.table(all_species, file = "all_species_data.csv", sep = ",")
+all_species_data = read.csv("all_species_data.csv", row.names = NULL)
 
 
