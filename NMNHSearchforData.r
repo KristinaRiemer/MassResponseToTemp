@@ -39,7 +39,16 @@ points(LatLonSpecies1, col = 'red')
 # read in county-coordinate table from US Census website http://www.census.gov/geo/maps-data/data/gazetteer2013.html
 # need to check entire file to ensure it's output correctly
 county_to_coord_data = read.table("CensusFile.txt", sep = "\t", fileEncoding = "latin1", fill = TRUE)
+county_to_coord_data = subset(county_to_coord_data, select = c("V1", "V4", "V9", "V10"))
 
+# add column to specimen dataframe that contains state abbreviations, returns NA if no state
+State.Abbreviation = state.abb[match(species1$Province.State, state.name)]
+species1 = cbind(species1, State.Abbreviation)
+
+# use data.table package to lookup coordinates for specimens from Census file
+lookup_specimen = data.table(species1, key = "State.Abbreviation,District.County")
+lookup_coord = data.table(county_to_coord_data, key = "V1,V4")
+end_coord = merge(lookup_specimen, lookup_coord, all = TRUE)
 
 ## summary matrix of relevant info (lat/long, date, mass) ---------------------
 
