@@ -157,8 +157,9 @@ setwd("/Users/kristinariemer/Documents/Documents/Graduate School/Year 1/BergRule
 all_species = do.call("rbind", lapply(filenames, read.csv, header = TRUE, row.names = NULL))
 
 # add column with unique rows to avoid duplicate row.names error when creating final .csv file
-all_species = cbind("Unique.ID" = 1:nrow(all_species), all_species)
-rownames(all_species) = make.names(all_species$Unique.ID, unique = TRUE)
+# all_species = cbind("Unique.ID" = 1:nrow(all_species), all_species)
+# rownames(all_species) = make.names(all_species$Unique.ID, unique = TRUE)
+# all_species$Unique.ID = make.names(all_species$Unique.ID, unique = TRUE)
 
 # change directory back to BergRuleClimateProject folder to put new .csv file there
 setwd("/Users/kristinariemer/Documents/Documents/Graduate School/Year 1/BergRuleClimateProject/")
