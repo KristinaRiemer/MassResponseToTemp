@@ -91,8 +91,10 @@ for (i in 1:nrow(size_values))
 
 
 # test of loop b/c no specimens have length but not mass
-test_sizes = matrix(c(10,NA,10,NA,10,10), nrow = 3)
+test_sizes = matrix(c(10,NA,10,NA,NA,10,10,10), nrow = 4)
 test_sizes
+
+test_length_nomass = sum(is.na(test_sizes[,1]) & !is.na(test_sizes[,2]))
 
 test_mass = vector()
 for (i in 1:nrow(test_sizes))
@@ -165,4 +167,27 @@ write.csv(all_species_data, file = "all_species.csv")
 # read in dataframe
 all_species = read.csv("all_species.csv")
 
-  
+# loop to remove everything from Measurements column except mass
+# str_match example: http://stackoverflow.com/questions/952275/regex-group-capture-in-r
+library(stringr)
+masses = vector()
+for (current_row in all_species$Measurements){
+  mass_match = str_match(current_row, "Specimen Weight: ([0-9.]*)g")
+  mass = as.numeric(mass_match[2])
+  masses = append(masses, mass)
+}
+
+# loop to remove total length value from Measurements column
+lengths = vector()
+for (current_row in all_species$Measurements){
+  length_match = str_match(current_row, "Total Length: ([0-9.]*)mm")
+  length = as.numeric(length_match[2])
+  lengths = append(lengths, length)
+}
+
+# find number of specimens that have length but not mass
+size_values = cbind(masses, lengths)
+length_nomass = sum(is.na(size_values[,1]) & !is.na(size_values[,2]))
+# only ~60,000 out of ~500,000 specimens have length but no mass
+
+
