@@ -149,24 +149,20 @@ abline(linreg)
 
 # combine individual family files into single file
 
-# create list of all family file names in SmithsonianFamilyData folder
-filenames = list.files(path = "/Users/kristinariemer/Documents/Documents/Graduate School/Year 1/BergRuleClimateProject/SmithsonianFamilyData/")
 # change directory to SmithsonianFamilyData folder
 setwd("/Users/kristinariemer/Documents/Documents/Graduate School/Year 1/BergRuleClimateProject/SmithsonianFamilyData/")
+# create list of all family file names in SmithsonianFamilyData folder
+family_filenames = list.files()
 # read in all family files and concatenate into single file
-all_species = do.call("rbind", lapply(filenames, read.csv, header = TRUE, row.names = NULL))
-
-# add column with unique rows to avoid duplicate row.names error when creating final .csv file
-# all_species = cbind("Unique.ID" = 1:nrow(all_species), all_species)
-# rownames(all_species) = make.names(all_species$Unique.ID, unique = TRUE)
-# all_species$Unique.ID = make.names(all_species$Unique.ID, unique = TRUE)
+# threw error when all_species_data.csv was being put into SmithsonianFamilyData folder
+all_species_data = do.call("rbind", lapply(family_filenames, read.csv, header = TRUE, row.names = NULL))
 
 # change directory back to BergRuleClimateProject folder to put new .csv file there
 setwd("/Users/kristinariemer/Documents/Documents/Graduate School/Year 1/BergRuleClimateProject/")
 # create dataframe containing all species files info
-write.table(all_species, file = "all_species_data.csv", sep = ",")
-all_species_data = read.csv("all_species_data.csv", row.names = 1)
+# write.table removes rows, but write.csv does not
+write.csv(all_species_data, file = "all_species.csv")
+# read in dataframe
+all_species = read.csv("all_species.csv")
 
-# use this to view entire dataframe (>1000 rows), but doesn't work (X11)
-utils::View(all_species_data)
-
+  
