@@ -13,6 +13,9 @@ names(dat)
 ## as.character function turns all data entries into strings
 dat$Measurements = as.character(dat$Measurements)
 
+# to view sections of dataframes beyond 1,000 rows
+View(dataframe.name[1xxx:2xxx,])
+
 
 ######## get temp v. mass plot for single example species (P. maniculatus) ----------
 # read in csv with data
@@ -39,16 +42,30 @@ points(LatLonSpecies1, col = 'red')
 # read in county-coordinate table from US Census website http://www.census.gov/geo/maps-data/data/gazetteer2013.html
 # need to check entire file to ensure it's output correctly
 county_to_coord_data = read.table("CensusFile.txt", sep = "\t", fileEncoding = "latin1", fill = TRUE)
+# remove columns that contain unnecessary information
 county_to_coord_data = subset(county_to_coord_data, select = c("V1", "V4", "V9", "V10"))
+# rename columns
+colnames(county_to_coord_data) = c("Abbreviation", "County.Name", "Latitude", "Longitude")
 
-# add column to specimen dataframe that contains state abbreviations, returns NA if no state
-State.Abbreviation = state.abb[match(species1$Province.State, state.name)]
-species1 = cbind(species1, State.Abbreviation)
+# add column to Census file dataframe that contains entire state name
+# create column with full state name for each row
+State.Fullname = state.name[match(county_to_coord_data$Abbreviation, state.abb)]
+# add this column to Census file dataframe
+county_to_coord_data = cbind(county_to_coord_data, State.Fullname)
 
 # use data.table package to lookup coordinates for specimens from Census file
-lookup_specimen = data.table(species1, key = "State.Abbreviation,District.County")
-lookup_coord = data.table(county_to_coord_data, key = "V1,V4")
-end_coord = merge(lookup_specimen, lookup_coord, all = TRUE)
+# for both keys, do state then county
+library(data.table)
+lookup_specimen = data.table(species1, key = c("Province.State", "District.County"))
+lookup_coord = data.table(county_to_coord_data, key = c("State.Fullname", "County.Name"))
+# this isn't doing what I want
+end_coord = merge.data.frame(lookup_specimen, lookup_coord, all = TRUE)
+# possibly use match function instead, see LookupTables.R file
+
+# attempt w/ match
+# put state and county in same column for both specimen and Census files
+specimen_statecounty = matrix(c(species1$Province.State, species1$District.County))
+lookup_specimen = c(species1, )
 
 ## summary matrix of relevant info (lat/long, date, mass) ---------------------
 
@@ -148,6 +165,7 @@ summary(linreg)
 abline(linreg)
 
 ## creating file with all specimens from Smithsonian mammals collection --------
+# only have to read in all_species.csv file now
 
 # combine individual family files into single file
 
@@ -167,10 +185,13 @@ write.csv(all_species_data, file = "all_species.csv")
 # read in dataframe
 all_species = read.csv("all_species.csv")
 
-# loop to remove everything from Measurements column except mass
+### determine how many specimens from the all species list have length but no mass-----
+
+# loop to remove everything from Measurements column except mass (same code as above)
 # str_match example: http://stackoverflow.com/questions/952275/regex-group-capture-in-r
 library(stringr)
 masses = vector()
+# only change is from "species1$Measurements" to "all_species$Measurements"
 for (current_row in all_species$Measurements){
   mass_match = str_match(current_row, "Specimen Weight: ([0-9.]*)g")
   mass = as.numeric(mass_match[2])
@@ -179,6 +200,7 @@ for (current_row in all_species$Measurements){
 
 # loop to remove total length value from Measurements column
 lengths = vector()
+# only change is from "species1$Measurements" to "all_species$Measurements"
 for (current_row in all_species$Measurements){
   length_match = str_match(current_row, "Total Length: ([0-9.]*)mm")
   length = as.numeric(length_match[2])
