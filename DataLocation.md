@@ -141,6 +141,8 @@ Successfully created and read into Rstudio a file containing all mammal specimen
 * Add in Mexico & Canada data for Peromyscus 
 * Separate out temporal and spatial scale data
 * Repeat with more common species (see "Possible species" list above)
+    - "All species extraction" section. Pull all specimen records from Smithsonian database. 
+    - Need to decide how many individuals of each species is sufficient to use that species for analysis (at least 200?) and then determine how many species fit this criterion. 
 * Plant Community Eco presentation suggestion: average temperatures for locations for more reasonable ecological time period (e.g., 5 years, 10 years?) than just using current time. Organisms will be responding to past temperatures. 
 
 ### Getting coordinates:
@@ -161,6 +163,7 @@ Successfully created and read into Rstudio a file containing all mammal specimen
 ### Getting size info:
 
 * If specimens have length but not mass, need to convert from length to mass. Use allometric equation. Develop from datasets for each species? At least for _P. maniculatus_, some specimens have both mass and length. Otherwise get from lit?
+    - Might not need to do this. Must determine if there's a sufficient number of specimens that have length but no mass to justify writing the code for this process. From ENTIRE specimen database, ~60,000 specimens of ~500,000 specimens fit this criteria. 
 * Need to improve code that extracts mass from Measurements string. Want to separate all parts of each string and run loop through each of those. Can then also extract length info, if mass isn't available. 
 * The _P. maniculatus_ dataset specimens that have length also have mass. 
 
