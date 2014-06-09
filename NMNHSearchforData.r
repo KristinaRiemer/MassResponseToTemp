@@ -18,27 +18,12 @@ View(dataframe.name[1xxx:2xxx,])
 
 
 ######## get temp v. mass plot for single example species (P. maniculatus) ----------
-# read in csv with data
-species1 = read.csv('./PeromyscusmanDataNMNH.csv')
-
-## convert county info to latitude/longitude using geocode, only run last line ---------------
-# improve accuracy by including state name with geocode function
-# improve accuracy even more by using state & county to get FIPS and then get coordinates
-library(ggmap)
-# Google limits use of geocode to 2,500 queries per day--could be a problem later on, see
-# markdown file about this
-latlon = geocode(paste(species1$Country, species1$Province.State, species1$District.County), output = 'latlon')
-write.table(latlon, "LatLonSpecies1.csv", sep = ",")
-LatLonSpecies1 = read.csv("./LatLonSpecies1.csv")
-
-# check coordinates to make sure they're all in the USA
-library(maps)
-map('world')
-points(LatLonSpecies1, col = 'red')
-map('usa')
-points(LatLonSpecies1, col = 'red')
 
 ## convert county info to latitude/longitude using Census information -----------
+
+# read in csv with specimen data
+species1 = read.csv('./PeromyscusmanDataNMNH.csv')
+
 # read in county-coordinate table from US Census website http://www.census.gov/geo/maps-data/data/gazetteer2013.html
 # need to check entire file to ensure it's output correctly
 county_to_coord_data = read.table("CensusFile.txt", sep = "\t", fileEncoding = "latin1", fill = TRUE)
@@ -53,19 +38,20 @@ State.Fullname = state.name[match(county_to_coord_data$Abbreviation, state.abb)]
 # add this column to Census file dataframe
 county_to_coord_data = cbind(county_to_coord_data, State.Fullname)
 
-# use data.table package to lookup coordinates for specimens from Census file
-# for both keys, do state then county
-library(data.table)
-lookup_specimen = data.table(species1, key = c("Province.State", "District.County"))
-lookup_coord = data.table(county_to_coord_data, key = c("State.Fullname", "County.Name"))
-# this isn't doing what I want
-end_coord = merge.data.frame(lookup_specimen, lookup_coord, all = TRUE)
-# possibly use match function instead, see LookupTables.R file
+# use match function to lookup coordinates for each specimen using Census file
+final_specimen_coords = county_to_coord_data[match(interaction(species1$Province.State, species1$District.County), interaction(county_to_coord_data$State.Fullname, county_to_coord_data$County.Name)), ]
+final_specimen_coords = subset(final_specimen_coords, select = c(Longitude, Latitude))
+#colnames(final_specimen_coords) = c("ID", "Longitude", "Latitude")
+rownames(final_specimen_coords) = NULL
+species1 = cbind(species1, final_specimen_coords)
 
-# attempt w/ match
-# put state and county in same column for both specimen and Census files
-specimen_statecounty = matrix(c(species1$Province.State, species1$District.County))
-lookup_specimen = c(species1, )
+# check coordinates to make sure they're all in the USA
+# this isn't working, can't figure out why
+library(maps)
+map('world')
+points(final_specimen_coords[,1], final_specimen_coords[,2], col = 'red')
+map('usa')
+points(final_specimen_coords[,1], final_specimen_coords[,2], col = 'red')
 
 ## summary matrix of relevant info (lat/long, date, mass) ---------------------
 
