@@ -41,17 +41,21 @@ county_to_coord_data = cbind(county_to_coord_data, State.Fullname)
 # use match function to lookup coordinates for each specimen using Census file
 final_specimen_coords = county_to_coord_data[match(interaction(species1$Province.State, species1$District.County), interaction(county_to_coord_data$State.Fullname, county_to_coord_data$County.Name)), ]
 final_specimen_coords = subset(final_specimen_coords, select = c(Longitude, Latitude))
-#colnames(final_specimen_coords) = c("ID", "Longitude", "Latitude")
-rownames(final_specimen_coords) = NULL
-species1 = cbind(species1, final_specimen_coords)
+
+# change final coordinates from dataframe to matrix to plot it
+final_specimen_coords = data.frame(final_specimen_coords, stringsAsFactors = FALSE)
+final_specimen_coords = as.matrix(final_specimen_coords)
 
 # check coordinates to make sure they're all in the USA
-# this isn't working, can't figure out why
 library(maps)
 map('world')
 points(final_specimen_coords[,1], final_specimen_coords[,2], col = 'red')
 map('usa')
 points(final_specimen_coords[,1], final_specimen_coords[,2], col = 'red')
+
+# add final coordinates to specimen data
+rownames(final_specimen_coords) = NULL
+species1 = cbind(species1, final_specimen_coords)
 
 ## summary matrix of relevant info (lat/long, date, mass) ---------------------
 
