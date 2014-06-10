@@ -147,6 +147,8 @@ Successfully created and read into Rstudio a file containing all mammal specimen
 
 ### Getting coordinates:
 
+**FINISHED 6/10/14** (using Census file as lookup, check new coordinates are in US and add to specimen file)
+
 * Geocode function in R goes through Google Maps, and they limit queries to 2,500 a day. This isn't currently a problem with a single species, but it will be a problem with many species because will definitely exceed that limit. 
 * Possible solutions:
     - Combo of createMaps and memoise? Don't quite understand how that would work yet. See third bullet here: http://cran.r-project.org/web/packages/toaster/NEWS 
