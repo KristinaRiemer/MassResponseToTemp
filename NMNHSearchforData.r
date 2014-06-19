@@ -80,37 +80,37 @@ for (current_row in species1$Measurements){
 # find specimens that have length but not mass
 size_values = cbind(masses, lengths)
 
-# loop attempt
-# empty vector
-calc_mass = vector()
-# loop through table with masses & lengths for each specimen
-for (i in 1:nrow(size_values))
-  # determine which specimens have length but not mass
-  if(is.na(size_values[i,1]) & !is.na(size_values[i,2])) {
-    # for those specimens, show 1
-    calc_mass = size_values[,2] * 0.14
-  } else {
-    # for the rest of the specimens, return NA
-    NA
-  }
-
-# incorporate newly calculated mass values in with provided mass values in "masses"
-
-
-# test of loop b/c no specimens have length but not mass
-test_sizes = matrix(c(10,NA,10,NA,NA,10,10,10), nrow = 4)
-test_sizes
-
-test_length_nomass = sum(is.na(test_sizes[,1]) & !is.na(test_sizes[,2]))
-
-test_mass = vector()
-for (i in 1:nrow(test_sizes))
-  if(is.na(test_sizes[i,1]) & !is.na(test_sizes[i,2])) {
-    test_mass = test_sizes[,2] * 0.14
-  } else {
-    NA
-  }
-test_mass
+# # loop attempt
+# # empty vector
+# calc_mass = vector()
+# # loop through table with masses & lengths for each specimen
+# for (i in 1:nrow(size_values))
+#   # determine which specimens have length but not mass
+#   if(is.na(size_values[i,1]) & !is.na(size_values[i,2])) {
+#     # for those specimens, show 1
+#     calc_mass = size_values[,2] * 0.14
+#   } else {
+#     # for the rest of the specimens, return NA
+#     NA
+#   }
+# 
+# # incorporate newly calculated mass values in with provided mass values in "masses"
+# 
+# 
+# # test of loop b/c no specimens have length but not mass
+# test_sizes = matrix(c(10,NA,10,NA,NA,10,10,10), nrow = 4)
+# test_sizes
+# 
+# test_length_nomass = sum(is.na(test_sizes[,1]) & !is.na(test_sizes[,2]))
+# 
+# test_mass = vector()
+# for (i in 1:nrow(test_sizes))
+#   if(is.na(test_sizes[i,1]) & !is.na(test_sizes[i,2])) {
+#     test_mass = test_sizes[,2] * 0.14
+#   } else {
+#     NA
+#   }
+# test_mass
 
 # remove everything but year from Date.Collected column
 species1$Date.Collected = as.character(species1$Date.Collected)
@@ -120,13 +120,18 @@ year = substr(species1$Date.Collected, nchar(species1$Date.Collected)-3, nchar(s
 year = as.numeric(year)
 stackID = year * 12 - 22793
 
-# final summary with year, stackID, lat/lon, mass
-PrelimSummaryTable = cbind(year, stackID, LatLonSpecies1, species1[32])
-FinalSummaryTable = cbind(stackID, LatLonSpecies1, masses)
+# initial summary with year, stackID, lat/lon, entire Measurements column
+PrelimSummaryTable = cbind(year, stackID, final_specimen_coords, species1[32])
+# final summary with year (raster format), coordinates, masses for each specimen
+final_specimen_coords = data.frame(final_specimen_coords)
+FinalSummaryTable = cbind(stackID, final_specimen_coords, masses)
+
 # remove specimens that lack mass
 FinalSummaryTable = na.omit(FinalSummaryTable)
 # remove specimens with collection date after 2010 because temp data not available
-FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable$stackID < 1327)
+FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable[,1] < 1327)
+# turn into dataframe
+#FinalSummaryTable = data.frame(FinalSummaryTable)
 
 ## use temperature data to determine temperatures for lat/lon/date of specimens -------
 # code from Dan 4/8/14
@@ -140,6 +145,10 @@ for (i in 1:nrow(FinalSummaryTable)){
   single_specimen_temp = extract(temp, coordinate)
   extracted_temps = append(extracted_temps, single_specimen_temp)
 }
+
+open.ncdf("air.mon.mean.v301.nc")
+temp = raster('air.mon.mean.v301.nc', band=FinalSummaryTable$stackID[1])
+temp = raster('air.mon.mean.v301.nc', band="1303")
 
 
 ## plot temperature-mass relationship -----------------------------------------
