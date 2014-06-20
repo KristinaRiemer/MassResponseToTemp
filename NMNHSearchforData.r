@@ -26,7 +26,11 @@ species1 = read.csv('./PeromyscusmanDataNMNH.csv')
 
 # read in county-coordinate table from US Census website http://www.census.gov/geo/maps-data/data/gazetteer2013.html
 # need to check entire file to ensure it's output correctly
-county_to_coord_data = read.table("CensusFile.txt", sep = "\t", fileEncoding = "latin1", fill = TRUE)
+county_to_coord_data = read.table("CensusFile.txt", sep = "\t", fileEncoding = "latin1", fill = TRUE, stringsAsFactors = FALSE)
+# change coordinate columns from character to numeric
+county_to_coord_data = transform(county_to_coord_data, V9 = as.numeric(V9))
+county_to_coord_data = transform(county_to_coord_data, V10 = as.numeric(V10))
+
 # remove columns that contain unnecessary information
 county_to_coord_data = subset(county_to_coord_data, select = c("V1", "V4", "V9", "V10"))
 # rename columns
@@ -123,7 +127,6 @@ stackID = year * 12 - 22793
 # initial summary with year, stackID, lat/lon, entire Measurements column
 PrelimSummaryTable = cbind(year, stackID, final_specimen_coords, species1[32])
 # final summary with year (raster format), coordinates, masses for each specimen
-final_specimen_coords = data.frame(final_specimen_coords)
 FinalSummaryTable = cbind(stackID, final_specimen_coords, masses)
 
 # remove specimens that lack mass
@@ -131,7 +134,7 @@ FinalSummaryTable = na.omit(FinalSummaryTable)
 # remove specimens with collection date after 2010 because temp data not available
 FinalSummaryTable = subset(FinalSummaryTable, FinalSummaryTable[,1] < 1327)
 # turn into dataframe
-#FinalSummaryTable = data.frame(FinalSummaryTable)
+FinalSummaryTable = data.frame(FinalSummaryTable)
 
 ## use temperature data to determine temperatures for lat/lon/date of specimens -------
 # code from Dan 4/8/14
@@ -141,15 +144,10 @@ library(raster)
 extracted_temps = NULL
 for (i in 1:nrow(FinalSummaryTable)){
   temp = raster('air.mon.mean.v301.nc', band=FinalSummaryTable$stackID[i])
-  coordinate = cbind(FinalSummaryTable$lon[i] + 360, FinalSummaryTable$lat[i])
+  coordinate = cbind(FinalSummaryTable$Longitude[i] + 360, FinalSummaryTable$Latitude[i])
   single_specimen_temp = extract(temp, coordinate)
   extracted_temps = append(extracted_temps, single_specimen_temp)
 }
-
-open.ncdf("air.mon.mean.v301.nc")
-temp = raster('air.mon.mean.v301.nc', band=FinalSummaryTable$stackID[1])
-temp = raster('air.mon.mean.v301.nc', band="1303")
-
 
 ## plot temperature-mass relationship -----------------------------------------
 # create matrix with temps and corresponding masses
