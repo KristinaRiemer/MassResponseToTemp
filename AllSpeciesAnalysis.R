@@ -19,7 +19,7 @@ write.csv(all_species_data, file = "all_species.csv")
 # read in dataframe
 all_species = read.csv("all_species.csv")
 
-# determining number of specimens per species in entire dataset
+#### determining number of specimens per species in entire dataset--------------------
 total_species = unique(all_species$Current.Identification)
 occurrences = table(all_species$Current.Identification)
 occurrences = data.frame(occurrences)
@@ -52,3 +52,27 @@ for (current_row in all_species$Measurements){
 size_values = cbind(masses, lengths)
 length_nomass = sum(is.na(size_values[,1]) & !is.na(size_values[,2]))
 # only ~60,000 out of ~500,000 specimens have length but no mass
+
+### determine how many species have at least 200 specimens with mass
+
+# extract mass values for each specimen and add to species file
+library(stringr)
+masses = vector()
+# only change is from "species1$Measurements" to "all_species$Measurements"
+for (current_row in all_species$Measurements){
+  mass_match = str_match(current_row, "Specimen Weight: ([0-9.]*)g")
+  mass = as.numeric(mass_match[2])
+  masses = append(masses, mass)
+}
+
+all_species = cbind(all_species, masses)
+
+massed_specimens = c()
+for(each_specimen in all_species){
+  massed_specimens = subset(all_species$masses !NA)
+}
+
+for(i in 1:nrow(all_species)){
+  massed_specimens = subset(all_species$masses[i] !NA)
+}
+
