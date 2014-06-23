@@ -1,5 +1,5 @@
 ## creating file with all specimens from Smithsonian mammals collection --------
-# only have to read in all_species.csv file now
+############### only have to read in all_species.csv file now
 
 # combine individual family files into single file
 
@@ -28,8 +28,34 @@ count_occurrences = sum(occurrences$Freq>200)
 
 ### determine how many specimens from the all species list have length but no mass-----
 
-# loop to remove everything from Measurements column except mass (same code as above)
-# str_match example: http://stackoverflow.com/questions/952275/regex-group-capture-in-r
+# # loop to remove everything from Measurements column except mass (same code as above)
+# # str_match example: http://stackoverflow.com/questions/952275/regex-group-capture-in-r
+# library(stringr)
+# masses = vector()
+# # only change is from "species1$Measurements" to "all_species$Measurements"
+# for (current_row in all_species$Measurements){
+#   mass_match = str_match(current_row, "Specimen Weight: ([0-9.]*)g")
+#   mass = as.numeric(mass_match[2])
+#   masses = append(masses, mass)
+# }
+
+# # loop to remove total length value from Measurements column
+# lengths = vector()
+# # only change is from "species1$Measurements" to "all_species$Measurements"
+# for (current_row in all_species$Measurements){
+#   length_match = str_match(current_row, "Total Length: ([0-9.]*)mm")
+#   length = as.numeric(length_match[2])
+#   lengths = append(lengths, length)
+# }
+# 
+# # find number of specimens that have length but not mass
+# size_values = cbind(masses, lengths)
+# length_nomass = sum(is.na(size_values[,1]) & !is.na(size_values[,2]))
+# # only ~60,000 out of ~500,000 specimens have length but no mass
+
+### determine how many species have at least 100 specimens with mass
+
+#### extract mass values for each specimen and add to species file-------------
 library(stringr)
 masses = vector()
 # only change is from "species1$Measurements" to "all_species$Measurements"
@@ -39,40 +65,22 @@ for (current_row in all_species$Measurements){
   masses = append(masses, mass)
 }
 
-# loop to remove total length value from Measurements column
-lengths = vector()
-# only change is from "species1$Measurements" to "all_species$Measurements"
-for (current_row in all_species$Measurements){
-  length_match = str_match(current_row, "Total Length: ([0-9.]*)mm")
-  length = as.numeric(length_match[2])
-  lengths = append(lengths, length)
-}
-
-# find number of specimens that have length but not mass
-size_values = cbind(masses, lengths)
-length_nomass = sum(is.na(size_values[,1]) & !is.na(size_values[,2]))
-# only ~60,000 out of ~500,000 specimens have length but no mass
-
-### determine how many species have at least 200 specimens with mass
-
-# extract mass values for each specimen and add to species file
-library(stringr)
-masses = vector()
-# only change is from "species1$Measurements" to "all_species$Measurements"
-for (current_row in all_species$Measurements){
-  mass_match = str_match(current_row, "Specimen Weight: ([0-9.]*)g")
-  mass = as.numeric(mass_match[2])
-  masses = append(masses, mass)
-}
-
+#add masses to dataset file
 all_species = cbind(all_species, masses)
 
-massed_specimens = c()
-for(each_specimen in all_species){
-  massed_specimens = subset(all_species$masses !NA)
-}
+#remove specimens with no mass from dataset
+all_species = all_species[complete.cases(all_species[,45]),]
+#went from ~450,000 to ~80,000 specimens
 
-for(i in 1:nrow(all_species)){
-  massed_specimens = subset(all_species$masses[i] !NA)
-}
+### clean up genus/species in Current.Identification column-------------------
+#change column to character vector
+all_species$Current.Identification = as.character(all_species$Current.Identification)
+#remove everything but genus and species identifiers (first two words)
+Species.Genus = word(all_species$Current.Identification, 1, 2)
+#add new identifier to dataset
+all_species = cbind(all_species, Species.Genus)
+
+#export current dataset as csv to save this form of data
+write.csv(all_species, "all_species_clean.csv")
+all_species_clean = read.csv("all_species_clean.csv")
 
