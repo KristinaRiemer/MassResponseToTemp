@@ -176,4 +176,12 @@ Successfully created and read into Rstudio a file containing all mammal specimen
 * Using subs for successional studies is a little different because these processes have a start, end, and a presumed order of events. 
 
 
+### Complete analysis on entire specimen database:
+
+* Be able to plot mass and temperature for one species (_P. maniculatus_) **FINISHED 6/20/14** in NMNHSearchforData.r
+* Be able to plot mass and temperature for all relevant species from NMNH dataset
+    - Determine which species are relevant: have 100+ specimens, each specimen has mass, each species has sufficient spatial (most of US) and temporal (50+ years) range
+    - Create a function for one species mass-temperature code
+    - Run each of the relevant species through the function to produce mass-temperature relationships for each
+
 
