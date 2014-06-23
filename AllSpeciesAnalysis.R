@@ -80,7 +80,28 @@ Species.Genus = word(all_species$Current.Identification, 1, 2)
 #add new identifier to dataset
 all_species = cbind(all_species, Species.Genus)
 
+#remove all specimens whose identifiers are "xxx(genus) sp."
+all_species$genus.only = grepl(".* sp.", all_species$Current.Identification)
+all_species = all_species[all_species$genus.only == FALSE, ]
+
 #export current dataset as csv to save this form of data
 write.csv(all_species, "all_species_clean.csv")
 all_species_clean = read.csv("all_species_clean.csv")
+
+#### determining number of specimens per species in entire dataset--------------------
+#list of unique species that has mass values
+total_species_clean = unique(all_species_clean$Species.Genus)
+#how many of these species there are
+str(total_species_clean)
+#1,628 species
+
+#how many specimens of each species there are
+occurrences_clean = table(all_species_clean$Species.Genus)
+#order table from species with most specimens to species with least specimens
+occurrences_clean = sort(occurrences_clean, decreasing = TRUE)
+
+occurrences_clean = data.frame(occurrences_clean)
+#determine number of species with more than 100 specimens
+sum(occurrences_clean$occurrences_clean>99)
+#161 species
 
