@@ -88,7 +88,8 @@ all_species = all_species[all_species$genus.only == FALSE, ]
 write.csv(all_species, "all_species_clean.csv")
 all_species_clean = read.csv("all_species_clean.csv")
 
-#### determining number of specimens per species in entire dataset--------------------
+#### creating species list-----------------------------------------------------
+#determining number of specimens per species in entire dataset
 #list of unique species that has mass values
 total_species_clean = unique(all_species_clean$Species.Genus)
 #how many of these species there are
@@ -105,3 +106,5 @@ occurrences_clean = data.frame(occurrences_clean)
 sum(occurrences_clean$occurrences_clean>99)
 #161 species
 
+#remove species w/ less than 100 specimens
+species_list = subset(occurrences_clean, occurrences_clean>99)
