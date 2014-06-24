@@ -65,8 +65,13 @@ for (current_row in all_species$Measurements){
   masses = append(masses, mass)
 }
 
+#create file with masses for all specimens
+write.csv(masses, "all_species_masses.csv")
+all_species_masses = read.csv("all_species_masses.csv")
+all_species_masses = all_species_masses[,2]
+
 #add masses to dataset file
-all_species = cbind(all_species, masses)
+all_species = cbind(all_species, all_species_masses)
 
 #remove specimens with no mass from dataset
 all_species = all_species[complete.cases(all_species[,45]),]
@@ -84,6 +89,10 @@ all_species = cbind(all_species, Species.Genus)
 all_species$genus.only = grepl(".* sp.", all_species$Current.Identification)
 all_species = all_species[all_species$genus.only == FALSE, ]
 
+### limit to US----------------------------------------------
+all_species$UnitedStates = grepl("United States", all_species$Country)
+all_species = all_species[all_species$UnitedStates == TRUE, ]
+
 #export current dataset as csv to save this form of data
 write.csv(all_species, "all_species_clean.csv")
 all_species_clean = read.csv("all_species_clean.csv")
@@ -94,7 +103,7 @@ all_species_clean = read.csv("all_species_clean.csv")
 total_species_clean = unique(all_species_clean$Species.Genus)
 #how many of these species there are
 str(total_species_clean)
-#1,628 species
+#177 species
 
 #how many specimens of each species there are
 occurrences_clean = table(all_species_clean$Species.Genus)
@@ -102,9 +111,16 @@ occurrences_clean = table(all_species_clean$Species.Genus)
 occurrences_clean = sort(occurrences_clean, decreasing = TRUE)
 
 occurrences_clean = data.frame(occurrences_clean)
-#determine number of species with more than 100 specimens
-sum(occurrences_clean$occurrences_clean>99)
-#161 species
+#determine number of species with at least 30 specimens
+sum(occurrences_clean$occurrences_clean>29)
+#48 species
 
-#remove species w/ less than 100 specimens
-species_list = subset(occurrences_clean, occurrences_clean>99)
+#remove species w/ less than 30 specimens
+species_list = subset(occurrences_clean, occurrences_clean>29)
+colnames(species_list) = "Number.Specimens"
+species_list$Species.Name = rownames(species_list)
+rownames(species_list) = NULL
+
+
+
+
