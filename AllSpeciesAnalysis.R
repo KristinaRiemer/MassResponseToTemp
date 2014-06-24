@@ -121,6 +121,35 @@ colnames(species_list) = "Number.Specimens"
 species_list$Species.Name = rownames(species_list)
 rownames(species_list) = NULL
 
+### find temporal ranges for each species in species_list----------------------
+#create column with just collection year
 
+#change Date.Collected column to character vector
+all_species_clean = transform(all_species_clean, Date.Collected = as.character(Date.Collected))
+#new column with year
+all_species_clean$Year.Collected = substr(all_species_clean$Date.Collected, 1, 4)
 
+#determine first and last years of specimens for each species
+year_range = c()
 
+for(current_species in species_list$Species.Name){
+  species_subset = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
+  first_year = min(species_subset$Year.Collected)
+  last_year = max(species_subset$Year.Collected)
+  year_range = rbind(year_range, c(current_species, first_year, last_year))
+}
+colnames(year_range) = c("Species", "First.Year", "Last.Year")
+
+#find range of years for each species by doing difference of years
+year_range = data.frame(year_range)
+year_range$First.Year = as.numeric(as.character(year_range$First.Year))
+year_range$Last.Year = as.numeric(as.character(year_range$Last.Year))
+year_range$Difference.Years = year_range$Last.Year - year_range$First.Year
+
+#determine how many species have more than 50 years of specimens
+year_range = sort(year_range$Difference.Years, decreasing = TRUE)
+sort(year_range, by = ~ -Difference.Years, na.last = TRUE)
+
+year_range = data.frame(year_range)
+sum(year_range$Difference.Years>2, na.rm = TRUE)
+#41 species
