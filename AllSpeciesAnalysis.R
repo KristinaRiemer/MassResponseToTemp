@@ -166,6 +166,65 @@ species_list$Number.Specimens = as.numeric(species_list$Number.Specimens)
 
 #remove all but species on species list from datase
 all_species_clean = all_species_clean[all_species_clean$Species.Genus %in% species_list$Species.Name,]
+#5,991 specimens for 39 species
+
+### find spatial extent of each species in species_list----------------------
+
+#find lat/lon for each specimen in database
+
+#creating lookup table, from NMNHSearchforData.r
+
+# read in county-coordinate table from US Census website http://www.census.gov/geo/maps-data/data/gazetteer2013.html
+# need to check entire file to ensure it's output correctly
+county_to_coord_data = read.table("CensusFile.txt", sep = "\t", fileEncoding = "latin1", fill = TRUE, stringsAsFactors = FALSE)
+# change coordinate columns from character to numeric
+county_to_coord_data = transform(county_to_coord_data, V9 = as.numeric(V9))
+county_to_coord_data = transform(county_to_coord_data, V10 = as.numeric(V10))
+
+# remove columns that contain unnecessary information
+county_to_coord_data = subset(county_to_coord_data, select = c("V1", "V4", "V9", "V10"))
+# rename columns
+colnames(county_to_coord_data) = c("Abbreviation", "County.Name", "Latitude", "Longitude")
+
+# add column to Census file dataframe that contains entire state name
+# create column with full state name for each row
+State.Fullname = state.name[match(county_to_coord_data$Abbreviation, state.abb)]
+# add this column to Census file dataframe
+county_to_coord_data = cbind(county_to_coord_data, State.Fullname)
+
+# use match function to lookup coordinates for each specimen using Census file
+coords = county_to_coord_data[match(interaction(all_species_clean$Province.State, all_species_clean$District.County), interaction(county_to_coord_data$State.Fullname, county_to_coord_data$County.Name)), ]
+coords = subset(coords, select = c(Longitude, Latitude))
+all_species_clean = cbind(all_species_clean, coords)
+
+#remove specimens with no coordinates from dataset
+all_species_clean = all_species_clean[complete.cases(all_species_clean$Longitude),]
+
+#update species list to reflect coordinate inclusion
+
+#determining number of specimens per species in entire dataset
+#list of unique species that has mass values
+total_species_clean_update = unique(all_species_clean$Species.Genus)
+#how many of these species there are
+str(total_species_clean_update)
+#177 species
+
+#how many specimens of each species there are
+occurrences_clean_update = table(all_species_clean$Species.Genus)
+#order table from species with most specimens to species with least specimens
+occurrences_clean = sort(occurrences_clean, decreasing = TRUE)
+
+occurrences_clean = data.frame(occurrences_clean)
+#determine number of species with at least 30 specimens
+sum(occurrences_clean$occurrences_clean>29)
+#48 species
+
+#remove species w/ less than 30 specimens
+species_list = subset(occurrences_clean, occurrences_clean>29)
+colnames(species_list) = "Number.Specimens"
+species_list$Species.Name = rownames(species_list)
+rownames(species_list) = NULL
+
 
 
 
