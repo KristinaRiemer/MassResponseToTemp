@@ -138,7 +138,7 @@ for(current_species in species_list$Species.Name){
   last_year = max(species_subset$Year.Collected)
   year_range = rbind(year_range, c(current_species, first_year, last_year))
 }
-colnames(year_range) = c("Species", "First.Year", "Last.Year")
+colnames(year_range) = c("Species.Name", "First.Year", "Last.Year")
 
 #find range of years for each species by doing difference of years
 year_range = data.frame(year_range)
@@ -146,10 +146,26 @@ year_range$First.Year = as.numeric(as.character(year_range$First.Year))
 year_range$Last.Year = as.numeric(as.character(year_range$Last.Year))
 year_range$Difference.Years = year_range$Last.Year - year_range$First.Year
 
-#determine how many species have more than 50 years of specimens
-year_range = sort(year_range$Difference.Years, decreasing = TRUE)
-sort(year_range, by = ~ -Difference.Years, na.last = TRUE)
+#determine how many species have more than 20 years of specimens
+#sort by year range
+year_range = year_range[order(year_range$Difference.Years, na.last = TRUE, decreasing = TRUE), ]
+#count relevant species
+sum(year_range$Difference.Years>19, na.rm = TRUE)
+#remove species from list with insufficient number of years
+year_range = subset(year_range, year_range$Difference.Years>19)
 
-year_range = data.frame(year_range)
-sum(year_range$Difference.Years>2, na.rm = TRUE)
-#41 species
+#look at earliest and latest collection years, have temp data for earliest collection years
+min(year_range$First.Year, na.rm = TRUE)
+max(year_range$First.Year, na.rm = TRUE)
+min(year_range$Last.Year, na.rm = TRUE)
+max(year_range$Last.Year, na.rm = TRUE)
+
+#add year range info to species list and remove species with insufficient years
+species_list = merge(species_list, year_range)
+species_list$Number.Specimens = as.numeric(species_list$Number.Specimens)
+
+#remove all but species on species list from datase
+all_species_clean = all_species_clean[all_species_clean$Species.Genus %in% species_list$Species.Name,]
+
+
+
