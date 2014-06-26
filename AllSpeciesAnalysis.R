@@ -215,20 +215,41 @@ colnames(species_list) [5] = "Number.Specimens"
 #use species list to remove specimens from dataset
 all_species_clean = all_species_clean[all_species_clean$Species.Genus %in% species_list$Species.Name,]
 
-#map coordinates for each species
+#create pdf which contains plot for each species that shows locations of all specimens using coords
+pdf("species.locations.pdf")
 for(current_species in species_list$Species.Name){
   species_subset = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
   library(maps)
   map('usa')
-  points(species_subset$Longitude, species_subset$Latitude, col = 'red', main = species_subset$Species.Genus)
+  points(species_subset$Longitude, species_subset$Latitude, col = 'red')
+  #title(sub = paste("Species", species_subset$Species.Genus))
+  mtext(paste("species", species_subset$Species.Genus), side = 1)
 }
+dev.off()
 
-map('usa')
-points(all_species_clean$Longitude[1:4], all_species_clean$Latitude[1:4], col = 'red', main = all_species_clean$Species.Genus[1:4])
+#lat/long range
 
+#check all in US
+#latitude: 24.52 - 49.38
+#longitude: 66.95 - 124.77
+coord_extent = c()
+coord_extent$Min.Latitude = min(all_species_clean$Latitude)
+coord_extent$Max.Latitude = max(all_species_clean$Latitude)
+coord_extent$Min.Longitude = min(all_species_clean$Longitude)
+coord_extent$Max.Longitude = max(all_species_clean$Longitude)
+known_coords = cbind(24.52, 49.38, -124.77, -66.95)
+rownames(known_coords) = "Known.US.Coords"
+coord_extent = rbind(known_coords, coord_extent)
+
+#determine coordinate ranges for each species
 for(current_species in species_list$Species.Name){
   species_subset = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
-  first_year = min(species_subset$Year.Collected)
-  last_year = max(species_subset$Year.Collected)
-  year_range = rbind(year_range, c(current_species, first_year, last_year))
+  max_lat = max(species_subset$Latitude)
+  min_lat = min(species_subset$Latitude)
+  species_list = rbind(species_list, max_lat, min_lat)
 }
+
+#use min of 11 units for latitude?
+
+
+
