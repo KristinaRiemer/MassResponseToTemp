@@ -200,31 +200,35 @@ all_species_clean = cbind(all_species_clean, coords)
 #remove specimens with no coordinates from dataset
 all_species_clean = all_species_clean[complete.cases(all_species_clean$Longitude),]
 
-#update species list to reflect coordinate inclusion
+#update species list to remove species that now have insufficient number of specimens
+lookat_species = table(all_species_clean$Species.Genus)
+lookat_species = sort(lookat_species, decreasing = TRUE)
+sum(lookat_species>29)
+lookat_species = subset(lookat_species, lookat_species>29)
+lookat_species = data.frame(lookat_species)
+lookat_species$Species.Name = rownames(lookat_species)
+rownames(lookat_species) = NULL
+species_list = merge(species_list, lookat_species)
+species_list$Number.Specimens = NULL
+colnames(species_list) [5] = "Number.Specimens"
 
-#determining number of specimens per species in entire dataset
-#list of unique species that has mass values
-total_species_clean_update = unique(all_species_clean$Species.Genus)
-#how many of these species there are
-str(total_species_clean_update)
-#177 species
+#use species list to remove specimens from dataset
+all_species_clean = all_species_clean[all_species_clean$Species.Genus %in% species_list$Species.Name,]
 
-#how many specimens of each species there are
-occurrences_clean_update = table(all_species_clean$Species.Genus)
-#order table from species with most specimens to species with least specimens
-occurrences_clean = sort(occurrences_clean, decreasing = TRUE)
+#map coordinates for each species
+for(current_species in species_list$Species.Name){
+  species_subset = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
+  library(maps)
+  map('usa')
+  points(species_subset$Longitude, species_subset$Latitude, col = 'red', main = species_subset$Species.Genus)
+}
 
-occurrences_clean = data.frame(occurrences_clean)
-#determine number of species with at least 30 specimens
-sum(occurrences_clean$occurrences_clean>29)
-#48 species
+map('usa')
+points(all_species_clean$Longitude[1:4], all_species_clean$Latitude[1:4], col = 'red', main = all_species_clean$Species.Genus[1:4])
 
-#remove species w/ less than 30 specimens
-species_list = subset(occurrences_clean, occurrences_clean>29)
-colnames(species_list) = "Number.Specimens"
-species_list$Species.Name = rownames(species_list)
-rownames(species_list) = NULL
-
-
-
-
+for(current_species in species_list$Species.Name){
+  species_subset = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
+  first_year = min(species_subset$Year.Collected)
+  last_year = max(species_subset$Year.Collected)
+  year_range = rbind(year_range, c(current_species, first_year, last_year))
+}
