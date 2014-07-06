@@ -215,18 +215,6 @@ colnames(species_list) [5] = "Number.Specimens"
 #use species list to remove specimens from dataset
 all_species_clean = all_species_clean[all_species_clean$Species.Genus %in% species_list$Species.Name,]
 
-#create pdf which contains plot for each species that shows locations of all specimens using coords
-pdf("species.locations.pdf")
-for(current_species in species_list$Species.Name){
-  species_subset = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
-  library(maps)
-  map('usa')
-  points(species_subset$Longitude, species_subset$Latitude, col = 'red')
-  #title(sub = paste("Species", species_subset$Species.Genus))
-  mtext(paste("species", species_subset$Species.Genus), side = 1)
-}
-dev.off()
-
 #lat/long range
 
 #check all in US
@@ -241,15 +229,35 @@ known_coords = cbind(24.52, 49.38, -124.77, -66.95)
 rownames(known_coords) = "Known.US.Coords"
 coord_extent = rbind(known_coords, coord_extent)
 
-#determine coordinate ranges for each species
+#determine min and max latitudes for each species
+species_coord_range = c()
 for(current_species in species_list$Species.Name){
   species_subset = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
   max_lat = max(species_subset$Latitude)
   min_lat = min(species_subset$Latitude)
-  species_list = rbind(species_list, max_lat, min_lat)
+  species_coord_range = rbind(species_coord_range, c(max_lat, min_lat))
 }
 
-#use min of 11 units for latitude?
+#add latitudes to species list and find latitude range for each species
+species_list = cbind(species_list, species_coord_range)
+colnames(species_list) [6] = "Max.Latitude"
+colnames(species_list) [7] = "Min.Latitude"
+species_list$Difference.Lat = species_list$Max.Latitude - species_list$Min.Latitude
 
+#remove species with less than 5 degrees of latitude from species list and dataset
+sum(species_list$Difference.Lat > 5)
+species_list = subset(species_list, species_list$Difference.Lat > 5)
+all_species_clean = all_species_clean[all_species_clean$Species.Genus %in% species_list$Species.Name,]
 
+#create pdf which contains visualization map of specimens for all species
+pdf("species.locations.pdf")
+for(current_species in species_list$Species.Name){
+  species_subset = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
+  library(maps)
+  map('usa')
+  points(species_subset$Longitude, species_subset$Latitude, col = 'red')
+  #title(sub = paste("Species", species_subset$Species.Genus))
+  mtext(paste("species", species_subset$Species.Genus), side = 1)
+}
+dev.off()
 
