@@ -180,8 +180,15 @@ Successfully created and read into Rstudio a file containing all mammal specimen
 
 * Be able to plot mass and temperature for one species (_P. maniculatus_) **FINISHED 6/20/14** in NMNHSearchforData.r
 * Be able to plot mass and temperature for all relevant species from NMNH dataset
-    - Determine which species are relevant: have 100+ specimens, each specimen has mass, each specimen in US (only have temperature data for US), each species has sufficient spatial (most of US) and temporal (50+ years) range
-    - Create a function for one species mass-temperature code
-    - Run each of the relevant species through the function to produce mass-temperature relationships for each
+
+* Criteria for species:
+    - At least 30 specimens per species
+    - All specimens have mass
+    - All specimens have genus + species identifiers
+    - All specimens in US (currently only have temperature data for US)
+    - Specimens span at least 20 years (temporal range)
+    - All specimens have county information (to get coordinates)
+    - Specimens span at least 5 latitudinal degrees (spatial range)
+* Determine which species fulfill all criteria, use raster to determine July temperature for each of their specimens, and plot mass-temperature relationships for each species
 
 
