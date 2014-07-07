@@ -53,7 +53,7 @@ count_occurrences = sum(occurrences$Freq>200)
 # length_nomass = sum(is.na(size_values[,1]) & !is.na(size_values[,2]))
 # # only ~60,000 out of ~500,000 specimens have length but no mass
 
-### determine how many species have at least 100 specimens with mass
+### determine how many species have at least 30 specimens with mass
 
 #### extract mass values for each specimen and add to species file-------------
 library(stringr)
@@ -245,8 +245,8 @@ colnames(species_list) [7] = "Min.Latitude"
 species_list$Difference.Lat = species_list$Max.Latitude - species_list$Min.Latitude
 
 #remove species with less than 5 degrees of latitude from species list and dataset
-sum(species_list$Difference.Lat > 5)
-species_list = subset(species_list, species_list$Difference.Lat > 5)
+sum(species_list$Difference.Lat >= 5)
+species_list = subset(species_list, species_list$Difference.Lat >= 5)
 all_species_clean = all_species_clean[all_species_clean$Species.Genus %in% species_list$Species.Name,]
 
 #create pdf which contains visualization map of specimens for all species
@@ -260,4 +260,51 @@ for(current_species in species_list$Species.Name){
   mtext(paste("species", species_subset$Species.Genus), side = 1)
 }
 dev.off()
+
+### final species--------------------------------------------------------
+
+#create and read in final species dataset CSV file
+write.csv(all_species_clean, file = "FinalSpeciesDataset.csv")
+FinalSpeciesDataset = read.csv("FinalSpeciesDataset.csv")
+
+#create and read in final species list CSV file
+write.csv(species_list, file = "FinalSpeciesList.csv")
+FinalSpeciesList = read.csv("FinalSpeciesList.csv")
+
+#determine which orders all species are in to get an idea of the taxonomic range
+final_orders = table(FinalSpeciesDataset$Order)
+
+#### use temperature data to determine temperatures for each specimen
+
+#convert year to correct format for raster function
+FinalSpeciesDataset$stackID = FinalSpeciesDataset$Year.Collected * 12 - 22793
+
+#remove specimens with collection dates after 2010 b/c temp data not available
+sum(FinalSpeciesDataset$stackID > 1315)
+#103 specimens
+FinalSpeciesDataset = subset(FinalSpeciesDataset, FinalSpeciesDataset$stackID < 1327)
+
+#determine temperature for each specimen
+library(raster)
+
+extracted_temperatures = c()
+for (i in 1:nrow(FinalSpeciesDataset)){
+  specimen.temperature = raster("air.mon.mean.v301.nc", band = FinalSpeciesDataset$stackID[i])
+  specimen.coordinates = cbind(FinalSpeciesDataset$Longitude[i] + 360, FinalSpeciesDataset$Latitude[i])
+  specimen.extracted.temperature = extract(specimen.temperature, specimen.coordinates)
+  extracted_temperatures = append(extracted_temperatures, specimen.extracted.temperature)
+}
+
+#add temperatures to final dataset
+FinalSpeciesDataset$Extracted.Temperature = extracted_temperatures
+
+# #determine which temperatures produced NAs and why
+# sum(is.na(FinalSpeciesDataset$Extracted.Temperature))
+# find.NA = subset(FinalSpeciesDataset, is.na(FinalSpeciesDataset$Extracted.Temperature))
+# #they're all near water? not sure why no temperatures were returned
+
+#remove specimens with no extracted temperature (i.e., NA)
+FinalSpeciesDataset$Extracted.Temperature = na.omit(FinalSpeciesDataset$Extracted.Temperature)
+sum(is.na(FinalSpeciesDataset$Extracted.Temperature))
+
 
