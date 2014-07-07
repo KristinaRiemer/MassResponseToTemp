@@ -249,19 +249,54 @@ sum(species_list$Difference.Lat >= 5)
 species_list = subset(species_list, species_list$Difference.Lat >= 5)
 all_species_clean = all_species_clean[all_species_clean$Species.Genus %in% species_list$Species.Name,]
 
-#create pdf which contains visualization map of specimens for all species
-pdf("species.locations.pdf")
-for(current_species in species_list$Species.Name){
-  species_subset = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
-  library(maps)
-  map('usa')
-  points(species_subset$Longitude, species_subset$Latitude, col = 'red')
-  #title(sub = paste("Species", species_subset$Species.Genus))
-  mtext(paste("species", species_subset$Species.Genus), side = 1)
-}
-dev.off()
 
-### final species--------------------------------------------------------
+#### use collection years & coordinates to determine temperatures for each specimen---
+
+#convert year to correct format for raster function
+all_species_clean$Year.Collected = as.numeric(all_species_clean$Year.Collected)
+all_species_clean$stackID = all_species_clean$Year.Collected * 12 - 22793
+
+#remove specimens with collection dates after 2010 b/c temp data not available
+sum(all_species_clean$stackID > 1315)
+#103 specimens
+all_species_clean = subset(all_species_clean, all_species_clean$stackID < 1327)
+
+#determine temperature for each specimen
+library(raster)
+
+extracted_temperatures = c()
+for (i in 1:nrow(all_species_clean)){
+  specimen.temperature = raster("air.mon.mean.v301.nc", band = all_species_clean$stackID[i])
+  specimen.coordinates = cbind(all_species_clean$Longitude[i] + 360, all_species_clean$Latitude[i])
+  specimen.extracted.temperature = extract(specimen.temperature, specimen.coordinates)
+  extracted_temperatures = append(extracted_temperatures, specimen.extracted.temperature)
+}
+#saving extracted temps so this loop doesn't have to be run again (takes ~5 mins)
+write.csv(extracted_temperatures, file = "extracted_temperatures.csv")
+extracted_temperatures = read.csv("extracted_temperatures.csv")
+
+#add temperatures to final dataset
+all_species_clean$Extracted.Temperature = extracted_temperatures[,2]
+
+# #determine which temperatures produced NAs and why
+# sum(is.na(all_species_clean$Extracted.Temperature))
+# find.NA = subset(FinalSpeciesDataset, is.na(FinalSpeciesDataset$Extracted.Temperature))
+# #they're all near water? not sure why no temperatures were returned
+
+#remove specimens with no extracted temperature (i.e., NA)
+all_species_clean = subset(all_species_clean, !is.na(all_species_clean$Extracted.Temperature))
+
+#need to remove species that now have less than 30 specimens
+write.csv(all_species_clean, file = "temporary_all_species_clean.csv")
+temporary_all_species_clean = read.csv("temporary_all_species_clean.csv")
+
+number_specimens = table(temporary_all_species_clean$Species.Genus)
+number_specimens = subset(number_specimens, number_specimens > 29)
+number_specimens$Species.Name = rownames(number_specimens)
+
+species_list_2 = merge()
+
+### final species list and dataset--------------------------------------------------------
 
 #create and read in final species dataset CSV file
 write.csv(all_species_clean, file = "FinalSpeciesDataset.csv")
@@ -274,37 +309,31 @@ FinalSpeciesList = read.csv("FinalSpeciesList.csv")
 #determine which orders all species are in to get an idea of the taxonomic range
 final_orders = table(FinalSpeciesDataset$Order)
 
-#### use temperature data to determine temperatures for each specimen
 
-#convert year to correct format for raster function
-FinalSpeciesDataset$stackID = FinalSpeciesDataset$Year.Collected * 12 - 22793
+#create pdf which contains visualization map of specimens for all species
+pdf("species.locations.pdf")
+for(current_species in FinalSpeciesList$Species.Name){
+  species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
+  library(maps)
+  map('usa')
+  points(species_subset$Longitude, species_subset$Latitude, col = 'red')
+  #title(sub = paste("Species", species_subset$Species.Genus))
+  mtext(paste("species", species_subset$Species.Genus), side = 1)
+}
+dev.off()
 
-#remove specimens with collection dates after 2010 b/c temp data not available
-sum(FinalSpeciesDataset$stackID > 1315)
-#103 specimens
-FinalSpeciesDataset = subset(FinalSpeciesDataset, FinalSpeciesDataset$stackID < 1327)
 
-#determine temperature for each specimen
-library(raster)
 
-extracted_temperatures = c()
-for (i in 1:nrow(FinalSpeciesDataset)){
-  specimen.temperature = raster("air.mon.mean.v301.nc", band = FinalSpeciesDataset$stackID[i])
-  specimen.coordinates = cbind(FinalSpeciesDataset$Longitude[i] + 360, FinalSpeciesDataset$Latitude[i])
-  specimen.extracted.temperature = extract(specimen.temperature, specimen.coordinates)
-  extracted_temperatures = append(extracted_temperatures, specimen.extracted.temperature)
+
+##### plot temperature-mass relationships for each species
+for(current_species in FinalSpeciesList$Species.Name){
+  species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
+  plot(species_subset$Extracted.Temperature, species_subset$all_species_mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)")
+  mtext(paste("species", species_subset$Species.Genus), side = 1)
+  linreg = lm(species_subset$all_species_masses ~ species_subset$Extracted.Temperature)
+  linreg.table = summary(linreg)
+  abline(linreg)
 }
 
-#add temperatures to final dataset
-FinalSpeciesDataset$Extracted.Temperature = extracted_temperatures
-
-# #determine which temperatures produced NAs and why
-# sum(is.na(FinalSpeciesDataset$Extracted.Temperature))
-# find.NA = subset(FinalSpeciesDataset, is.na(FinalSpeciesDataset$Extracted.Temperature))
-# #they're all near water? not sure why no temperatures were returned
-
-#remove specimens with no extracted temperature (i.e., NA)
-FinalSpeciesDataset$Extracted.Temperature = na.omit(FinalSpeciesDataset$Extracted.Temperature)
-sum(is.na(FinalSpeciesDataset$Extracted.Temperature))
 
 
