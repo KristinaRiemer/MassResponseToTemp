@@ -283,18 +283,24 @@ all_species_clean$Extracted.Temperature = extracted_temperatures[,2]
 # find.NA = subset(FinalSpeciesDataset, is.na(FinalSpeciesDataset$Extracted.Temperature))
 # #they're all near water? not sure why no temperatures were returned
 
-#remove specimens with no extracted temperature (i.e., NA)
+#remove specimens with no extracted temperature (i.e., NA)-----------------------
 all_species_clean = subset(all_species_clean, !is.na(all_species_clean$Extracted.Temperature))
 
 #need to remove species that now have less than 30 specimens
+#create new csv of dataset to actually remove subsetted rows
 write.csv(all_species_clean, file = "temporary_all_species_clean.csv")
 temporary_all_species_clean = read.csv("temporary_all_species_clean.csv")
 
+#create list of species from dataset and remove those with less than 30 specimens
 number_specimens = table(temporary_all_species_clean$Species.Genus)
 number_specimens = subset(number_specimens, number_specimens > 29)
+number_specimens = data.frame(number_specimens)
 number_specimens$Species.Name = rownames(number_specimens)
+rownames(number_specimens) = NULL
 
-species_list_2 = merge()
+#update species list to reflect the removed species
+species_list = merge(species_list, number_specimens)
+species_list$Number.Specimens = NULL
 
 ### final species list and dataset--------------------------------------------------------
 
@@ -309,7 +315,6 @@ FinalSpeciesList = read.csv("FinalSpeciesList.csv")
 #determine which orders all species are in to get an idea of the taxonomic range
 final_orders = table(FinalSpeciesDataset$Order)
 
-
 #create pdf which contains visualization map of specimens for all species
 pdf("species.locations.pdf")
 for(current_species in FinalSpeciesList$Species.Name){
@@ -322,10 +327,9 @@ for(current_species in FinalSpeciesList$Species.Name){
 }
 dev.off()
 
-
-
-
-##### plot temperature-mass relationships for each species
+##### plot temperature-mass relationships for each species-----------------------
+#create pdf of plots
+pdf("temperature_mass_relationships.pdf")
 for(current_species in FinalSpeciesList$Species.Name){
   species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
   plot(species_subset$Extracted.Temperature, species_subset$all_species_mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)")
@@ -334,6 +338,21 @@ for(current_species in FinalSpeciesList$Species.Name){
   linreg.table = summary(linreg)
   abline(linreg)
 }
+
+pdf("temperature_mass_relationships.pdf")
+
+pdf("FinalPlots.pdf")
+for(current_species in FinalSpeciesList[,"Species.Name"]){
+  species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset[,"Species.Genus"] == current_species)
+  plot(species_subset[,"Extracted.Temperature"], species_subset[,47], xlab = "Temperature (*C)", ylab = "Body Mass (g)")
+  mtext(paste("species", species_subset[,"Species.Genus"]), side = 1)
+  linreg = lm(species_subset[,47] ~ species_subset[,"Extracted.Temperature"])
+  linreg.table = summary(linreg)
+  abline(linreg)
+}
+
+
+
 
 
 
