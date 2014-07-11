@@ -302,6 +302,26 @@ rownames(number_specimens) = NULL
 species_list = merge(species_list, number_specimens)
 species_list$Number.Specimens = NULL
 
+### adding orders to species list---------------------------------------
+#this section really needs to be redone
+#get orders for each species
+orders_list = c()
+for(current_species in species_list$Species.Name){
+  by_species = subset(all_species_clean, all_species_clean$Species.Genus == current_species)
+  orders_list = rbind(orders_list, unique(by_species$Order))
+  #orders_list = unique(by_species$Order)
+  #orders_list = rbind(orders_list, orders)
+}
+
+#change orders identification numbers to order names
+orders_list = as.numeric(orders_list)
+lookup_orders = matrix(c(1, 2, 3, 4, 5, 6, 7, 8, "Carnivora", "Cetacea", "Chiroptera", "Cingulata", "Didelphimorphia", "Lagomorpha", "Rodentia", "Soricomorpha"), nrow = 8)
+orders_list2 = lookup_orders[match(orders_list, lookup_orders[,1]),]
+orders_list2 = data.frame(orders_list2)
+
+#add to species list
+species_list$Order = orders_list2$X2
+
 ### final species list and dataset--------------------------------------------------------
 
 #create and read in final species dataset CSV file
