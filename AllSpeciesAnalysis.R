@@ -327,50 +327,46 @@ species_list$Order = orders_list2$X2
 #create and read in final species dataset CSV file
 write.csv(all_species_clean, file = "FinalSpeciesDataset.csv")
 FinalSpeciesDataset = read.csv("FinalSpeciesDataset.csv")
+colnames(FinalSpeciesDataset) [47] = "Mass"
 
 #create and read in final species list CSV file
 write.csv(species_list, file = "FinalSpeciesList.csv")
 FinalSpeciesList = read.csv("FinalSpeciesList.csv")
+rownames(FinalSpeciesList) = NULL
+
+#sort species list by order
+FinalSpeciesList = FinalSpeciesList[order(FinalSpeciesList$Order),]
 
 #determine which orders all species are in to get an idea of the taxonomic range
 final_orders = table(FinalSpeciesDataset$Order)
 
 #create pdf which contains visualization map of specimens for all species
 pdf("species.locations.pdf")
+
 for(current_species in FinalSpeciesList$Species.Name){
   species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
   library(maps)
   map('usa')
   points(species_subset$Longitude, species_subset$Latitude, col = 'red')
-  #title(sub = paste("Species", species_subset$Species.Genus))
-  mtext(paste("species", species_subset$Species.Genus), side = 1)
+  mtext(paste("species:", species_subset$Species.Genus, ",", "order:", species_subset$Order), side = 1)
 }
+
 dev.off()
 
 ##### plot temperature-mass relationships for each species-----------------------
 #create pdf of plots
-pdf("temperature_mass_relationships.pdf")
+pdf("FinalPlots.pdf")
+
 for(current_species in FinalSpeciesList$Species.Name){
   species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
-  plot(species_subset$Extracted.Temperature, species_subset$all_species_mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)")
-  mtext(paste("species", species_subset$Species.Genus), side = 1)
-  linreg = lm(species_subset$all_species_masses ~ species_subset$Extracted.Temperature)
+  plot(species_subset$Extracted.Temperature, species_subset$Mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)")
+  mtext(paste("species:", species_subset$Species.Genus, ",", "order:", species_subset$Order), side = 3)
+  linreg = lm(species_subset$Mass ~ species_subset$Extracted.Temperature)
   linreg.table = summary(linreg)
   abline(linreg)
 }
 
-pdf("temperature_mass_relationships.pdf")
-
-pdf("FinalPlots.pdf")
-for(current_species in FinalSpeciesList[,"Species.Name"]){
-  species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset[,"Species.Genus"] == current_species)
-  plot(species_subset[,"Extracted.Temperature"], species_subset[,47], xlab = "Temperature (*C)", ylab = "Body Mass (g)")
-  mtext(paste("species", species_subset[,"Species.Genus"]), side = 1)
-  linreg = lm(species_subset[,47] ~ species_subset[,"Extracted.Temperature"])
-  linreg.table = summary(linreg)
-  abline(linreg)
-}
-
+dev.off()
 
 
 
