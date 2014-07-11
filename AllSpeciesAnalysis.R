@@ -340,6 +340,46 @@ FinalSpeciesDataset = read.csv("FinalSpeciesDataset.csv")
 write.csv(species_list, file = "FinalSpeciesList.csv")
 FinalSpeciesList = read.csv("FinalSpeciesList.csv")
 
+### remove outliers from (presumably) data entry errors----------------------------------
+#found outliers by looking at mass-temperature plots for specimens with unusually high masses
+#4 species
+
+#find Sorex trowbridgii outliers
+S.trowbridgii.data = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == "Sorex trowbridgii")
+S.trowbridgii.data = subset(S.trowbridgii.data, S.trowbridgii.data$Mass > 20)
+#remove Sorex trowbridgii outliers from dataset
+FinalSpeciesDataset = subset(FinalSpeciesDataset, !FinalSpeciesDataset$X.2 == 5552 & !FinalSpeciesDataset$X.2 == 5553)
+#check for removal
+S.trowbridgii.data.check = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == "Sorex trowbridgii")
+S.trowbridgii.data.check = subset(S.trowbridgii.data.check, S.trowbridgii.data.check$Mass > 20)
+
+#find Peromyscus leucopus outliers
+P.leucopus.data = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == "Peromyscus leucopus")
+P.leucopus.data = subset(P.leucopus.data, P.leucopus.data$Mass > 40)
+#remove Peromyscus leucopus outlier
+FinalSpeciesDataset = subset(FinalSpeciesDataset, !FinalSpeciesDataset$X.2 == 757)
+#check for removal
+P.leucopus.data.check = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == "Peromyscus leucopus")
+P.leucopus.data.check = subset(P.leucopus.data.check, P.leucopus.data.check$Mass > 40)
+
+#find Perimyotis subflavus outliers
+P.subflavus.data = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == "Perimyotis subflavus")
+P.subflavus.data = subset(P.subflavus.data, P.subflavus.data$Mass > 15)
+#remove Perimyotis subflavus outliers
+FinalSpeciesDataset = subset(FinalSpeciesDataset, !FinalSpeciesDataset$X.2 == 7467 & !FinalSpeciesDataset$X.2 == 7468)
+#check for removal
+P.subflavus.data.check = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == "Perimyotis subflavus")
+P.subflavus.data.check = subset(P.subflavus.data.check, P.subflavus.data.check$Mass > 15)
+
+#find Sorex monticolus outliers
+S.monticolus.data = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == "Sorex monticolus")
+S.monticolus.data = subset(S.monticolus.data, S.monticolus.data$Mass > 12)
+#remove Sorex monticolus outlier
+FinalSpeciesDataset = subset(FinalSpeciesDataset, !FinalSpeciesDataset$X.2 == 5084)
+#check for removal
+S.monticolus.data.check = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == "Sorex monticolus")
+S.monticolus.data.check = subset(S.monticolus.data.check, S.monticolus.data.check$Mass > 12)
+
 
 #create pdf which contains visualization map of specimens for all species
 #set up pdf for plots
