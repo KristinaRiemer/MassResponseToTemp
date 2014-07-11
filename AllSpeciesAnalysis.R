@@ -322,27 +322,30 @@ orders_list2 = data.frame(orders_list2)
 #add to species list
 species_list$Order = orders_list2$X2
 
+#### changes to species list and dataset for later-----------------------
+#change mass column name in dataset
+colnames(all_species_clean) [46] = "Mass"
+
+#sort species list by order
+species_list = species_list[order(species_list$Order),]
+
+
 ### final species list and dataset--------------------------------------------------------
 
 #create and read in final species dataset CSV file
 write.csv(all_species_clean, file = "FinalSpeciesDataset.csv")
 FinalSpeciesDataset = read.csv("FinalSpeciesDataset.csv")
-colnames(FinalSpeciesDataset) [47] = "Mass"
 
 #create and read in final species list CSV file
 write.csv(species_list, file = "FinalSpeciesList.csv")
 FinalSpeciesList = read.csv("FinalSpeciesList.csv")
-rownames(FinalSpeciesList) = NULL
 
-#sort species list by order
-FinalSpeciesList = FinalSpeciesList[order(FinalSpeciesList$Order),]
-
-#determine which orders all species are in to get an idea of the taxonomic range
-final_orders = table(FinalSpeciesDataset$Order)
 
 #create pdf which contains visualization map of specimens for all species
-pdf("species.locations.pdf")
+#set up pdf for plots
+pdf("SpecimenLocations.pdf")
 
+#loop to create plots
 for(current_species in FinalSpeciesList$Species.Name){
   species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
   library(maps)
@@ -351,12 +354,15 @@ for(current_species in FinalSpeciesList$Species.Name){
   mtext(paste("species:", species_subset$Species.Genus, ",", "order:", species_subset$Order), side = 1)
 }
 
+#turn pdf device off
 dev.off()
 
 ##### plot temperature-mass relationships for each species-----------------------
-#create pdf of plots
+#set up pdf and layout for plots
 pdf("FinalPlots.pdf")
+par(mfrow = c(2,2))
 
+#loop to create plots
 for(current_species in FinalSpeciesList$Species.Name){
   species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
   plot(species_subset$Extracted.Temperature, species_subset$Mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)")
@@ -366,6 +372,7 @@ for(current_species in FinalSpeciesList$Species.Name){
   abline(linreg)
 }
 
+#turn pdf device off
 dev.off()
 
 
