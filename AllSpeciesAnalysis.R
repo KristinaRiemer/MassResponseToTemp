@@ -403,12 +403,17 @@ pdf("FinalPlots.pdf")
 par(mfrow = c(2,2))
 
 #loop to create plots
+linreg_summary = c()
 for(current_species in FinalSpeciesList$Species.Name){
   species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
   plot(species_subset$Extracted.Temperature, species_subset$Mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)")
   mtext(paste("species:", species_subset$Species.Genus, ",", "order:", species_subset$Order), side = 3)
   linreg = lm(species_subset$Mass ~ species_subset$Extracted.Temperature)
-  linreg.table = summary(linreg)
+  #linreg_summary = paste(summary(linreg))
+  print(summary(linreg))
+  linreg_summary = rbind(linreg_summary, summary(linreg)$coefficients)
+  #linreg_summary = print(summary(linreg))
+  #linreg_summary = summary(get(paste(current_species, linreg)))
   abline(linreg)
 }
 
@@ -416,6 +421,28 @@ for(current_species in FinalSpeciesList$Species.Name){
 dev.off()
 
 
+### determine linear regression p-values for each species-------------------------
 
+#remove everything from linear regression summary except p-values for each species
+rownames(linreg_summary) = NULL
+linreg_summary = data.frame(linreg_summary)
+even_rows = linreg_summary[c(FALSE, TRUE),]
+species_pvalues = even_rows$Pr...t..
+species_pvalues = data.frame(species_pvalues)
+colnames(species_pvalues) = "Pvalues"
+
+#add p-values to species list
+FinalSpeciesList = cbind(FinalSpeciesList, species_pvalues)
+
+#species with statistically significant p-values
+sum(FinalSpeciesList$Pvalues < 0.05)
+stat_significant = subset(FinalSpeciesList, FinalSpeciesList$Pvalues < 0.05)
+
+#species with non-statistically significant p-values
+sum(FinalSpeciesList$Pvalues > 0.05)
+not_stat_significant = subset(FinalSpeciesList, FinalSpeciesList$Pvalues > 0.05)
+
+#remove everything from linear regression summary except slopes for each species
+#slope is second value in "Estimate" column
 
 
