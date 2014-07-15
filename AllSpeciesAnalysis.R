@@ -424,25 +424,49 @@ dev.off()
 ### determine linear regression p-values for each species-------------------------
 
 #remove everything from linear regression summary except p-values for each species
+#p-value are second value in "Pr(>|t|)" column
 rownames(linreg_summary) = NULL
 linreg_summary = data.frame(linreg_summary)
 even_rows = linreg_summary[c(FALSE, TRUE),]
 species_pvalues = even_rows$Pr...t..
 species_pvalues = data.frame(species_pvalues)
-colnames(species_pvalues) = "Pvalues"
+colnames(species_pvalues) = "Pvalue"
 
 #add p-values to species list
 FinalSpeciesList = cbind(FinalSpeciesList, species_pvalues)
 
 #species with statistically significant p-values
-sum(FinalSpeciesList$Pvalues < 0.05)
-stat_significant = subset(FinalSpeciesList, FinalSpeciesList$Pvalues < 0.05)
+sum(FinalSpeciesList$Pvalue < 0.05)
+stat_significant = subset(FinalSpeciesList, FinalSpeciesList$Pvalue < 0.05)
 
 #species with non-statistically significant p-values
-sum(FinalSpeciesList$Pvalues > 0.05)
-not_stat_significant = subset(FinalSpeciesList, FinalSpeciesList$Pvalues > 0.05)
+sum(FinalSpeciesList$Pvalue > 0.05)
+not_stat_significant = subset(FinalSpeciesList, FinalSpeciesList$Pvalue > 0.05)
 
 #remove everything from linear regression summary except slopes for each species
 #slope is second value in "Estimate" column
+species_slopes = even_rows$Estimate
+species_slopes = data.frame(species_slopes)
+colnames(species_slopes) = "Slope"
+
+#add slopes to species list
+FinalSpeciesList = cbind(FinalSpeciesList, species_slopes)
+
+#grouping species according to slope type
+for(current_species in FinalSpeciesList$Species.Name){
+  not_SS = subset(FinalSpeciesList, FinalSpeciesList$Pvalue > 0.05)
+  SS_negative = subset(FinalSpeciesList, FinalSpeciesList$Pvalue < 0.05 & FinalSpeciesList$Slope < 0)
+  SS_positive = subset(FinalSpeciesList, FinalSpeciesList$Pvalue < 0.05 & FinalSpeciesList$Slope > 0)
+}
+
+#getting counts for each group
+slopetype_counts = c()
+slopetype_counts$not_SS = nrow(not_SS)
+slopetype_counts$SS_negative = nrow(SS_negative)
+slopetype_counts$SS_positive = nrow(SS_positive)
+slopetype_counts = data.frame(slopetype_counts)
+
+
+barplot(slopetype_counts)
 
 
