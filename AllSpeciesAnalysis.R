@@ -404,6 +404,7 @@ par(mfrow = c(2,2))
 
 #loop to create plots
 linreg_summary = c()
+linreg_rsquared = c()
 for(current_species in FinalSpeciesList$Species.Name){
   species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
   plot(species_subset$Extracted.Temperature, species_subset$Mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)")
@@ -412,6 +413,7 @@ for(current_species in FinalSpeciesList$Species.Name){
   #linreg_summary = paste(summary(linreg))
   print(summary(linreg))
   linreg_summary = rbind(linreg_summary, summary(linreg)$coefficients)
+  linreg_rsquared = rbind(linreg_rsquared, summary(linreg)$r.squared)
   #linreg_summary = print(summary(linreg))
   #linreg_summary = summary(get(paste(current_species, linreg)))
   abline(linreg)
@@ -421,7 +423,7 @@ for(current_species in FinalSpeciesList$Species.Name){
 dev.off()
 
 
-### determine linear regression p-values for each species-------------------------
+### determine lin reg slope types (sign & stat sig) for each species-------------------------
 
 #remove everything from linear regression summary except p-values for each species
 #p-value are second value in "Pr(>|t|)" column
@@ -473,3 +475,12 @@ barplot(slope_counts$Percent.Slope.Type, xlab = "Effect of Temperature on Mass",
         names.arg = c("Negative", "None", "Positive"))
 
 
+####figure of r-squared values for each species----------------------------
+#pulled out r-squared values in lin reg loop to linreg_rsquared
+
+#add r-squared to species list
+FinalSpeciesList = cbind(FinalSpeciesList, linreg_rsquared)
+colnames(FinalSpeciesList) [13] = "R.squared"
+
+#create histogram of species' r-squared values
+hist(FinalSpeciesList$R.squared, xlab = "R-squared Value", xlim = c(0,1), col = "red", main = NULL)
