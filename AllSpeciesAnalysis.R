@@ -470,9 +470,11 @@ slope_counts = data.frame(slope_counts)
 slope_counts$Slope.Type = rbind("negative", "zero", "positive")
 slope_counts$Percent.Slope.Type = (slope_counts$slope_counts/sum(slope_counts$slope_counts))*100
 
-#figure of percent of species with each type of slope
+#pdf of plot showing effect of temperature on mass
+pdf("SlopeTypes.pdf")
 barplot(slope_counts$Percent.Slope.Type, xlab = "Effect of Temperature on Mass", ylab = "Percent of Species",
         names.arg = c("Negative", "None", "Positive"))
+dev.off()
 
 
 ####figure of r-squared values for each species----------------------------
@@ -482,9 +484,10 @@ barplot(slope_counts$Percent.Slope.Type, xlab = "Effect of Temperature on Mass",
 FinalSpeciesList = cbind(FinalSpeciesList, linreg_rsquared)
 colnames(FinalSpeciesList) [13] = "R.squared"
 
-#create histogram of species' r-squared values
+#create pdf of histogram of species' r-squared values
+pdf("RsquaredHistogram.pdf")
 hist(FinalSpeciesList$R.squared, xlab = "R-squared Value", xlim = c(0,1), col = "red", main = NULL)
-
+dev.off()
 
 ###histogram of normalized slopes of each species---------------------
 
@@ -557,8 +560,9 @@ colnames(species_normalizedslopes) = "Normalized.Slope"
 FinalSpeciesList = cbind(FinalSpeciesList, species_normalizedslopes)
 
 #create histogram of normalized slopes
+pdf("NormalizedSlopesHistogram.pdf")
 hist(FinalSpeciesList$Normalized.Slope, xlab = "Normalized Slope", col = "red", main = NULL)
-
+dev.off()
 
 
 
