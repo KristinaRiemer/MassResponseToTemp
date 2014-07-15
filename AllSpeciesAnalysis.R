@@ -484,3 +484,81 @@ colnames(FinalSpeciesList) [13] = "R.squared"
 
 #create histogram of species' r-squared values
 hist(FinalSpeciesList$R.squared, xlab = "R-squared Value", xlim = c(0,1), col = "red", main = NULL)
+
+
+###histogram of normalized slopes of each species---------------------
+
+#determine average & SD of mass and temperature for each species
+Mass.Average = c()
+Mass.SD = c()
+Temperature.Average = c()
+Temperature.SD = c()
+
+for(current_species in FinalSpeciesList$Species.Name){
+  species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
+  Mass.Average = rbind(Mass.Average, mean(species_subset$Mass))
+  Mass.SD = rbind(Mass.SD, sd(species_subset$Mass))
+  Temperature.Average = rbind(Temperature.Average, mean(species_subset$Extracted.Temperature))
+  Temperature.SD = rbind(Temperature.SD, sd(species_subset$Extracted.Temperature))
+}
+
+#put four types of values into species list
+FinalSpeciesList = cbind(FinalSpeciesList, Mass.Average, Mass.SD, Temperature.Average, Temperature.SD)
+
+#get species average/SD values for each specimen in dataset
+Species.Values.Extract = FinalSpeciesList[match(FinalSpeciesDataset$Species.Genus, FinalSpeciesList$Species.Name),]
+FinalSpeciesDataset = cbind(FinalSpeciesDataset, Species.Values.Extract$Mass.Average, Species.Values.Extract$Mass.SD, Species.Values.Extract$Temperature.Average, Species.Values.Extract$Temperature.SD)
+colnames(FinalSpeciesDataset) [56] = "Mass.Average.Species"
+colnames(FinalSpeciesDataset) [57] = "Mass.SD.Species"
+colnames(FinalSpeciesDataset) [58] = "Temperature.Average.Species"
+colnames(FinalSpeciesDataset) [59] = "Temperature.SD.Species"
+
+#calculate normalized mass and temp for each specimen using species average/SD values
+for(current_specimen in FinalSpeciesDataset$Species.Genus){
+  FinalSpeciesDataset$Normalized.Mass = (FinalSpeciesDataset$Mass - FinalSpeciesDataset$Mass.Average.Species)/FinalSpeciesDataset$Mass.SD.Species
+  FinalSpeciesDataset$Normalized.Temperature = (FinalSpeciesDataset$Extracted.Temperature - FinalSpeciesDataset$Temperature.Average.Species)/FinalSpeciesDataset$Temperature.SD.Species
+}
+
+#using code from previous raw data loop to plot & do lin reg with normalized values
+
+#set up pdf and layout for plots
+pdf("NormalizedPlots.pdf")
+par(mfrow = c(2,2))
+
+#loop to create plots
+normalizedlinreg_summary = c()
+for(current_species in FinalSpeciesList$Species.Name){
+  species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
+  plot(species_subset$Normalized.Temperature, species_subset$Normalized.Mass, xlab = "Normalized Temperature", ylab = "Normalized Body Mass")
+  mtext(paste("species:", species_subset$Species.Genus, ",", "order:", species_subset$Order), side = 3)
+  normalizedlinreg = lm(species_subset$Normalized.Mass ~ species_subset$Normalized.Temperature)
+  #linreg_summary = paste(summary(linreg))
+  print(summary(normalizedlinreg))
+  normalizedlinreg_summary = rbind(normalizedlinreg_summary, summary(normalizedlinreg)$coefficients)
+  #linreg_summary = print(summary(linreg))
+  #linreg_summary = summary(get(paste(current_species, linreg)))
+  abline(normalizedlinreg)
+}
+
+#turn pdf device off
+dev.off()
+
+#checked that this was correct by comparing to FinalPlots.pdf; they are the same, as they should be
+
+#pulling out slopes from lin reg summary
+rownames(normalizedlinreg_summary) = NULL
+normalizedlinreg_summary = data.frame(normalizedlinreg_summary)
+normalized_even_rows = normalizedlinreg_summary[c(FALSE, TRUE),]
+species_normalizedslopes = normalized_even_rows$Estimate
+species_normalizedslopes = data.frame(species_normalizedslopes)
+colnames(species_normalizedslopes) = "Normalized.Slope"
+
+#add normalized slopes to species list
+FinalSpeciesList = cbind(FinalSpeciesList, species_normalizedslopes)
+
+#create histogram of normalized slopes
+hist(FinalSpeciesList$Normalized.Slope, xlab = "Normalized Slope", col = "red", main = NULL)
+
+
+
+
