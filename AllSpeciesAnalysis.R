@@ -332,12 +332,12 @@ species_list = species_list[order(species_list$Order),]
 
 ### final species list and dataset--------------------------------------------------------
 
-#create and read in final species dataset CSV file
+#create finals species list and dataset CSV files
 write.csv(all_species_clean, file = "FinalSpeciesDataset.csv")
-FinalSpeciesDataset = read.csv("FinalSpeciesDataset.csv")
-
-#create and read in final species list CSV file
 write.csv(species_list, file = "FinalSpeciesList.csv")
+
+#read in final species list and dataset CSV files
+FinalSpeciesDataset = read.csv("FinalSpeciesDataset.csv")
 FinalSpeciesList = read.csv("FinalSpeciesList.csv")
 
 ### remove outliers from (presumably) data entry errors----------------------------------
@@ -460,13 +460,16 @@ for(current_species in FinalSpeciesList$Species.Name){
 }
 
 #getting counts for each group
-slopetype_counts = c()
-slopetype_counts$not_SS = nrow(not_SS)
-slopetype_counts$SS_negative = nrow(SS_negative)
-slopetype_counts$SS_positive = nrow(SS_positive)
-slopetype_counts = data.frame(slopetype_counts)
+slope_counts = c()
+slope_counts = nrow(SS_negative)
+slope_counts = rbind(slope_counts, nrow(not_SS))
+slope_counts = rbind(slope_counts, nrow(SS_positive))
+slope_counts = data.frame(slope_counts)
+slope_counts$Slope.Type = rbind("negative", "zero", "positive")
+slope_counts$Percent.Slope.Type = (slope_counts$slope_counts/sum(slope_counts$slope_counts))*100
 
-
-barplot(slopetype_counts)
+#figure of percent of species with each type of slope
+barplot(slope_counts$Percent.Slope.Type, xlab = "Effect of Temperature on Mass", ylab = "Percent of Species",
+        names.arg = c("Negative", "None", "Positive"))
 
 
