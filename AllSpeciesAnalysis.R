@@ -473,7 +473,7 @@ slope_counts$Percent.Slope.Type = (slope_counts$slope_counts/sum(slope_counts$sl
 #pdf of plot showing effect of temperature on mass
 pdf("SlopeTypes.pdf")
 barplot(slope_counts$Percent.Slope.Type, xlab = "Effect of Temperature on Mass", ylab = "Percent of Species",
-        names.arg = c("Negative", "None", "Positive"))
+        names.arg = c("Negative", "None", "Positive"), ylim = c(0,60))
 dev.off()
 
 
@@ -486,7 +486,8 @@ colnames(FinalSpeciesList) [13] = "R.squared"
 
 #create pdf of histogram of species' r-squared values
 pdf("RsquaredHistogram.pdf")
-hist(FinalSpeciesList$R.squared, xlab = "R-squared Value", xlim = c(0,1), col = "red", main = NULL)
+hist(FinalSpeciesList$R.squared, xlab = "R-squared Value", xlim = c(0,1), col = "red", 
+     main = NULL, ylim = c(0,20))
 dev.off()
 
 ###histogram of normalized slopes of each species---------------------
@@ -561,8 +562,12 @@ FinalSpeciesList = cbind(FinalSpeciesList, species_normalizedslopes)
 
 #create histogram of normalized slopes
 pdf("NormalizedSlopesHistogram.pdf")
-hist(FinalSpeciesList$Normalized.Slope, xlab = "Normalized Slope", col = "red", main = NULL)
+hist(FinalSpeciesList$Normalized.Slope, xlab = "Normalized Slope", col = "red", 
+     main = NULL, xlim = c(-1, 1))
 dev.off()
+
+
+#good resource for linear regression and correlation analysis: http://udel.edu/~mcdonald/statregression.html
 
 
 
