@@ -407,7 +407,7 @@ linreg_summary = c()
 linreg_rsquared = c()
 for(current_species in FinalSpeciesList$Species.Name){
   species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
-  plot(species_subset$Extracted.Temperature, species_subset$Mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)")
+  plot(species_subset$Extracted.Temperature, species_subset$Mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)", col = "red")
   mtext(paste("species:", species_subset$Species.Genus, ",", "order:", species_subset$Order), side = 3)
   linreg = lm(species_subset$Mass ~ species_subset$Extracted.Temperature)
   #linreg_summary = paste(summary(linreg))
@@ -472,8 +472,8 @@ slope_counts$Percent.Slope.Type = (slope_counts$slope_counts/sum(slope_counts$sl
 
 #pdf of plot showing effect of temperature on mass
 pdf("SlopeTypes.pdf")
-barplot(slope_counts$Percent.Slope.Type, xlab = "Effect of Temperature on Mass", ylab = "Percent of Species",
-        names.arg = c("Negative", "None", "Positive"), ylim = c(0,60))
+barplot(slope_counts$Percent.Slope.Type, xlab = NULL, ylab = "Percent of Species",
+        names.arg = c("Negative", "None", "Positive"), ylim = c(0,60), col = c("red", "blue3", "black"))
 dev.off()
 
 
@@ -486,8 +486,8 @@ colnames(FinalSpeciesList) [13] = "R.squared"
 
 #create pdf of histogram of species' r-squared values
 pdf("RsquaredHistogram.pdf")
-hist(FinalSpeciesList$R.squared, xlab = "R-squared Value", xlim = c(0,1), col = "red", 
-     main = NULL, ylim = c(0,20))
+hist(FinalSpeciesList$R.squared, xlab = "R-squared Value", ylab = "Number of Species",
+     xlim = c(0,1), col = "blue3", main = NULL, ylim = c(0,20))
 dev.off()
 
 ###histogram of normalized slopes of each species---------------------
