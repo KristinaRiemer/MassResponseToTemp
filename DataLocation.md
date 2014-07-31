@@ -192,3 +192,12 @@ Successfully created and read into Rstudio a file containing all mammal specimen
 * Determine which species fulfill all criteria, use raster to determine July temperature for each of their specimens, and plot mass-temperature relationships for each species
 
 
+4. Fall objectives
+====
+
+### Gordon Conference 2014 ideas/directions:
+1. (Easy) Arrange species' mass-temp relationships in order of average species mass in order to look for possible patterns in species size and mass-temp relationships, e.g., larger species usually have positive mass-temp relationships. 
+2. (Easy) Recreate mass-temperature relationship figures with specimens across orders instead of species to get order-level mass-temperature relationships. 
+
+
+
