@@ -569,5 +569,10 @@ dev.off()
 
 #good resource for linear regression and correlation analysis: http://udel.edu/~mcdonald/statregression.html
 
+#creating CSV file of species list to print out
+write.csv(FinalSpeciesList, file = "PrintSpeciesList.csv")
+
+#plot of all specimens mass-temperature relationship
+plot(FinalSpeciesDataset$Extracted.Temperature, FinalSpeciesDataset$Mass)
 
 
