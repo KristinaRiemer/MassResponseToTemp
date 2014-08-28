@@ -582,34 +582,6 @@ plot(FinalSpeciesDataset$Extracted.Temperature, FinalSpeciesDataset$Mass)
 #organize species list by ascending average mass
 FinalSpeciesList_bymass = FinalSpeciesList[order(FinalSpeciesList$Mass.Average),]
 
-#create plot of species average masses
-#bars color-coded according to mass-temp relationship
-  #red = negative; blue = none; black = positive
-#what's started below won't work
-# vals = 
-# breaks = c(-Inf, )
-# cols = c("red", "blue", "black")[findInterval(vals, vec = breaks)]
-
-#need to add column to species list that displays slope type for each species, based
-#on both p-value magnitude and slope sign
-slope.type = c()
-
-for(current_species in FinalSpeciesList_bymass)
-  if(current_species$Pvalue < 0.05 & current_species$Slope < 0){
-    slope.color = "red"
-  } else {
-    if(current_species$Pvalue < 0.05 & current_species$Slope > 0){
-      slope.color = "black"
-    } else {
-      slope.color = "blue"
-    }
-  }
-
-
-
-barplot(FinalSpeciesList_bymass$Mass.Average)
-
-
 #redo mass-temperature plots for each species using new species list order
 #set up pdf and layout for plots
 pdf("FinalPlots_bymass.pdf")
@@ -637,6 +609,33 @@ for(current_species in FinalSpeciesList_bymass$Species.Name){
 #turn pdf device off
 dev.off()
 
-#testing that Git still works even with folder name change (dumb, don't do that again)
 
+
+#need to add column to species list that displays slope type for each species, based
+#on both p-value magnitude and slope sign
+slope.type = c()
+for(current_species in FinalSpeciesList$Species.Name){
+  if(FinalSpeciesList$Pvalue < 0.05 & FinalSpeciesList$Slope < 0){
+    slope.type = "negative"
+  } else {
+    if(FinalSpeciesList$Pvalue < 0.05 & FinalSpeciesList$Slope > 0){
+      slope.type = "positive"
+    } else {
+      slope.type = "none"
+    }
+  }
+  slope.type = rbind(slope.type)
+}
+
+
+barplot(FinalSpeciesList_bymass$Mass.Average)
+
+
+#create plot of species average masses
+#bars color-coded according to mass-temp relationship
+#red = negative; blue = none; black = positive
+#what's started below won't work
+# vals = 
+# breaks = c(-Inf, )
+# cols = c("red", "blue", "black")[findInterval(vals, vec = breaks)]
 
