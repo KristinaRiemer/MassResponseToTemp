@@ -579,9 +579,9 @@ plot(FinalSpeciesDataset$Extracted.Temperature, FinalSpeciesDataset$Mass)
 ### arrange species stats/plots by mass and slope type------------------------------------
 
 #add column to species list that displays slope type for each species
-#"positive" = statistically significant w/ positive slope
-#"negative" = statistically significant w/ negative slope
-#"none" = not statistically significant, regardless of slope
+  #"positive" = statistically significant w/ positive slope
+  #"negative" = statistically significant w/ negative slope
+  #"none" = not statistically significant, regardless of slope
 
 for(current_species in FinalSpeciesList$Species.Name){
   FinalSpeciesList$Slope.Type = ifelse(FinalSpeciesList$Pvalue < 0.05 & 
@@ -635,5 +635,72 @@ barplot(FinalSpeciesList_bymass$Mass.Average,
         ifelse(FinalSpeciesList$Slope.Type == "none", "blue", "black")), 
         xlab = "Species", ylab = "Mass (g)")
 dev.off()
+
+
+
+### plot temperature-mass relationships for each order --------------------------
+#repeat of code from species temp-mass plots
+
+#create list of orders from specimen dataset, in alphabetical order
+FinalOrdersList = unique(FinalSpeciesDataset$Order)
+FinalOrdersList = sort(FinalOrdersList)
+
+#create pdf
+pdf("FinalOrderPlots.pdf")
+par(mfrow = c(3,2))
+
+#loop to create order plots
+linreg_order_summary = c()
+linreg_order_rsquared = c()
+for(current_order in FinalOrdersList){
+  orders_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Order == current_order)
+  plot(orders_subset$Extracted.Temperature, orders_subset$Mass, xlab = "Temperature (*C)", ylab = "Body Mass (g)", col = "red")
+  mtext(paste("order:", orders_subset$Order), side = 3)
+  linreg_order = lm(orders_subset$Mass ~ orders_subset$Extracted.Temperature)
+  print(summary(linreg_order))
+  linreg_order_summary = rbind(linreg_order_summary, summary(linreg_order)$coefficients)
+  linreg_order_rsquared = rbind(linreg_order_rsquared, summary(linreg_order)$r.squared)
+  abline(linreg_order)
+}
+
+#turn pdf device off
+dev.off()
+
+#add pvalues to orders list
+
+#remove everything from linear regression summary except p-values for each species
+#p-value are second value in "Pr(>|t|)" column
+rownames(linreg_order_summary) = NULL
+linreg_order_summary = data.frame(linreg_order_summary)
+even_rows = linreg_order_summary[c(FALSE, TRUE),]
+orders_pvalues = even_rows$Pr...t..
+orders_pvalues = data.frame(orders_pvalues)
+colnames(orders_pvalues) = "Pvalue"
+FinalOrdersList = cbind(FinalOrdersList, orders_pvalues)
+
+#add slope to orders list
+orders_slopes = even_rows$Estimate
+orders_slopes = data.frame(orders_slopes)
+colnames(orders_slopes) = "Slope"
+FinalOrdersList = cbind(FinalOrdersList, orders_slopes)
+
+#add rsquared values to orders list
+FinalOrdersList = cbind(FinalOrdersList, linreg_order_rsquared)
+colnames(FinalOrdersList) [4] = "R.squared"
+
+#add column to orders list that displays slope type for each order
+  #"positive" = statistically significant w/ positive slope
+  #"negative" = statistically significant w/ negative slope
+  #"none" = not statistically significant, regardless of slope
+
+for(current_order in FinalOrdersList$FinalOrdersList){
+  FinalOrdersList$Slope.Type = ifelse(FinalOrdersList$Pvalue < 0.05 & 
+                                         FinalOrdersList$Slope < 0, "negative", 
+                                       ifelse(FinalOrdersList$Pvalue < 0.05 &
+                                                FinalOrdersList$Slope > 0, "positive", 
+                                              "none"))
+}
+
+
 
 
