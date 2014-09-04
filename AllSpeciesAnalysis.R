@@ -576,7 +576,21 @@ write.csv(FinalSpeciesList, file = "PrintSpeciesList.csv")
 plot(FinalSpeciesDataset$Extracted.Temperature, FinalSpeciesDataset$Mass)
 
 
-### arrange species stats/plots by mass------------------------------------
+### arrange species stats/plots by mass and slope type------------------------------------
+
+#add column to species list that displays slope type for each species
+#"positive" = statistically significant w/ positive slope
+#"negative" = statistically significant w/ negative slope
+#"none" = not statistically significant, regardless of slope
+
+for(current_species in FinalSpeciesList$Species.Name){
+  FinalSpeciesList$Slope.Type = ifelse(FinalSpeciesList$Pvalue < 0.05 & 
+                                         FinalSpeciesList$Slope < 0, "negative", 
+                                       ifelse(FinalSpeciesList$Pvalue < 0.05 &
+                                          FinalSpeciesList$Slope > 0, "positive", 
+                                          "none"))
+}
+
 
 #already calculated average mass for each species, in species list
 #organize species list by ascending average mass
@@ -609,31 +623,17 @@ for(current_species in FinalSpeciesList_bymass$Species.Name){
 #turn pdf device off
 dev.off()
 
+#create plot species average masses in ascending order, with bars color-coded 
+#according to slope type
+  #red = negative
+  #black = none
+  #blue = positive
 
+pdf("SpeciesSlopeType.pdf")
+barplot(FinalSpeciesList_bymass$Mass.Average, 
+        col = ifelse(FinalSpeciesList$Slope.Type == "negative", "red", 
+        ifelse(FinalSpeciesList$Slope.Type == "none", "blue", "black")), 
+        xlab = "Species", ylab = "Mass (g)")
+dev.off()
 
-#add column to species list that displays slope type for each species
-  #"positive" = statistically significant w/ positive slope
-  #"negative" = statistically significant w/ negative slope
-  #"none" = not statistically significant, regardless of slope
-
-for(current_species in FinalSpeciesList$Species.Name){
-  FinalSpeciesList$Slope.Type = ifelse(FinalSpeciesList$Pvalue < 0.05 & 
-                                         FinalSpeciesList$Slope < 0, "negative", 
-                                       ifelse(FinalSpeciesList$Pvalue < 0.05 &
-                                                FinalSpeciesList$Slope > 0, "positive", 
-                                              "none"))
-}
-
-
-
-
-barplot(FinalSpeciesList_bymass$Mass.Average)
-
-#create plot of species average masses
-#bars color-coded according to mass-temp relationship
-#red = negative; blue = none; black = positive
-#what's started below won't work
-# vals = 
-# breaks = c(-Inf, )
-# cols = c("red", "blue", "black")[findInterval(vals, vec = breaks)]
 
