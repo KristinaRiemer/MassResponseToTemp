@@ -611,25 +611,23 @@ dev.off()
 
 
 
-#need to add column to species list that displays slope type for each species, based
-#on both p-value magnitude and slope sign
-slope.type = c()
+#add column to species list that displays slope type for each species
+  #"positive" = statistically significant w/ positive slope
+  #"negative" = statistically significant w/ negative slope
+  #"none" = not statistically significant, regardless of slope
+
 for(current_species in FinalSpeciesList$Species.Name){
-  if(FinalSpeciesList$Pvalue < 0.05 & FinalSpeciesList$Slope < 0){
-    slope.type = "negative"
-  } else {
-    if(FinalSpeciesList$Pvalue < 0.05 & FinalSpeciesList$Slope > 0){
-      slope.type = "positive"
-    } else {
-      slope.type = "none"
-    }
-  }
-  slope.type = rbind(slope.type)
+  FinalSpeciesList$Slope.Type = ifelse(FinalSpeciesList$Pvalue < 0.05 & 
+                                         FinalSpeciesList$Slope < 0, "negative", 
+                                       ifelse(FinalSpeciesList$Pvalue < 0.05 &
+                                                FinalSpeciesList$Slope > 0, "positive", 
+                                              "none"))
 }
 
 
-barplot(FinalSpeciesList_bymass$Mass.Average)
 
+
+barplot(FinalSpeciesList_bymass$Mass.Average)
 
 #create plot of species average masses
 #bars color-coded according to mass-temp relationship
