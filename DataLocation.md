@@ -197,7 +197,7 @@ Successfully created and read into Rstudio a file containing all mammal specimen
 
 ### Gordon Conference 2014 ideas/directions:
 1. **FINISHED 9/4/14** (Easy) Arrange species' mass-temp relationships in order of average species mass in order to look for possible patterns in species size and mass-temp relationships, e.g., larger species usually have positive mass-temp relationships. See "SpeciesSlopeType.pdf". 
-2. (Easy) Recreate mass-temperature relationship figures with specimens across orders instead of species to get order-level mass-temperature relationships. 
+2. **FINISHED 9/4/14** (Easy) Recreate mass-temperature relationship figures with specimens across orders instead of species to get order-level mass-temperature relationships. 
 
 
 
