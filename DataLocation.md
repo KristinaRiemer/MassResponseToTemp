@@ -195,9 +195,29 @@ Successfully created and read into Rstudio a file containing all mammal specimen
 4. Fall objectives
 ====
 
-### Gordon Conference 2014 ideas/directions:
-1. **FINISHED 9/4/14** (Easy) Arrange species' mass-temp relationships in order of average species mass in order to look for possible patterns in species size and mass-temp relationships, e.g., larger species usually have positive mass-temp relationships. See "SpeciesSlopeType.pdf". 
-2. **FINISHED 9/4/14** (Easy) Recreate mass-temperature relationship figures with specimens across orders instead of species to get order-level mass-temperature relationships. 
+_Many ideas/directions resulted from Gordon Conference 2014_
 
 
+### Immediate tasks -- Looking at already analyzed data in new ways
+
+1. **FINISHED 9/4/14** Arrange species' mass-temp relationships in order of average species mass in order to look for possible patterns in species size and mass-temp relationships, e.g., larger species usually have positive mass-temp relationships. See "SpeciesSlopeType.pdf". 
+
+2. **FINISHED 9/4/14** Recreate mass-temperature relationship figures with specimens across orders instead of species to get order-level mass-temperature relationships. 
+
+3. Look at temperature trends. Compare winter and summer temperatures, look at how temps have changed through course of study time period, temperature averages v. ranges, regional temperature differences. 
+
+4. Re-run analysis using winter temperatures (Dec or Jan?) instead of summer temperature (used July). From #3, summer v. winter temperature trends.
+
+5. Determine what propoprtion of each species' geographical range is captured by analysis. Can obtain geographical ranges from NatureServe. 
+
+6. Compare temperature range for each species to their r-squared and p values. 
+
+
+### Longer term (i.e., not immediate) -- Expansion of project to include new data
+
+1. TEMPERATURE: could expand beyond US with global temp dataset that has sufficient resolution; maybe Microclim, or Dillon et al. (2010). 
+
+2. SPECIMENS: could expand number of specimens using Arctos dataset, which appears to have all necessary variables.
+
+3. TIME: could repeat analysis with paleo data possibly for similar climate change period maybe 13,000 years ago, using Neotoma database. 
 
