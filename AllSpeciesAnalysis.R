@@ -626,8 +626,8 @@ dev.off()
 #create plot species average masses in ascending order, with bars color-coded 
 #according to slope type
   #red = negative
-  #black = none
-  #blue = positive
+  #blue = none
+  #black = positive
 
 pdf("SpeciesSlopeType.pdf")
 barplot(FinalSpeciesList_bymass$Mass.Average, 
@@ -700,6 +700,47 @@ for(current_order in FinalOrdersList$FinalOrdersList){
                                                 FinalOrdersList$Slope > 0, "positive", 
                                               "none"))
 }
+
+
+# compare species' temperature ranges to their p-values and r-squared values---------
+
+#what about temperature standard deviation also? not just max and min
+
+#determine max and min temps for each species
+Temperature.Min = c()
+Temperature.Max = c()
+
+for(current_species in FinalSpeciesList$Species.Name){
+  species_subset = subset(FinalSpeciesDataset, FinalSpeciesDataset$Species.Genus == current_species)
+  Temperature.Min = rbind(Temperature.Min, min(species_subset$Extracted.Temperature))
+  Temperature.Max = rbind(Temperature.Max, max(species_subset$Extracted.Temperature))
+}
+
+#add species' max and min temps to species list
+FinalSpeciesList = cbind(FinalSpeciesList, Temperature.Min, Temperature.Max)
+
+#plot temperature min v. max for each species
+plot(FinalSpeciesList$Temperature.Min, FinalSpeciesList$Temperature.Max, 
+     xlab = "Species Minimum Temperature (C*)", ylab = "Species Maximum Temperature (C*)")
+
+#determine species' temp range from temp max and min
+FinalSpeciesList$Temperature.Range = FinalSpeciesList$Temperature.Max - FinalSpeciesList$Temperature.Min
+
+#plot species' temperature ranges
+hist(FinalSpeciesList$Temperature.Range, xlab = "Temperature Ranges", 
+     ylab = "Number of Species", main = NA)
+
+#plot species' temperature ranges v. r-squared values
+pdf("TempRange_Rsquared_Plot.pdf")
+plot(FinalSpeciesList$Temperature.Range, FinalSpeciesList$R.squared, 
+     xlab = "Species Temperature Range", ylab = "Species R-squared Values")
+dev.off()
+
+#plot species' temperature ranges v. p-values
+pdf("TempRange_Pvalue_Plot.pdf")
+plot(FinalSpeciesList$Temperature.Range, FinalSpeciesList$Pvalue, 
+     xlab = "Species Temperature Range", ylab = "Species P-values")
+dev.off()
 
 
 
