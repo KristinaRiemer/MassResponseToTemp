@@ -210,7 +210,7 @@ _Many ideas/directions resulted from Gordon Conference 2014_
 
 5. Determine what propoprtion of each species' geographical range is captured by analysis. Can obtain geographical ranges from NatureServe. 
 
-6. Compare temperature range for each species to their r-squared and p values. 
+6. **FINISHED 9/25/14** Compare temperature range for each species to their r-squared and p values. 
 
 
 ### Longer term (i.e., not immediate) -- Expansion of project to include new data
