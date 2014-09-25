@@ -740,7 +740,25 @@ dev.off()
 pdf("TempRange_Pvalue_Plot.pdf")
 plot(FinalSpeciesList$Temperature.Range, FinalSpeciesList$Pvalue, 
      xlab = "Species Temperature Range", ylab = "Species P-values")
+abline(a = 0.05, b = 0, col = "red", lty = 2)
 dev.off()
+
+# explore temperature trends of dataset --------------------------------------
+
+#relationship between time and temperature regardless of latitude
+plot(FinalSpeciesDataset$Year.Collected, FinalSpeciesDataset$Extracted.Temperature)
+timeTemp_linreg = lm(FinalSpeciesDataset$Extracted.Temperature ~ FinalSpeciesDataset$Year.Collected)
+abline(timeTemp_linreg)
+
+#relationship between time and temperature including latitude
+
+
+
+#relationship between space and temperature regardless of year
+plot(FinalSpeciesDataset$Latitude, FinalSpeciesDataset$Extracted.Temperature)
+spaceTemp_linreg = lm(FinalSpeciesDataset$Extracted.Temperature ~ FinalSpeciesDataset$Latitude)
+abline(spaceTemp_linreg)
+
 
 
 
