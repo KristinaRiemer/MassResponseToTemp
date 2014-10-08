@@ -477,7 +477,7 @@ barplot(slope_counts$Percent.Slope.Type, xlab = NULL, ylab = "Percent of Species
 dev.off()
 
 
-####figure of r-squared values for each species----------------------------
+####r-squared values histogram-----------------------------------------
 #pulled out r-squared values in lin reg loop to linreg_rsquared
 
 #add r-squared to species list
@@ -489,6 +489,18 @@ pdf("RsquaredHistogram.pdf")
 hist(FinalSpeciesList$R.squared, xlab = "R-squared Value", ylab = "Number of Species",
      xlim = c(0,1), col = "blue3", main = NULL, ylim = c(0,20))
 dev.off()
+
+
+####p-values histogram-------------------------------------------------
+
+#create pdf of histogram of species' p-values
+pdf("PvaluesHistogram.pdf")
+#would like for first bar to be a different color than the others, but couldn't
+#quickly figure it out
+hist(FinalSpeciesList$Pvalue, xlab = "P-value", ylab = "Number of Species", 
+     breaks = 20, col = "blue3", main = NULL)
+dev.off()
+
 
 ###histogram of normalized slopes of each species---------------------
 
