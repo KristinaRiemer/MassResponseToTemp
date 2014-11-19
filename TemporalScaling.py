@@ -41,6 +41,11 @@ plt.title("baa_baa_baa")
 
 # Read in temperature data try 2
 from osgeo import gdal
+from osgeo.gdalconst import *
+gdal.AllRegister()
+driver = gdal.GetDriverByName("netCDF")
+# Error 4: doesn't recognize .nc file formats
+# Changed to full path name, same result
 temperature_data2 = gdal.Open("air.mon.mean.v301.nc")
 print temperature_data2.GetMetadata()
 
