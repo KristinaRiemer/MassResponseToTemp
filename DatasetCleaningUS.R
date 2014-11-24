@@ -1,37 +1,24 @@
 # Read in complete Smithsonian dataset
 individual_data_original = read.csv("all_species.csv")
 
+# Create subset of dataset to test functions
+test_data_subset = individual_data_original[1:30,]
+
 # Extract mass values for each individual
 library(stringr)
-masses = vector()
-
-extract_individuals_mass(dataset_column, ){
+extract_individuals_masses = function(dataset_column){
+  extracted_masses = vector()
   for (current_row in dataset_column){
-    mass_match = str_match(current_row, "Specimen Weight: ([0-9.]*)g")
-    mass = as.numeric(mass_match[2])
-    masses = append(masses, mass)
+    extracted_mass = str_match(dataset_column, "Specimen Weight: ([0-9.]*)g")
+    extracted_mass = as.numeric(extracted_mass[,2])
+    extracted_masses = append(extracted_masses, extracted_mass)
+    return(extracted_masses)
   }
 }
 
-
-#### extract mass values for each specimen and add to species file-------------
-library(stringr)
-masses = vector()
-# only change is from "species1$Measurements" to "all_species$Measurements"
-for (current_row in individual_data_original$Measurements){
-  mass_match = str_match(current_row, "Specimen Weight: ([0-9.]*)g")
-  mass = as.numeric(mass_match[2])
-  masses = append(masses, mass)
-}
-
-# #create file with masses for all specimens
-# write.csv(masses, "all_species_masses.csv")
-# all_species_masses = read.csv("all_species_masses.csv")
-# all_species_masses = all_species_masses[,2]
+# Test function with example dataset
+test_extracted_masses = extract_individuals_masses(test_data_subset$Measurements)
 
 #add masses to dataset file
 all_species = cbind(all_species, all_species_masses)
 
-# #remove specimens with no mass from dataset
-# all_species = all_species[complete.cases(all_species[,45]),]
-# #went from ~450,000 to ~80,000 specimens
