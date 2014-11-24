@@ -6,19 +6,30 @@ test_data_subset = individual_data_original[1:30,]
 
 # Extract mass values for each individual
 library(stringr)
-extract_individuals_masses = function(dataset_column){
+extract_individuals_masses = function(dataset, dataset_column){
+  # Extract mass values from individual measurements and place in new column
+  #
+  # Args: 
+  #   dataset: Dataset that contains measurements and will have new mass column
+  #   dataset_column: Column in dataset that contains measurements for each 
+  #   individuals, e.g., length
+  #
+  # Returns: 
+  #   Dataset with new column that holds individuals' mass values
   extracted_masses = vector()
   for (current_row in dataset_column){
     extracted_mass = str_match(dataset_column, "Specimen Weight: ([0-9.]*)g")
     extracted_mass = as.numeric(extracted_mass[,2])
     extracted_masses = append(extracted_masses, extracted_mass)
-    return(extracted_masses)
+    dataset = cbind(dataset, extracted_masses)
+    return(dataset)
   }
 }
 
 # Test function with example dataset
-test_extracted_masses = extract_individuals_masses(test_data_subset$Measurements)
+test_data_subset = extract_individuals_masses(test_data_subset, 
+                                              test_data_subset$Measurements)
 
-#add masses to dataset file
-all_species = cbind(all_species, all_species_masses)
-
+# Run entire dataset through functions
+individual_data_original = extract_individuals_masses(individual_data_original, 
+                                                      individual_data_original$Measurements)
