@@ -260,14 +260,16 @@ all_species_clean$stackID = all_species_clean$Year.Collected * 12 - 22793
 sum(all_species_clean$stackID > 1315)
 #103 specimens
 all_species_clean = subset(all_species_clean, all_species_clean$stackID < 1327)
+write.csv(all_species_clean, "all_species_for_temps.csv")
+all_species_for_temps = read.csv("all_species_for_temps.csv")
 
 #determine temperature for each specimen
 library(raster)
 
 extracted_temperatures = c()
-for (i in 1:nrow(all_species_clean)){
-  specimen.temperature = raster("air.mon.mean.v301.nc", band = all_species_clean$stackID[i])
-  specimen.coordinates = cbind(all_species_clean$Longitude[i] + 360, all_species_clean$Latitude[i])
+for (i in 1:nrow(all_species_for_temps)){
+  specimen.temperature = raster("air.mon.mean.v301.nc", band = all_species_for_temps$stackID[i])
+  specimen.coordinates = cbind(all_species_for_temps$Longitude[i] + 360, all_species_for_temps$Latitude[i])
   specimen.extracted.temperature = extract(specimen.temperature, specimen.coordinates)
   extracted_temperatures = append(extracted_temperatures, specimen.extracted.temperature)
 }
