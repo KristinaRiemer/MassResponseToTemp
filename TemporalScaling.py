@@ -37,37 +37,46 @@ def get_value_at_point(raster_file, coordinates, band):
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
 
-# Example to test function
-p = (276.73, 30.83)
-b = 1267
-print get_value_at_point("air.mon.mean.v301.nc", p, b)
+## Example to test function
+#p = (276.73, 30.83)
+#b = 1267
+#print get_value_at_point("air.mon.mean.v301.nc", p, b)
 
 # Lag A with first individual
+
+# Assign variables for first individual
 temp_file = "air.mon.mean.v301.nc"
 individual_1_coords = individual_data.iloc[0][["Longitude", "Latitude"]]
 # Need to add 360 to longitude so it's in correct format
 individual_1_coords["Longitude"] = individual_1_coords["Longitude"] + 360
 individual_1_band = individual_data.iloc[0]["stackID"]
-#individual_1_current_temp = get_value_at_point(temp_file, individual_1_coords, individual_1_band)
-#individual_1_lastyear_band = individual_1_band - 12
-#individual_1_lastyear_temp = get_value_at_point(temp_file, individual_1_coords, individual_1_lastyear_band)
-#individual_1_yearbefore_band = individual_1_lastyear_band - 12
-#individual_1_yearbefore_temp = get_value_at_point(temp_file, individual_1_coords, individual_1_yearbefore_band)
 
-
+# Get all July stackID values for the first individual
 all_july_stackIDs = []
 def get_prev_julys(july_stackID):
     while july_stackID > 0:
         all_july_stackIDs.append(july_stackID)
         july_stackID -= 12
-
 get_prev_julys(individual_1_band)
 
+# Use temp extraction function to get all July temps for the first individual
 all_july_temps_individual1 = []
-for current_stackID in all_july_stackIDs:
-    temp = get_value_at_point(temp_file, individual_1_coords, current_stackID)
-    all_july_temps_individual1.append(temp)
-    
+#for current_stackID in all_july_stackIDs:
+    #temp = get_value_at_point(temp_file, individual_1_coords, current_stackID)
+    #all_july_temps_individual1.append(temp)
+
+def get_july_temps(all_years, file_name, coords):
+    for current_year in all_years: 
+        each_temp = get_value_at_point(file_name, coords, current_year)
+        all_july_temps_individual1.append(each_temp)
+        return all_july_temps_individual1
+
+get_july_temps(all_july_stackIDs, temp_file, individual_1_coords)
+
+## Put stackIDs and temps for first individual together in Pandas dataframe
+#import numpy as np
+#individual1 = np.column_stack((all_july_stackIDs, all_july_temps_individual1))
+#individual1 = pd.DataFrame(individual1)
 
 
 ## Useful GDAL commands
