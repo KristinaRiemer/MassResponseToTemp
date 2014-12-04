@@ -37,58 +37,44 @@ def get_value_at_point(raster_file, coordinates, band):
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
 
-## Example to test function
-#p = (276.73, 30.83)
-#b = 1267
-#print get_value_at_point("air.mon.mean.v301.nc", p, b)
 
-# Lag A with first individual
+# For each individual, get temperatures for each July starting with the initial, 
+# i.e., when collected, year and every previous year until 1900. 
 
-# Assign variables for first individual
+# Getting temperature and individuals datasets ready
 temp_file = "air.mon.mean.v301.nc"
-individual_1_coords = individual_data.iloc[0][["Longitude", "Latitude"]]
 # Need to add 360 to longitude so it's in correct format
-individual_1_coords["Longitude"] = individual_1_coords["Longitude"] + 360
-individual_1_band = individual_data.iloc[0]["stackID"]
+individual_data["Longitude.Transformed"] = individual_data["Longitude"] + 360
+# Create subset of individuals dataset to test function for multiple individuals
+subset_individual_data = individual_data.iloc[0:10]
 
-# Get all July stackID values for the first individual
-all_july_stackIDs = []
+# Get all July stackID values for an individual
 def get_prev_julys(july_stackID):
+    all_july_stackIDs = []
     while july_stackID > 0:
         all_july_stackIDs.append(july_stackID)
         july_stackID -= 12
-get_prev_julys(individual_1_band)
+    return all_july_stackIDs
 
-# Use temp extraction function to get all July temps for the first individual
-all_july_temps_individual1 = []
-#for current_stackID in all_july_stackIDs:
-    #temp = get_value_at_point(temp_file, individual_1_coords, current_stackID)
-    #all_july_temps_individual1.append(temp)
+# Use for loop to run each individual's stackID through function
+# Each list is for one individual and contains all July years
+subset_individuals = []
+for individual_year in subset_individual_data["stackID"]:
+    each_individual = get_prev_julys(individual_year)
+    subset_individuals.append(each_individual)
 
-def get_july_temps(all_years, file_name, coords):
-    for current_year in all_years: 
-        each_temp = get_value_at_point(file_name, coords, current_year)
-        all_july_temps_individual1.append(each_temp)
-        return all_july_temps_individual1
+# Use temp extraction function to get all July temps for an individual
+def get_temps(years, file_name, coords):
+    all_temps = []    
+    for year in years: 
+        each_temp = get_value_at_point(file_name, coords, year)
+        all_temps.append(each_temp)
+    return all_temps
 
-get_july_temps(all_july_stackIDs, temp_file, individual_1_coords)
+# Use for loop to run each individual's July stackIDS to get temps
+subset_temps = []
+for i in range(len(subset_individual_data)):
+    all_temps = get_temps(subset_individuals[i], temp_file, 
+                          individual_data.iloc[i][["Longitude.Transformed", "Latitude"]])
+    subset_temps.append(all_temps)
 
-## Put stackIDs and temps for first individual together in Pandas dataframe
-#import numpy as np
-#individual1 = np.column_stack((all_july_stackIDs, all_july_temps_individual1))
-#individual1 = pd.DataFrame(individual1)
-
-
-## Useful GDAL commands
-#temp_metadata = temperature_data.GetMetadata()
-#cols = temperature_data.RasterXSize
-#rows = temperature_data.RasterYSize
-#bands = temperature_data.RasterCount
-
-## Get info about file
-#temperature_data_geotransform = temperature_data.GetGeoTransform()
-#originX = temperature_data_geotransform[0]    #top left x
-#originY = temperature_data_geotransform[3]    #top left y
-#pixelWidth = temperature_data_geotransform[1]    #west-east resolution
-#pixelHeight = temperature_data_geotransform[5]    #north-south resolution
-#bandtype = gdal.GetDataTypeName(band.DataType)
