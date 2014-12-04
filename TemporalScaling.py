@@ -1,25 +1,49 @@
 from __future__ import division
 
-# Read in individual and species data
+# Read in individual data and create subset to test functions
 import pandas as pd
 individual_data = pd.read_csv("FinalSpeciesDataset.csv")
-species_data = pd.read_csv("FinalSpeciesList.csv")
+individual_data["Longitude.Transformed"] = individual_data["Longitude"] + 360
+subset_individual_data = individual_data.iloc[0:10]
 
-# Read in temperature data
+# Packages for reading in temperature data
 # http://www.esrl.noaa.gov/psd/data/gridded/data.UDel_AirT_Precip.html
 from osgeo import gdal
 from osgeo.gdalconst import *
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
 
-# Function to extract temperature at specific longitude, latitude, and month
-def get_value_at_point(raster_file, coordinates, band):
-    """Determine value at chosen coordinates and band of raster
+# Temperature dataset
+temp_file = "air.mon.mean.v301.nc"
+
+def get_prev_years(stackID):
+    """Get stackID values for same months in all previous years until 1900
+    
+    Args:
+        stackID: initial/current stackID value
+    
+    Returns:
+        List containing initial/current stackID value and previous years' stackIDs
+    """
+    all_stackIDs = []
+    while stackID > 0:
+        all_stackIDs.append(stackID)
+        stackID -= 12
+    return all_stackIDs
+
+# Get all July stackID values for each individual in subset dataset
+subset_stackIDs = []
+for individual_stackID in subset_individual_data["stackID"]:
+    individual_stackIDs = get_prev_years(individual_stackID)
+    subset_stackIDs.append(individual_stackIDs)
+
+def get_temp_at_point(raster_file, coordinates, band):
+    """Determine temperature value at chosen coordinates and band of raster
     
     Args:
         raster_file: file name of raster
-        coordinates: chosen coordinates, should be longitude then latitude
-        band: chosen band
+        coordinates: chosen coordinates, order is longitude and latitude
+        band: chosen band (i.e., month)
     
     Returns: 
         Unpacked temperature at coordinates in band
@@ -37,44 +61,35 @@ def get_value_at_point(raster_file, coordinates, band):
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
 
+def get_individuals_temps(years_list, file_name, coordinates):
+    """Get all temperature values for corresponding stackIDs for an individual
+    
+    Args: 
+        years_list: list of stackID values (i.e., months)
+        file_name: name of raster file
+        coordinates: longitude and latitude of individual
+    
+    Returns: 
+        List containing all temperatures for individual
+    """
+    all_individuals_temps = []    
+    for current_year in years_list: 
+        each_temp = get_temp_at_point(file_name, coordinates, current_year)
+        all_individuals_temps.append(each_temp)
+    return all_individuals_temps
 
-# For each individual, get temperatures for each July starting with the initial, 
-# i.e., when collected, year and every previous year until 1900. 
-
-# Getting temperature and individuals datasets ready
-temp_file = "air.mon.mean.v301.nc"
-# Need to add 360 to longitude so it's in correct format
-individual_data["Longitude.Transformed"] = individual_data["Longitude"] + 360
-# Create subset of individuals dataset to test function for multiple individuals
-subset_individual_data = individual_data.iloc[0:10]
-
-# Get all July stackID values for an individual
-def get_prev_julys(july_stackID):
-    all_july_stackIDs = []
-    while july_stackID > 0:
-        all_july_stackIDs.append(july_stackID)
-        july_stackID -= 12
-    return all_july_stackIDs
-
-# Use for loop to run each individual's stackID through function
-# Each list is for one individual and contains all July years
-subset_individuals = []
-for individual_year in subset_individual_data["stackID"]:
-    each_individual = get_prev_julys(individual_year)
-    subset_individuals.append(each_individual)
-
-# Use temp extraction function to get all July temps for an individual
-def get_temps(years, file_name, coords):
-    all_temps = []    
-    for year in years: 
-        each_temp = get_value_at_point(file_name, coords, year)
-        all_temps.append(each_temp)
-    return all_temps
-
-# Use for loop to run each individual's July stackIDS to get temps
+# Get all temps for corresponding July stackIDs for each individual in subset dataset
 subset_temps = []
 for i in range(len(subset_individual_data)):
-    all_temps = get_temps(subset_individuals[i], temp_file, 
+    subset_individuals_temps = get_individuals_temps(subset_stackIDs[i], temp_file, 
                           individual_data.iloc[i][["Longitude.Transformed", "Latitude"]])
-    subset_temps.append(all_temps)
+    subset_temps.append(subset_individuals_temps)
 
+# Create final dataset
+subset_temps = pd.DataFrame(subset_temps)
+year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass", 
+                                "Year.Collected"]], subset_temps])
+
+# Can't rename temperature columns or concatenate data with columns in desired order
+#subset_temps = subset_temps.rename(columns=lambda x: str(x))
+#subset_temps = subset_temps.rename(columns=lambda x: x.replace("", "Past.Year." + ""))
