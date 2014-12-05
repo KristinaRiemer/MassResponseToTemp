@@ -90,6 +90,9 @@ subset_temps = pd.DataFrame(subset_temps)
 year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass", 
                                 "Year.Collected"]], subset_temps])
 
-# Can't rename temperature columns or concatenate data with columns in desired order
+## Can't rename temperature columns or concatenate data with columns in desired order
 #subset_temps = subset_temps.rename(columns=lambda x: str(x))
-#subset_temps = subset_temps.rename(columns=lambda x: x.replace("", "Past.Year." + ""))
+#subset_temps2 = subset_temps.rename(columns=lambda x: x.replace("", "Past.Year."))
+#subset_temps3 = subset_temps.rename(columns=lambda x: x.replace("^[0-9]+$" , "^Past.Year.[0-9]+$", regex=True))
+
+
