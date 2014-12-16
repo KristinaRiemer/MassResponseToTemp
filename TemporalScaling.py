@@ -90,13 +90,15 @@ for i in range(len(subset_individual_data)):
 column_names = ["Past_Year_{}" .format(year) for year in range(41)]
 subset_temps = pd.DataFrame(subset_temps, columns=column_names)
 year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass", 
-                                "Year.Collected"]], subset_temps])
+                                "Year.Collected"]], subset_temps], axis=1)
 
 
 #Plotting: each scatterplot is all individuals of same species, with temperature on 
 # x-axis and mass on y-axis, and for same relative year
 
-# How to slice dataset according to certain criteria? Look at pandas reading
+# Need to subset unique species by row and then unique past years by column
 for unique_species in year_lag_july_subset["Species.Genus"].unique():
-    #print unique_species
-    unique_species_data = year_lag_july_subset.
+    unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
+    for current_past_year in column_names:
+        unique_year_data = unique_species_data[unique_species_data.columns == current_past_year]
+
