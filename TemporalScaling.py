@@ -86,13 +86,17 @@ for i in range(len(subset_individual_data)):
     subset_temps.append(subset_individuals_temps)
 
 # Create final dataset
-subset_temps = pd.DataFrame(subset_temps)
+# Need to change range to be automated for greatest length
+column_names = ["Past_Year_{}" .format(year) for year in range(41)]
+subset_temps = pd.DataFrame(subset_temps, columns=column_names)
 year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass", 
                                 "Year.Collected"]], subset_temps])
 
-## Can't rename temperature columns or concatenate data with columns in desired order
-#subset_temps = subset_temps.rename(columns=lambda x: str(x))
-#subset_temps2 = subset_temps.rename(columns=lambda x: x.replace("", "Past.Year."))
-#subset_temps3 = subset_temps.rename(columns=lambda x: x.replace("^[0-9]+$" , "^Past.Year.[0-9]+$", regex=True))
 
+#Plotting: each scatterplot is all individuals of same species, with temperature on 
+# x-axis and mass on y-axis, and for same relative year
 
+# How to slice dataset according to certain criteria? Look at pandas reading
+for unique_species in year_lag_july_subset["Species.Genus"].unique():
+    #print unique_species
+    unique_species_data = year_lag_july_subset.
