@@ -2,7 +2,7 @@
 individual_data_original = read.csv("all_species.csv")
 
 # Create subset of dataset to test functions
-test_data_subset = individual_data_original[1:30,]
+test_data_subset = individual_data_original[1:250,]
 
 # Extract mass values for each individual
 library(stringr)
@@ -58,5 +58,28 @@ extract_individuals_genus_species = function(dataset, dataset_column){
 }
 
 # Test function with example dataset
-test_data_subset = extract_individuals_genus_species(test_data_subset, test_data_subset$Current.Identification)
+test_data_subset = extract_individuals_genus_species(test_data_subset, 
+                                                     test_data_subset$Current.Identification)
+
+
+# Does this really need to be a function? I'm only doing it once
+
+# Coordinate lookup table
+# http://www.census.gov/geo/maps-data/data/gazetteer2013.html
+county_to_coord_data = read.table("CensusFile.txt", sep="\t", fileEncoding="latin1", 
+                                  fill=TRUE, stringsAsFactors=FALSE, header=TRUE)
+county_to_coord_data$STATE_NAME = state.name[match(county_to_coord_data$USPS, state.abb)]
+county_to_coord_data = county_to_coord_data[!is.na(county_to_coord_data$STATE_NAME),]
+names(county_to_coord_data)[10] = "INTPTLONG"
+
+get_coords_from_counties = function(data, lookup, data_state, data_county, lookup_state, lookup_county){
+  dataset_info = interaction(data_state, data_county)
+  lookup_info = interaction(lookup_state, lookup_county)
+  dataset_coords = lookup[match(dataset_info, lookup_info),]
+}
+
+testing = get_coords_from_counties(test_data_subset, county_to_coord_data, test_data_subset$Province.State, test_data_subset$District.County, county_to_coord_data$STATE_NAME, county_to_coord_data$NAME)
+test_data_subset$lat = testing$INTPTLAT
+test_data_subset$long = testing$INTPTLONG
+
 
