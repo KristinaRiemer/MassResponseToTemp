@@ -1,10 +1,22 @@
+#-----DATASETS------
+
 # Read in complete Smithsonian dataset
 individual_data_original = read.csv("all_species.csv")
 
 # Create subset of dataset to test functions
 test_data_subset = individual_data_original[1:250,]
 
-# Extract mass values for each individual
+# Read in coordinate lookup table
+# http://www.census.gov/geo/maps-data/data/gazetteer2013.html
+county_to_coord_data = read.table("CensusFile.txt", sep="\t", fileEncoding="latin1", 
+                                  fill=TRUE, stringsAsFactors=FALSE, header=TRUE)
+county_to_coord_data$STATE_NAME = state.name[match(county_to_coord_data$USPS, state.abb)]
+county_to_coord_data = county_to_coord_data[!is.na(county_to_coord_data$STATE_NAME),]
+names(county_to_coord_data)[10] = "INTPTLONG"
+
+
+#-----FUNCTIONS------
+
 library(stringr)
 extract_individuals_masses = function(dataset, dataset_column){
   # Extract mass values from individual measurements and place in new column
@@ -26,16 +38,7 @@ extract_individuals_masses = function(dataset, dataset_column){
   }
 }
 
-# Test function with example dataset
-test_data_subset = extract_individuals_masses(test_data_subset, 
-                                              test_data_subset$Measurements)
 
-# Run entire dataset through functions
-individual_data_original = extract_individuals_masses(individual_data_original, 
-                                                      individual_data_original$Measurements)
-
-
-# Extract genus and species for each individual
 extract_individuals_genus_species = function(dataset, dataset_column){
   # Get species and genus from current identification for each individual
   #
@@ -57,29 +60,56 @@ extract_individuals_genus_species = function(dataset, dataset_column){
   }
 }
 
-# Test function with example dataset
+# Does this really need to be a function? I'm only doing it once
+# Tried to generalize enough that it could be used in other cases
+get_lookup_matches = function(lookup, data_col1, data_col2, lookup_col1, lookup_col2){
+  # Get info from lookup for two-column matches between lookup and data
+  #
+  # Args: 
+  #   lookup: Dataframe that contains desired information
+  #   data_col1: First column from dataset to match
+  #   data_col2: Second column from dataset to match
+  #   lookup_col1: First column from lookup to match to data_col1
+  #   lookup_col2: Second column from lookup to match to data_col2
+  #
+  # Returns: 
+  #   Lookup information that matches dataset columns
+  dataset_info = interaction(data_col1, data_col2)
+  lookup_info = interaction(lookup_col1, lookup_col2)
+  lookup_matches = lookup[match(dataset_info, lookup_info),]
+}
+
+
+#-----TESTING FUNCTIONS------
+
+# Extract mass values for each individual in test dataset
+test_data_subset = extract_individuals_masses(test_data_subset, 
+                                              test_data_subset$Measurements)
+
+# Extract genus and species for each individual in test dataset
 test_data_subset = extract_individuals_genus_species(test_data_subset, 
                                                      test_data_subset$Current.Identification)
 
-
-# Does this really need to be a function? I'm only doing it once
-
-# Coordinate lookup table
-# http://www.census.gov/geo/maps-data/data/gazetteer2013.html
-county_to_coord_data = read.table("CensusFile.txt", sep="\t", fileEncoding="latin1", 
-                                  fill=TRUE, stringsAsFactors=FALSE, header=TRUE)
-county_to_coord_data$STATE_NAME = state.name[match(county_to_coord_data$USPS, state.abb)]
-county_to_coord_data = county_to_coord_data[!is.na(county_to_coord_data$STATE_NAME),]
-names(county_to_coord_data)[10] = "INTPTLONG"
-
-get_coords_from_counties = function(data, lookup, data_state, data_county, lookup_state, lookup_county){
-  dataset_info = interaction(data_state, data_county)
-  lookup_info = interaction(lookup_state, lookup_county)
-  dataset_coords = lookup[match(dataset_info, lookup_info),]
-}
-
-testing = get_coords_from_counties(test_data_subset, county_to_coord_data, test_data_subset$Province.State, test_data_subset$District.County, county_to_coord_data$STATE_NAME, county_to_coord_data$NAME)
+# Get coordinates for individuals in test dataset that have county-level info
+testing = get_lookup_matches(county_to_coord_data, test_data_subset$Province.State, 
+                                   test_data_subset$District.County, county_to_coord_data$STATE_NAME, 
+                                   county_to_coord_data$NAME)
 test_data_subset$lat = testing$INTPTLAT
 test_data_subset$long = testing$INTPTLONG
+
+
+
+
+# Purpose: combine two lat cols into one, and two long cols into one, and limit
+# to US
+# lat range: 24.52 - 49.38
+# long range: 66.95 - 124.77
+merge_two_cols = function(dataset, col1, col2){
+  both_cols = cbind(col1, col2)
+  combine_cols = rowMeans(both_cols, na.rm = TRUE)
+}
+
+test_data_subset$lat_all = merge_two_cols(test_data_subset, test_data_subset$Centroid.Latitude, test_data_subset$lat)
+test_data_subset$long_all = merge_two_cols(test_data_subset, test_data_subset$Centroid.Longitude, test_data_subset$long)
 
 
