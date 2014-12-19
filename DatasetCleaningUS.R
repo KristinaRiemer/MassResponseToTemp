@@ -38,7 +38,6 @@ extract_individuals_masses = function(dataset, dataset_column){
   }
 }
 
-
 extract_individuals_genus_species = function(dataset, dataset_column){
   # Get species and genus from current identification for each individual
   #
@@ -79,6 +78,33 @@ get_lookup_matches = function(lookup, data_col1, data_col2, lookup_col1, lookup_
   lookup_matches = lookup[match(dataset_info, lookup_info),]
 }
 
+merge_two_cols = function(col1, col2){
+  # Combine two columns into a single new column
+  # 
+  # Args: 
+  #   col1: First column to be combined
+  #   col2: Second column to be combined
+  #
+  # Returns:
+  #   New column containing values from both chosen columns
+  both_cols = cbind(col1, col2)
+  combine_cols = rowMeans(both_cols, na.rm = TRUE)
+}
+
+remove_values = function(dataset_col, lower_limit, upper_limit){
+  # Remove rows that contain values outside of chosen range from column containing NAs
+  #
+  # Args:
+  #   dataset_col: Chosen column
+  #   lower_limit: Bottom end of chosen range
+  #   upper_limit: Top end of chosen range
+  #
+  # Returns:
+  #   Column with rows that had values outside of chosen range changed to NA
+  dataset_col = ifelse(!is.na(dataset_col) & (dataset_col < lower_limit | dataset_col > 
+                                                upper_limit), NA, dataset_col)
+}
+
 
 #-----TESTING FUNCTIONS------
 
@@ -97,19 +123,14 @@ testing = get_lookup_matches(county_to_coord_data, test_data_subset$Province.Sta
 test_data_subset$lat = testing$INTPTLAT
 test_data_subset$long = testing$INTPTLONG
 
-
-
-
-# Purpose: combine two lat cols into one, and two long cols into one, and limit
-# to US
+# Put all latitudes and longitudes in single column, remove coordinates outside of US
 # lat range: 24.52 - 49.38
-# long range: 66.95 - 124.77
-merge_two_cols = function(dataset, col1, col2){
-  both_cols = cbind(col1, col2)
-  combine_cols = rowMeans(both_cols, na.rm = TRUE)
-}
+# long range: -66.95 - -124.77
+test_data_subset$lat_all = merge_two_cols(test_data_subset$Centroid.Latitude, test_data_subset$lat)
+test_data_subset$long_all = merge_two_cols(test_data_subset$Centroid.Longitude, test_data_subset$long)
 
-test_data_subset$lat_all = merge_two_cols(test_data_subset, test_data_subset$Centroid.Latitude, test_data_subset$lat)
-test_data_subset$long_all = merge_two_cols(test_data_subset, test_data_subset$Centroid.Longitude, test_data_subset$long)
+test_data_subset$lat_all = remove_values(test_data_subset$lat_all, 24.52, 49.38)
+test_data_subset$long_all = remove_values(test_data_subset$long_all, -124.77, -66.95)
+
 
 
