@@ -105,6 +105,19 @@ remove_values = function(dataset_col, lower_limit, upper_limit){
                                                 upper_limit), NA, dataset_col)
 }
 
+get_stackID = function(dataset_col){
+  # Extract year from date column and turn year into format correct for raster
+  #
+  # Args:
+  #   dataset_col: Column containing full date
+  #
+  # Returns:
+  #   Year in raster format
+  years = substr(dataset_col, 1, 4)
+  years = as.numeric(years)
+  stackID = years * 12 - 22793
+}
+
 
 #-----TESTING FUNCTIONS------
 
@@ -126,11 +139,14 @@ test_data_subset$long = testing$INTPTLONG
 # Put all latitudes and longitudes in single column, remove coordinates outside of US
 # lat range: 24.52 - 49.38
 # long range: -66.95 - -124.77
-test_data_subset$lat_all = merge_two_cols(test_data_subset$Centroid.Latitude, test_data_subset$lat)
-test_data_subset$long_all = merge_two_cols(test_data_subset$Centroid.Longitude, test_data_subset$long)
+test_data_subset$lat_all = merge_two_cols(test_data_subset$Centroid.Latitude, 
+                                          test_data_subset$lat)
+test_data_subset$long_all = merge_two_cols(test_data_subset$Centroid.Longitude, 
+                                           test_data_subset$long)
 
 test_data_subset$lat_all = remove_values(test_data_subset$lat_all, 24.52, 49.38)
 test_data_subset$long_all = remove_values(test_data_subset$long_all, -124.77, -66.95)
 
-
+# Get year in proper format for using temperature raster
+test_data_subset$stackID = get_stackID(test_data_subset$Date.Collected)
 
