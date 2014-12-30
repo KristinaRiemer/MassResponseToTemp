@@ -96,9 +96,21 @@ year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass
 #Plotting: each scatterplot is all individuals of same species, with temperature on 
 # x-axis and mass on y-axis, and for same relative year
 
-# Need to subset unique species by row and then unique past years by column
+# Create subset unique species by row and then unique past years by column
+# Need to get masses along with each temperature subset
+# Attempt with append, close but aren't concatenated columns
 for unique_species in year_lag_july_subset["Species.Genus"].unique():
     unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
     for current_past_year in column_names:
-        unique_year_data = unique_species_data[unique_species_data.columns == current_past_year]
+        unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
+        unique_year_mass = []
+        unique_year_mass.append([unique_species_data["Mass"], unique_year_data])
+
+# Attempt with concat
+for unique_species in year_lag_july_subset["Species.Genus"].unique():
+    unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
+    for current_past_year in column_names:
+        unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
+        unique_year_data = pd.DataFrame(unique_year_data)
+        unique_year_data = unique_year_data.concat(unique_species_data["Mass"])
 
