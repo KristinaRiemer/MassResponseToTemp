@@ -117,11 +117,24 @@ for unique_species in year_lag_july_subset["Species.Genus"].unique():
 # Linreg walkthrough: http://www.datarobot.com/blog/ordinary-least-squares-in-python/
 # Doing example with last species in subset for past year 0
 
-# temp
-X = [17.1, 25.2, 25.2, 17.7, 17.9]
-# mass
-Y = [29.0, 24.4, 26.4, 21.0, 25.5]
+import statsmodels.api as sm
+
+example_data = [[17.1, 29.0], [25.2, 24.4], [25.2, 26.4], [17.7, 21.0], [17.9, 25.5]]
+example_data = pd.DataFrame(example_data)
+example_data.columns = ["temp", "mass"]
+
+y = example_data.mass
+X = example_data.temp
+X = sm.add_constant(X)
+
+est = sm.OLS(y, X)
+est = est.fit()
+est.summary()
 
 
-plt.plot(X, Y, "bo")
+
+
+plt.plot(X, y, "bo")
 plt.show()
+
+
