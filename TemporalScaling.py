@@ -97,20 +97,31 @@ year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass
 # x-axis and mass on y-axis, and for same relative year
 
 # Create subset unique species by row and then unique past years by column
-# Need to get masses along with each temperature subset
-# Attempt with append, close but aren't concatenated columns
+# Get masses along with each temperature subset
+# Create plot for each mass/temp dataframe, for all past years
+
+# Just plots with sufficient points, include species name and past year on plot
+# Then add linear regression to plot and calculate p-value for lin reg line
+
+#all_of_them = []
 for unique_species in year_lag_july_subset["Species.Genus"].unique():
     unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
     for current_past_year in column_names:
         unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
-        unique_year_mass = []
-        unique_year_mass.append([unique_species_data["Mass"], unique_year_data])
+        unique_year_mass = pd.concat([unique_species_data["Mass"], unique_year_data], axis=1)
+        #all_of_them.append(unique_year_mass)
+        plt.figure()
+        plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
+        plt.show()
 
-# Attempt with concat
-for unique_species in year_lag_july_subset["Species.Genus"].unique():
-    unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
-    for current_past_year in column_names:
-        unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
-        unique_year_data = pd.DataFrame(unique_year_data)
-        unique_year_data = unique_year_data.concat(unique_species_data["Mass"])
+# Linreg walkthrough: http://www.datarobot.com/blog/ordinary-least-squares-in-python/
+# Doing example with last species in subset for past year 0
 
+# temp
+X = [17.1, 25.2, 25.2, 17.7, 17.9]
+# mass
+Y = [29.0, 24.4, 26.4, 21.0, 25.5]
+
+
+plt.plot(X, Y, "bo")
+plt.show()
