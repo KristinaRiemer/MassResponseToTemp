@@ -170,7 +170,36 @@ for(i in 1:nrow(test_data_subset)){
   temp = append(temp, individual_temp)
 }
 
+temp = c()
+get_individual_temps_stripped = function(dataset){
+  for(i in 1:nrow(dataset)){
+    if((test_data_subset$stackID[i] > 1) && (test_data_subset$stackID[i] < 1332) && (!is.na(test_data_subset$stackID[i]))){
+      individual_year = raster("air.mon.mean.v301.nc", band = test_data_subset$stackID[i])
+      individual_coords = cbind(test_data_subset$long_all[i] + 360, test_data_subset$lat_all[i])
+      individual_temp = extract(individual_year, individual_coords)
+    } else {
+      individual_temp = NA
+    }
+    temp = append(temp, individual_temp)
+    return(temp)
+  }
+}
 
+testing_stripped_fx = get_individual_temps_stripped(test_data_subset)
 
+temp = c()
+get_individual_temps = function(dataset, year_col, low_limit, up_limit, lat_col, long_col, raster_data){
+  for(i in 1:nrow(dataset)){
+    if((year_col[i] > low_limit) && (year_col[i] < up_limit) && (!is.na(year_col[i]))){
+      individual_year = raster(raster_data, band = year_col[i])
+      individual_coords = cbind(long_col[i] + 360, lat_col[i])
+      individual_temp = extract(individual_year, individual_coords)
+    } else {
+      individual_temp = NA
+    }
+    temp = append(temp, individual_temp)
+  }
+}
 
+testing_fx = get_individual_temps(test_data_subset, test_data_subset$stackID, 1, 1332, test_data_subset$lat_all, test_data_subset$long_all, "air.mon.mean.v301.nc")
 
