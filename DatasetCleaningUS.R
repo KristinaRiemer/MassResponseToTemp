@@ -119,6 +119,11 @@ get_stackID = function(dataset_col){
 }
 
 
+
+#determine temperature for each specimen
+library(raster)
+
+
 #-----TESTING FUNCTIONS------
 
 # Extract mass values for each individual in test dataset
@@ -149,4 +154,23 @@ test_data_subset$long_all = remove_values(test_data_subset$long_all, -124.77, -6
 
 # Get year in proper format for using temperature raster
 test_data_subset$stackID = get_stackID(test_data_subset$Date.Collected)
+
+
+
+# Temp extraction loop, need to refactor
+temp = c()
+for(i in 1:nrow(test_data_subset)){
+  if((test_data_subset$stackID[i] > 1) && (test_data_subset$stackID[i] < 1332) && (!is.na(test_data_subset$stackID[i]))){
+    individual_year = raster("air.mon.mean.v301.nc", band = test_data_subset$stackID[i])
+    individual_coords = cbind(test_data_subset$long_all[i] + 360, test_data_subset$lat_all[i])
+    individual_temp = extract(individual_year, individual_coords)
+  } else {
+    individual_temp = NA
+  }
+  temp = append(temp, individual_temp)
+}
+
+
+
+
 
