@@ -103,6 +103,8 @@ year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass
 # Just plots with sufficient points, include species name and past year on plot
 # Then add linear regression to plot and calculate p-value for lin reg line
 
+import matplotlib.pyplot as plt
+
 #all_of_them = []
 for unique_species in year_lag_july_subset["Species.Genus"].unique():
     unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
@@ -114,27 +116,39 @@ for unique_species in year_lag_july_subset["Species.Genus"].unique():
         plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
         plt.show()
 
+
+for unique_species in year_lag_july_subset["Species.Genus"].unique():
+    unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
+    for current_past_year in column_names:
+        unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
+        unique_year_mass = pd.concat([unique_species_data["Mass"], unique_year_data], axis=1)
+        # the notnull function isn't working for NaN values?
+        if pd.notnull(unique_year_mass.iloc[:,1]).any():
+            plt.figure()
+            plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
+            plt.show()
+
+
 # Linreg walkthrough: http://www.datarobot.com/blog/ordinary-least-squares-in-python/
 # Doing example with last species in subset for past year 0
 
 import statsmodels.api as sm
+sm.regression.linear_model.OLS(unique_year_mass["Mass"], unique_year_mass["Past_Year_40"])
+
 
 example_data = [[17.1, 29.0], [25.2, 24.4], [25.2, 26.4], [17.7, 21.0], [17.9, 25.5]]
 example_data = pd.DataFrame(example_data)
 example_data.columns = ["temp", "mass"]
 
-y = example_data.mass
-X = example_data.temp
-X = sm.add_constant(X)
+testing_linreg = sm.regression.linear_model.OLS(example_data["mass"], example_data["temp"])
+results = testing_linreg.fit()
+print(results.summary())
+print(results.rsquared)
+print(results.pvalues)
 
-est = sm.OLS(y, X)
-est = est.fit()
-est.summary()
+# See dir(results) for all possible parts of lin reg summary
 
-
-
-
-plt.plot(X, y, "bo")
+plt.plot(example_data["temp"], example_data["mass"], "bo")
 plt.show()
 
 
