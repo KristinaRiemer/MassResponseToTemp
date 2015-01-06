@@ -104,6 +104,7 @@ year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass
 # Then add linear regression to plot and calculate p-value for lin reg line
 
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 #all_of_them = []
 for unique_species in year_lag_july_subset["Species.Genus"].unique():
@@ -112,22 +113,45 @@ for unique_species in year_lag_july_subset["Species.Genus"].unique():
         unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
         unique_year_mass = pd.concat([unique_species_data["Mass"], unique_year_data], axis=1)
         #all_of_them.append(unique_year_mass)
-        plt.figure()
-        plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
-        plt.show()
+        with PdfPages("all_figs.pdf") as pdf:
+            plt.figure()
+            plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
+            plt.savefig()
+plt.close()
+        #plt.figure()
+        #plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
+        #plt.show()
 
-
+# PdfPages not working because need Latex?
+#all_of_them = []
+pp = PdfPages("all_figs.pdf")
 for unique_species in year_lag_july_subset["Species.Genus"].unique():
     unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
     for current_past_year in column_names:
         unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
         unique_year_mass = pd.concat([unique_species_data["Mass"], unique_year_data], axis=1)
-        # the notnull function isn't working for NaN values?
-        if pd.notnull(unique_year_mass.iloc[:,1]).any():
+        #all_of_them.append(unique_year_mass)
+        plt.figure()
+        plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
+        plt.savefig(pp, format="pdf")
+        pp.close()
+
+
+# limiting figures to those with complete datasets (i.e., no nulls)
+import numpy as np
+for unique_species in year_lag_july_subset["Species.Genus"].unique():
+    unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
+    for current_past_year in column_names:
+        unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
+        unique_year_mass = pd.concat([unique_species_data["Mass"], unique_year_data], axis=1)
+        if np.all(pd.notnull(unique_year_mass.iloc[:,1])):
             plt.figure()
             plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
             plt.show()
 
+
+# how to return false for temp columns that contain null values
+np.all(pd.notnull(col))
 
 # Linreg walkthrough: http://www.datarobot.com/blog/ordinary-least-squares-in-python/
 # Doing example with last species in subset for past year 0
@@ -150,5 +174,47 @@ print(results.pvalues)
 
 plt.plot(example_data["temp"], example_data["mass"], "bo")
 plt.show()
+
+
+# pdf example attempt 1
+import datetime
+import numpy as np
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
+
+with PdfPages('multipage_pdf.pdf') as pdf:
+    plt.figure(figsize=(3, 3))
+    plt.plot(range(7), [3, 1, 4, 1, 5, 9, 2], 'r-o')
+    plt.title('Page One')
+    pdf.savefig()  # saves the current figure into a pdf page
+    plt.close()
+
+    plt.rc('text', usetex=True)
+    plt.figure(figsize=(8, 6))
+    x = np.arange(0, 5, 0.1)
+    plt.plot(x, np.sin(x), 'b-')
+    plt.title('Page Two')
+    pdf.savefig()
+    plt.close()
+
+    plt.rc('text', usetex=False)
+    fig = plt.figure(figsize=(4, 5))
+    plt.plot(x, x*x, 'ko')
+    plt.title('Page Three')
+    pdf.savefig(fig)  # or you can pass a Figure object to pdf.savefig
+    plt.close()
+
+# pdf example attempt 2
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+
+ex_fig = plt.plot(range(5), range(5), "bo")
+ex_fig2 = plt.plot(range(4), range(4), "bo")
+
+pp = PdfPages("foo.pdf")
+pp.savefig(ex_fig)
+pp.savefig(ex_fig2)
+pp.close()
+
 
 
