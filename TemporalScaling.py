@@ -96,44 +96,33 @@ year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass
 
 # Subset dataset by unique species with unique past years, select on those subsets
 # with all temps (i.e., no nulls in past year col), graph those subsets and save
-# all in single pdf
+# all in single pdf, get pvalue and r2 from lin reg for each subset
 
 # What do do about RuntimeWarning? Moving close around didn't work
 
-# Need to do lin reg of each of these subsets, get pvalues and r2 for each
+# See dir(results) for all possible parts of lin reg summary
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-#all_of_them = []
+import statsmodels.api as sm
+all_of_them = []
 pp = PdfPages("all_figs.pdf")
-for unique_species in year_lag_july_subset["Species.Genus"].unique():
+linreg_stats = []
+for unique_species in year_lag_july_subset["Species.Genus"].unique()[0], year_lag_july_subset["Species.Genus"].unique()[-1]:
     unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
     for current_past_year in column_names:
         unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
         unique_year_mass = pd.concat([unique_species_data["Mass"], unique_year_data], axis=1)
-        #all_of_them.append(unique_year_mass)
+        all_of_them.append(unique_year_mass)
         if np.all(pd.notnull(unique_year_mass.iloc[:,1])):
             plt.figure()
             plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
             pp.savefig()
+            linreg = sm.regression.linear_model.OLS(unique_year_mass.iloc[:,0], unique_year_mass.iloc[:,1])
+            linreg_results = linreg.fit()
+            r2 = linreg_results.rsquared
+            pval = linreg_results.pvalues
+            linreg_stats.append([pval, r2])
 pp.close()
 
-
-# Linreg walkthrough: http://www.datarobot.com/blog/ordinary-least-squares-in-python/
-# Doing example with last species in subset for past year 0
-
-import statsmodels.api as sm
-sm.regression.linear_model.OLS(unique_year_mass["Mass"], unique_year_mass["Past_Year_40"])
-
-example_data = [[17.1, 29.0], [25.2, 24.4], [25.2, 26.4], [17.7, 21.0], [17.9, 25.5]]
-example_data = pd.DataFrame(example_data)
-example_data.columns = ["temp", "mass"]
-
-testing_linreg = sm.regression.linear_model.OLS(example_data["mass"], example_data["temp"])
-results = testing_linreg.fit()
-print(results.summary())
-print(results.rsquared)
-print(results.pvalues)
-
-# See dir(results) for all possible parts of lin reg summary
