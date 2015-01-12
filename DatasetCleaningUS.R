@@ -3,9 +3,6 @@
 # Read in complete Smithsonian dataset
 individual_data_original = read.csv("all_species.csv")
 
-# Create subset of dataset to test functions
-test_data_subset = individual_data_original[1:250,]
-
 # Read in coordinate lookup table
 # http://www.census.gov/geo/maps-data/data/gazetteer2013.html
 county_to_coord_data = read.table("CensusFile.txt", sep="\t", fileEncoding="latin1", 
@@ -145,40 +142,84 @@ extract_individual_temp = function(dataset, raster_file, band_col, long_col, lat
   return(all_temps)
 }
 
+# 
+# #-----TESTING FUNCTIONS------
+# 
+# # Create subset of dataset to test functions
+# test_data_subset = individual_data_original[1:500,]
+#
+# # Extract mass values for each individual in test dataset
+# test_data_subset = extract_individuals_masses(test_data_subset, 
+#                                               test_data_subset$Measurements)
+# 
+# # Extract genus and species for each individual in test dataset
+# test_data_subset = extract_individuals_genus_species(test_data_subset, 
+#                                                      test_data_subset$Current.Identification)
+# 
+# # Get coordinates for individuals in test dataset that have county-level info
+# testing = get_lookup_matches(county_to_coord_data, test_data_subset$Province.State, 
+#                                    test_data_subset$District.County, county_to_coord_data$STATE_NAME, 
+#                                    county_to_coord_data$NAME)
+# test_data_subset$lat = testing$INTPTLAT
+# test_data_subset$long = testing$INTPTLONG
+# 
+# # Put all latitudes and longitudes in single column, remove coordinates outside of US
+# # lat range: 24.52 - 49.38
+# # long range: -66.95 - -124.77
+# test_data_subset$lat_all = merge_two_cols(test_data_subset$Centroid.Latitude, 
+#                                           test_data_subset$lat)
+# test_data_subset$long_all = merge_two_cols(test_data_subset$Centroid.Longitude, 
+#                                            test_data_subset$long)
+# 
+# test_data_subset$lat_all = remove_values(test_data_subset$lat_all, 24.52, 49.38)
+# test_data_subset$long_all = remove_values(test_data_subset$long_all, -124.77, -66.95)
+# 
+# # Get year in proper format for using temperature raster
+# test_data_subset$stackID = get_stackID(test_data_subset$Date.Collected)
+# 
+# # Get temperature for all relevant individuals
+# test_data_subset$temp = extract_individual_temp(test_data_subset, "air.mon.mean.v301.nc", 
+#                                                 test_data_subset$stackID, test_data_subset$long_all, 
+#                                                 test_data_subset$lat_all)
+# 
 
-#-----TESTING FUNCTIONS------
+#-----FUNCTIONS ON ENTIRE DATASET------
+# This entire section takes ~5 hours to run, mostly due to temp extraction
 
-# Extract mass values for each individual in test dataset
-test_data_subset = extract_individuals_masses(test_data_subset, 
-                                              test_data_subset$Measurements)
+# Extract mass values for each individual in entire dataset
+individual_data_original = extract_individuals_masses(individual_data_original, 
+                                              individual_data_original$Measurements)
 
 # Extract genus and species for each individual in test dataset
-test_data_subset = extract_individuals_genus_species(test_data_subset, 
-                                                     test_data_subset$Current.Identification)
+individual_data_original = extract_individuals_genus_species(individual_data_original, 
+                                                     individual_data_original$Current.Identification)
 
 # Get coordinates for individuals in test dataset that have county-level info
-testing = get_lookup_matches(county_to_coord_data, test_data_subset$Province.State, 
-                                   test_data_subset$District.County, county_to_coord_data$STATE_NAME, 
-                                   county_to_coord_data$NAME)
-test_data_subset$lat = testing$INTPTLAT
-test_data_subset$long = testing$INTPTLONG
+lookup_results = get_lookup_matches(county_to_coord_data, individual_data_original$Province.State, 
+                             individual_data_original$District.County, county_to_coord_data$STATE_NAME, 
+                             county_to_coord_data$NAME)
+individual_data_original$lat = lookup_results$INTPTLAT
+individual_data_original$long = lookup_results$INTPTLONG
 
 # Put all latitudes and longitudes in single column, remove coordinates outside of US
 # lat range: 24.52 - 49.38
 # long range: -66.95 - -124.77
-test_data_subset$lat_all = merge_two_cols(test_data_subset$Centroid.Latitude, 
-                                          test_data_subset$lat)
-test_data_subset$long_all = merge_two_cols(test_data_subset$Centroid.Longitude, 
-                                           test_data_subset$long)
+individual_data_original$lat_all = merge_two_cols(individual_data_original$Centroid.Latitude, 
+                                          individual_data_original$lat)
+individual_data_original$long_all = merge_two_cols(individual_data_original$Centroid.Longitude, 
+                                           individual_data_original$long)
 
-test_data_subset$lat_all = remove_values(test_data_subset$lat_all, 24.52, 49.38)
-test_data_subset$long_all = remove_values(test_data_subset$long_all, -124.77, -66.95)
+individual_data_original$lat_all = remove_values(individual_data_original$lat_all, 24.52, 49.38)
+individual_data_original$long_all = remove_values(individual_data_original$long_all, -124.77, -66.95)
 
 # Get year in proper format for using temperature raster
-test_data_subset$stackID = get_stackID(test_data_subset$Date.Collected)
+individual_data_original$stackID = get_stackID(individual_data_original$Date.Collected)
 
 # Get temperature for all relevant individuals
-test_data_subset$temp = extract_individual_temp(test_data_subset, "air.mon.mean.v301.nc", 
-                                                test_data_subset$stackID, test_data_subset$long_all, 
-                                                test_data_subset$lat_all)
+individual_data_original$temp = extract_individual_temp(individual_data_original, "air.mon.mean.v301.nc", 
+                                                individual_data_original$stackID, individual_data_original$long_all, 
+                                                individual_data_original$lat_all)
+
+# Save dataset as new CSV so that code doesn't need to be run again
+write.csv(individual_data_original, "CompleteDatasetUS.csv")
 
