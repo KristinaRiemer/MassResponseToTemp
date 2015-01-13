@@ -115,76 +115,7 @@ get_stackID = function(dataset_col){
   stackID = years * 12 - 22793
 }
 
-library(raster)
-extract_individual_temp = function(dataset, raster_file, band_col, long_col, lat_col){
-  # Get temperature for corresponding year and location of each individual
-  #
-  # Args:
-  #   dataset: Dataset that contains individuals' info
-  #   raster_file: Temperature file
-  #   band_col: Dataset column that has correct band for raster_file
-  #   long_col: Dataset column that has first coordinate
-  #   lat_col: Dataset that has second coordinate
-  #
-  # Returns:
-  #   Column containing temperatures for all individuals
-  all_temps = c()
-  for(i in 1:nrow(dataset)){
-    if((band_col[i] > 1) && (band_col[i] < 1332) && (!is.na(band_col[i]))){
-      individual_year = raster(raster_file, band = band_col[i])
-      individual_coords = cbind(long_col[i] + 360, lat_col[i])
-      individual_temp = extract(individual_year, individual_coords)
-    } else {
-      individual_temp = NA
-    }
-    all_temps = append(all_temps, individual_temp)
-  }
-  return(all_temps)
-}
-
-# 
-# #-----TESTING FUNCTIONS------
-# 
-# # Create subset of dataset to test functions
-# test_data_subset = individual_data_original[1:500,]
-#
-# # Extract mass values for each individual in test dataset
-# test_data_subset = extract_individuals_masses(test_data_subset, 
-#                                               test_data_subset$Measurements)
-# 
-# # Extract genus and species for each individual in test dataset
-# test_data_subset = extract_individuals_genus_species(test_data_subset, 
-#                                                      test_data_subset$Current.Identification)
-# 
-# # Get coordinates for individuals in test dataset that have county-level info
-# testing = get_lookup_matches(county_to_coord_data, test_data_subset$Province.State, 
-#                                    test_data_subset$District.County, county_to_coord_data$STATE_NAME, 
-#                                    county_to_coord_data$NAME)
-# test_data_subset$lat = testing$INTPTLAT
-# test_data_subset$long = testing$INTPTLONG
-# 
-# # Put all latitudes and longitudes in single column, remove coordinates outside of US
-# # lat range: 24.52 - 49.38
-# # long range: -66.95 - -124.77
-# test_data_subset$lat_all = merge_two_cols(test_data_subset$Centroid.Latitude, 
-#                                           test_data_subset$lat)
-# test_data_subset$long_all = merge_two_cols(test_data_subset$Centroid.Longitude, 
-#                                            test_data_subset$long)
-# 
-# test_data_subset$lat_all = remove_values(test_data_subset$lat_all, 24.52, 49.38)
-# test_data_subset$long_all = remove_values(test_data_subset$long_all, -124.77, -66.95)
-# 
-# # Get year in proper format for using temperature raster
-# test_data_subset$stackID = get_stackID(test_data_subset$Date.Collected)
-# 
-# # Get temperature for all relevant individuals
-# test_data_subset$temp = extract_individual_temp(test_data_subset, "air.mon.mean.v301.nc", 
-#                                                 test_data_subset$stackID, test_data_subset$long_all, 
-#                                                 test_data_subset$lat_all)
-# 
-
 #-----FUNCTIONS ON ENTIRE DATASET------
-# This entire section takes ~5 hours to run, mostly due to temp extraction
 
 # Extract mass values for each individual in entire dataset
 individual_data_original = extract_individuals_masses(individual_data_original, 
@@ -215,11 +146,7 @@ individual_data_original$long_all = remove_values(individual_data_original$long_
 # Get year in proper format for using temperature raster
 individual_data_original$stackID = get_stackID(individual_data_original$Date.Collected)
 
-# Get temperature for all relevant individuals
-individual_data_original$temp = extract_individual_temp(individual_data_original, "air.mon.mean.v301.nc", 
-                                                individual_data_original$stackID, individual_data_original$long_all, 
-                                                individual_data_original$lat_all)
-
 # Save dataset as new CSV so that code doesn't need to be run again
 write.csv(individual_data_original, "CompleteDatasetUS.csv")
+CompleteDatasetUS = read.csv("CompleteDatasetUS.csv")
 
