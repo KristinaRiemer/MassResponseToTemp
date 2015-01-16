@@ -1,4 +1,2 @@
-BergRuleClimateProject
-======================
 
-Temporal and spatial Bergmann's rule pattern used for climate change prediction, project started spring 2014
+Determine if there is a relationship between mass and temperature for animals at particular temporal or spatial scales or lags. This can then be used to make predictions about animal species' responses to climate change. 
