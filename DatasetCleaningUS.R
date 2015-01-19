@@ -1,7 +1,7 @@
 #-----DATASETS------
 
 # Read in complete Smithsonian dataset
-individual_data_original = read.csv("all_species.csv")
+individual_data = read.csv("all_species.csv")
 
 # Read in coordinate lookup table
 # http://www.census.gov/geo/maps-data/data/gazetteer2013.html
@@ -102,51 +102,53 @@ remove_values = function(dataset_col, lower_limit, upper_limit){
                                                 upper_limit), NA, dataset_col)
 }
 
-get_stackID = function(dataset_col){
-  # Extract year from date column and turn year into format correct for raster
+extract_year = function(dataset_col){
+  # Extract year from date column
   #
   # Args:
   #   dataset_col: Column containing full date
   #
   # Returns:
-  #   Year in raster format
+  #   Column with year
   years = substr(dataset_col, 1, 4)
   years = as.numeric(years)
-  stackID = years * 12 - 22793
 }
 
 #-----FUNCTIONS ON ENTIRE DATASET------
 
 # Extract mass values for each individual in entire dataset
-individual_data_original = extract_individuals_masses(individual_data_original, 
-                                              individual_data_original$Measurements)
+individual_data = extract_individuals_masses(individual_data, 
+                                              individual_data$Measurements)
 
 # Extract genus and species for each individual in test dataset
-individual_data_original = extract_individuals_genus_species(individual_data_original, 
-                                                     individual_data_original$Current.Identification)
+individual_data = extract_individuals_genus_species(individual_data, 
+                                                     individual_data$Current.Identification)
 
 # Get coordinates for individuals in test dataset that have county-level info
-lookup_results = get_lookup_matches(county_to_coord_data, individual_data_original$Province.State, 
-                             individual_data_original$District.County, county_to_coord_data$STATE_NAME, 
+lookup_results = get_lookup_matches(county_to_coord_data, individual_data$Province.State, 
+                             individual_data$District.County, county_to_coord_data$STATE_NAME, 
                              county_to_coord_data$NAME)
-individual_data_original$lat = lookup_results$INTPTLAT
-individual_data_original$long = lookup_results$INTPTLONG
+individual_data$lookup_lat = lookup_results$INTPTLAT
+individual_data$lookup_lon = lookup_results$INTPTLONG
 
 # Put all latitudes and longitudes in single column, remove coordinates outside of US
 # lat range: 24.52 - 49.38
 # long range: -66.95 - -124.77
-individual_data_original$lat_all = merge_two_cols(individual_data_original$Centroid.Latitude, 
-                                          individual_data_original$lat)
-individual_data_original$long_all = merge_two_cols(individual_data_original$Centroid.Longitude, 
-                                           individual_data_original$long)
+individual_data$lat = merge_two_cols(individual_data$Centroid.Latitude, 
+                                          individual_data$lookup_lat)
+individual_data$lon_untrans = merge_two_cols(individual_data$Centroid.Longitude, 
+                                           individual_data$lookup_lon)
 
-individual_data_original$lat_all = remove_values(individual_data_original$lat_all, 24.52, 49.38)
-individual_data_original$long_all = remove_values(individual_data_original$long_all, -124.77, -66.95)
+individual_data$lat = remove_values(individual_data$lat, 24.52, 49.38)
+individual_data$lon_untrans = remove_values(individual_data$lon_untrans, -124.77, -66.95)
 
-# Get year in proper format for using temperature raster
-individual_data_original$stackID = get_stackID(individual_data_original$Date.Collected)
+# Transform longitude to be in correct format for temperature extraction
+individual_data$lon = individual_data$lon_untrans + 360
 
-# Save dataset as new CSV so that code doesn't need to be run again
-write.csv(individual_data_original, "CompleteDatasetUS.csv")
+# Get collection use to use for temperature extraction
+individual_data$year = extract_year(individual_data$Date.Collected)
+
+# Save dataset as CSV to be used as input for Python code
+write.csv(individual_data, "CompleteDatasetUS.csv")
 CompleteDatasetUS = read.csv("CompleteDatasetUS.csv")
 
