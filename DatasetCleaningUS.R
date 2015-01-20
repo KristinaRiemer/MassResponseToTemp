@@ -15,27 +15,27 @@ names(county_to_coord_data)[10] = "INTPTLONG"
 #-----FUNCTIONS------
 
 library(stringr)
-extract_individuals_masses = function(dataset, dataset_column){
-  # Extract mass values from individual measurements and place in new column
+extract_component = function(dataset_column, regex){
+  # Pull out numerical component of strings
   #
   # Args: 
-  #   dataset: Dataset that contains measurements and will have new mass column
-  #   dataset_column: Column in dataset that contains measurements for each 
-  #   individuals, e.g., length
+  #   dataset_column: Column that contains strings
+  #   regex: Regular expression to specify string surrounding numerical component
   #
   # Returns: 
-  #   Dataset with new column that holds individuals' mass values
-  extracted_masses = vector()
+  #   Vector that contains extracted numerical components
+  components_list = vector()
   for (current_row in dataset_column){
-    extracted_mass = str_match(dataset_column, "Specimen Weight: ([0-9.]*)g")
-    extracted_mass = as.numeric(extracted_mass[,2])
-    extracted_masses = append(extracted_masses, extracted_mass)
-    dataset = cbind(dataset, extracted_masses)
-    return(dataset)
+    component = str_match(dataset_column, regex)
+    component = as.numeric(component[,2])
+    components_list = append(components_list, component)
+    return(components_list)
   }
 }
 
-extract_individuals_genus_species = function(dataset, dataset_column){
+# I don't think it's worth it to generalize this function, it's too specific
+# to this problem
+extract_individuals_genus_species = function(dataset_column){
   # Get species and genus from current identification for each individual
   #
   # Args:
@@ -50,14 +50,11 @@ extract_individuals_genus_species = function(dataset, dataset_column){
   for(current_row in dataset_column){
     extract_genus_species = word(dataset_column, 1, 2)
     extracted_genus_species = append(extracted_genus_species, extract_genus_species)
-    dataset = cbind(dataset, extracted_genus_species)
-    dataset_subset = dataset[!grepl(".*sp", dataset$extracted_genus_species),]
-    return(dataset_subset)
+    extracted_genus_species = gsub(".*sp", NA, extracted_genus_species)
+    return(extracted_genus_species)
   }
 }
 
-# Does this really need to be a function? I'm only doing it once
-# Tried to generalize enough that it could be used in other cases
 get_lookup_matches = function(lookup, data_col1, data_col2, lookup_col1, lookup_col2){
   # Get info from lookup for two-column matches between lookup and data
   #
@@ -117,14 +114,12 @@ extract_year = function(dataset_col){
 #-----FUNCTIONS ON ENTIRE DATASET------
 
 # Extract mass values for each individual in entire dataset
-individual_data = extract_individuals_masses(individual_data, 
-                                              individual_data$Measurements)
+individual_data$mass = extract_component(individual_data$Measurements, "Specimen Weight: ([0-9.]*)g")
 
-# Extract genus and species for each individual in test dataset
-individual_data = extract_individuals_genus_species(individual_data, 
-                                                     individual_data$Current.Identification)
+# Extract genus and species for each individual in entire dataset
+individual_data$genus_species = extract_individuals_genus_species(individual_data$Current.Identification)
 
-# Get coordinates for individuals in test dataset that have county-level info
+# Get coordinates for individuals that have county-level info in entire dataset
 lookup_results = get_lookup_matches(county_to_coord_data, individual_data$Province.State, 
                              individual_data$District.County, county_to_coord_data$STATE_NAME, 
                              county_to_coord_data$NAME)
@@ -145,10 +140,17 @@ individual_data$lon_untrans = remove_values(individual_data$lon_untrans, -124.77
 # Transform longitude to be in correct format for temperature extraction
 individual_data$lon = individual_data$lon_untrans + 360
 
-# Get collection use to use for temperature extraction
+# Get collection year to use for temperature extraction
 individual_data$year = extract_year(individual_data$Date.Collected)
 
-# Save dataset as CSV to be used as input for Python code
-write.csv(individual_data, "CompleteDatasetUS.csv")
-CompleteDatasetUS = read.csv("CompleteDatasetUS.csv")
+# Subset dataset to retain only individuals with mass, species ID, 
+# coordinates (in US), and collected 1900-2010
+individual_data = individual_data[complete.cases(individual_data$mass),]
+individual_data = individual_data[complete.cases(individual_data$genus_species),]
+individual_data = individual_data[(complete.cases(individual_data$lat) & complete.cases(individual_data$lon)),]
+individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
+
+# # Save dataset as CSV to be used as input for Python code
+# write.csv(individual_data, "CompleteDatasetUS.csv")
+# CompleteDatasetUS = read.csv("CompleteDatasetUS.csv")
 
