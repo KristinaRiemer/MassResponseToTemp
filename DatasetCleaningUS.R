@@ -150,6 +150,27 @@ individual_data = individual_data[complete.cases(individual_data$genus_species),
 individual_data = individual_data[(complete.cases(individual_data$lat) & complete.cases(individual_data$lon)),]
 individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
 
+# Subset dataset to retain individuals whose species has at least 30 individuals
+species_names = table(individual_data$genus_species)
+individual_data = individual_data[individual_data$genus_species %in% names(species_names[species_names > 30]),]
+
+# Subset dataset to retain individuals whose species has a collection year range
+# of at least 20 years
+
+# Max year for each species
+max_year = aggregate(year ~ genus_species, individual_data, max)
+
+# Min year for each species
+min_year = aggregate(year ~ genus_species, individual_data, min)
+
+# Range of years for each species
+year_range = merge(max_year, min_year)
+year_range = c()
+year_range = aggregate(individual_data, by=c(year), FUN=max)
+
+range_attempt = aggregate(year ~ genus_species, individual_data, FUN=c(max, min))
+
+
 # # Save dataset as CSV to be used as input for Python code
 # write.csv(individual_data, "CompleteDatasetUS.csv")
 # CompleteDatasetUS = read.csv("CompleteDatasetUS.csv")
