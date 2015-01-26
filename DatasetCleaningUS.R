@@ -150,26 +150,38 @@ individual_data = individual_data[complete.cases(individual_data$genus_species),
 individual_data = individual_data[(complete.cases(individual_data$lat) & complete.cases(individual_data$lon)),]
 individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
 
-# Subset dataset to retain individuals whose species has at least 30 individuals
-species_names = table(individual_data$genus_species)
-individual_data = individual_data[individual_data$genus_species %in% names(species_names[species_names > 30]),]
+# Create list of species criteria (number individuals, year range, lat range) for 
+# later subsetting based on species ID
+# Make this into a function?
+species_data = data.frame(table(individual_data$genus_species))
+colnames(species_data) = c("genus_species", "individuals")
 
-# Subset dataset to retain individuals whose species has a collection year range
-# of at least 20 years
-
-# Max year for each species
 max_year = aggregate(year ~ genus_species, individual_data, max)
+colnames(max_year)[2] = "max_year"
+species_data = merge(species_data, max_year)
 
-# Min year for each species
 min_year = aggregate(year ~ genus_species, individual_data, min)
+colnames(min_year)[2] = "min_year"
+species_data = merge(species_data, min_year)
 
-# Range of years for each species
-year_range = merge(max_year, min_year)
-year_range = c()
-year_range = aggregate(individual_data, by=c(year), FUN=max)
+species_data$year_range = species_data$max_year - species_data$min_year
 
-range_attempt = aggregate(year ~ genus_species, individual_data, FUN=c(max, min))
+max_lat = aggregate(lat ~ genus_species, individual_data, max)
+colnames(max_lat)[2] = "max_lat"
+species_data = merge(species_data, max_lat)
 
+min_lat = aggregate(lat ~ genus_species, individual_data, min)
+colnames(min_lat)[2] = "min_lat"
+species_data = merge(species_data, min_lat)
+
+species_data$lat_range = species_data$max_lat - species_data$min_lat
+
+# Subset dataset to retain individuals whose species has at least 30 individuals, 
+# 20 years of data, and 5 latitudinal degrees of data
+# Collapse into one line or refactor?
+individual_data = individual_data[individual_data$genus_species %in% species_data$genus_species[species_data$individuals >= 30],]
+individual_data = individual_data[individual_data$genus_species %in% species_data$genus_species[species_data$year_range >= 20],]
+individual_data = individual_data[individual_data$genus_species %in% species_data$genus_species[species_data$lat_range >= 5],]
 
 # # Save dataset as CSV to be used as input for Python code
 # write.csv(individual_data, "CompleteDatasetUS.csv")
