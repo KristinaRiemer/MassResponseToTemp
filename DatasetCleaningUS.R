@@ -111,6 +111,24 @@ extract_year = function(dataset_col){
   years = as.numeric(years)
 }
 
+species_crit = function(dataset, for_col, by_col, fx, col_name){
+  # Get all minimum or maximum values of one variable for each species
+  #
+  # Args:
+  #   dataset: Dataset that contains individuals' information
+  #   for_col: Column that contains desired variable
+  #   by_col: Column that contains species ID
+  #   fx: Either min or max function
+  #   col_name: Desired name for minimum or maximum values
+  #
+  # Return:
+  #   Column containing minimum or maximum variables for each species
+  list = aggregate(for_col ~ by_col, dataset, fx)
+  colnames(list)[1] = "genus_species"
+  colnames(list)[2] = col_name
+  return(list)
+}
+
 #-----FUNCTIONS ON ENTIRE DATASET------
 
 # Extract mass values for each individual in entire dataset
@@ -143,6 +161,8 @@ individual_data$lon = individual_data$lon_untrans + 360
 # Get collection year to use for temperature extraction
 individual_data$year = extract_year(individual_data$Date.Collected)
 
+#----SUBSETTING DATASET----
+
 # Subset dataset to retain only individuals with mass, species ID, 
 # coordinates (in US), and collected 1900-2010
 individual_data = individual_data[complete.cases(individual_data$mass),]
@@ -150,30 +170,22 @@ individual_data = individual_data[complete.cases(individual_data$genus_species),
 individual_data = individual_data[(complete.cases(individual_data$lat) & complete.cases(individual_data$lon)),]
 individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
 
-# Create list of species criteria (number individuals, year range, lat range) for 
-# later subsetting based on species ID
-# Make this into a function?
+# Create list of species info (number individuals, year range, lat range) needed 
+# to later subset based on species ID
 species_data = data.frame(table(individual_data$genus_species))
 colnames(species_data) = c("genus_species", "individuals")
 
-max_year = aggregate(year ~ genus_species, individual_data, max)
-colnames(max_year)[2] = "max_year"
+max_year = species_crit(individual_data, individual_data$year, individual_data$genus_species, max, "max_year")
+min_year = species_crit(individual_data, individual_data$year, individual_data$genus_species, min, "min_year")
+max_lat = species_crit(individual_data, individual_data$lat, individual_data$genus_species, max, "max_lat")
+min_lat = species_crit(individual_data, individual_data$lat, individual_data$genus_species, min, "min_lat")
+
 species_data = merge(species_data, max_year)
-
-min_year = aggregate(year ~ genus_species, individual_data, min)
-colnames(min_year)[2] = "min_year"
 species_data = merge(species_data, min_year)
-
-species_data$year_range = species_data$max_year - species_data$min_year
-
-max_lat = aggregate(lat ~ genus_species, individual_data, max)
-colnames(max_lat)[2] = "max_lat"
 species_data = merge(species_data, max_lat)
-
-min_lat = aggregate(lat ~ genus_species, individual_data, min)
-colnames(min_lat)[2] = "min_lat"
 species_data = merge(species_data, min_lat)
 
+species_data$year_range = species_data$max_year - species_data$min_year
 species_data$lat_range = species_data$max_lat - species_data$min_lat
 
 # Subset dataset to retain individuals whose species has at least 30 individuals, 
@@ -183,7 +195,6 @@ individual_data = individual_data[individual_data$genus_species %in% species_dat
 individual_data = individual_data[individual_data$genus_species %in% species_data$genus_species[species_data$year_range >= 20],]
 individual_data = individual_data[individual_data$genus_species %in% species_data$genus_species[species_data$lat_range >= 5],]
 
-# # Save dataset as CSV to be used as input for Python code
-# write.csv(individual_data, "CompleteDatasetUS.csv")
-# CompleteDatasetUS = read.csv("CompleteDatasetUS.csv")
+# Save dataset as CSV to be used as input for Python code
+write.csv(individual_data, "CompleteDatasetUS.csv")
 
