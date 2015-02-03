@@ -6,6 +6,16 @@ individual_data = pd.read_csv("FinalSpeciesDataset.csv")
 individual_data["Longitude.Transformed"] = individual_data["Longitude"] + 360
 subset_individual_data = individual_data.iloc[0:10]
 
+# Read in new individual data
+new_individual_data = pd.read_csv("CompleteDatasetUS.csv")
+subset_new_individual_data = new_individual_data.iloc[0:10]
+
+## Comparing datasets
+#from pandas.util.testing import assert_frame_equal
+#assert_frame_equal(individual_data["Species.Genus"], new_individual_data["genus_species"])
+colnames = subset_individual_data.columns
+new_colnames = subset_new_individual_data.columns
+
 # Packages for reading in temperature data
 # http://www.esrl.noaa.gov/psd/data/gridded/data.UDel_AirT_Precip.html
 from osgeo import gdal
@@ -16,26 +26,63 @@ driver = gdal.GetDriverByName("netCDF")
 # Temperature dataset
 temp_file = "air.mon.mean.v301.nc"
 
-def get_prev_years(stackID):
-    """Get stackID values for same months in all previous years until 1900
+# List of months with corresponding codes for stackID
+# stackID = year * 12 - monthcode
+import calendar
+month_names = []
+for each_month in range(1, 13):
+    month_names.append(calendar.month_name[each_month])
+month_codes = pd.DataFrame(month_names, columns = ["month"])
+month_codes["code"] = range(22799, 22787, -1)
+    
+# How to use this as a lookup table?
+month_codes["code"][month_codes["month"] == "July"]
+
+# Only monthly average for now, later add 3 month average option
+def get_all_stackIDs(current_year, month_code):
+    """Get stackIDs for chosen month in current and previous years until 1900
     
     Args:
-        stackID: initial/current stackID value
+        current_year: Collection year for first stackID
+        month_code: Code for chosen month
     
     Returns:
-        List containing initial/current stackID value and previous years' stackIDs
+        List of stackIDs for chosen month from current year back to 1900
     """
+    current_stackID = current_year * 12 - month_code
     all_stackIDs = []
-    while stackID > 0:
-        all_stackIDs.append(stackID)
-        stackID -= 12
+    while current_stackID > 0:
+        all_stackIDs.append(current_stackID)
+        current_stackID -= 12
     return all_stackIDs
 
 # Get all July stackID values for each individual in subset dataset
-subset_stackIDs = []
-for individual_stackID in subset_individual_data["stackID"]:
-    individual_stackIDs = get_prev_years(individual_stackID)
-    subset_stackIDs.append(individual_stackIDs)
+july_code = 22793
+subset_july_stackIDS = []
+for each_year in subset_new_individual_data["year"]:
+    each_year_stackIDs = get_all_stackIDs(each_year, july_code)
+    subset_july_stackIDS.append(each_year_stackIDs)
+
+#def get_prev_years(stackID):
+    #"""Get stackID values for same month in all previous years until 1900
+    
+    #Args:
+        #stackID: initial/current stackID value
+    
+    #Returns:
+        #List containing initial/current stackID value and previous years' stackIDs
+    #"""
+    #all_stackIDs = []
+    #while stackID > 0:
+        #all_stackIDs.append(stackID)
+        #stackID -= 12
+    #return all_stackIDs
+
+## Get all July stackID values for each individual in subset dataset
+#subset_stackIDs = []
+#for individual_stackID in subset_individual_data["stackID"]:
+    #individual_stackIDs = get_prev_years(individual_stackID)
+    #subset_stackIDs.append(individual_stackIDs)
 
 def get_temp_at_point(raster_file, coordinates, band):
     """Determine temperature value at chosen coordinates and band of raster
@@ -100,7 +147,7 @@ year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass
 
 # What do do about RuntimeWarning? Moving close around didn't work
 
-# See dir(results) for all possible parts of lin reg summary
+# See dir(linreg_results) for all possible parts of lin reg summary
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -123,6 +170,25 @@ for unique_species in year_lag_july_subset["Species.Genus"].unique()[0], year_la
             linreg_results = linreg.fit()
             r2 = linreg_results.rsquared
             pval = linreg_results.pvalues
-            linreg_stats.append([pval, r2])
+            slope = linreg_results.params
+            linreg_stats.append([pval, r2, slope])
 pp.close()
+
+
+# Using pandas groupby, what is the benefit? 
+by_species = year_lag_july_subset.groupby("Species.Genus")
+for species, species_data in by_species:
+    avg_mass = np.mean(species_data["Mass"])
+    print "Avg mass of {} is {}" .format(species, avg_mass)
+
+pp2 = PdfPages("all_figs_2.pdf")
+by_species = year_lag_july_subset.groupby("Species.Genus")
+for species, species_data in by_species:
+    for current_past_year in column_names:
+
+
+
+
+
+
 
