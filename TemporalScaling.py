@@ -1,20 +1,23 @@
 from __future__ import division
 
-# Read in individual data and create subset to test functions
-import pandas as pd
-individual_data = pd.read_csv("FinalSpeciesDataset.csv")
-individual_data["Longitude.Transformed"] = individual_data["Longitude"] + 360
-subset_individual_data = individual_data.iloc[0:10]
+#### beginning of to-be-deleted section
+## Read in individual data and create subset to test functions
+#import pandas as pd
+#individual_data = pd.read_csv("FinalSpeciesDataset.csv")
+#individual_data["Longitude.Transformed"] = individual_data["Longitude"] + 360
+#subset_individual_data = individual_data.iloc[0:10]
+#### end of deleted section
 
 # Read in new individual data
+import pandas as pd
 new_individual_data = pd.read_csv("CompleteDatasetUS.csv")
 subset_new_individual_data = new_individual_data.iloc[0:10]
 
-## Comparing datasets
-#from pandas.util.testing import assert_frame_equal
-#assert_frame_equal(individual_data["Species.Genus"], new_individual_data["genus_species"])
-colnames = subset_individual_data.columns
-new_colnames = subset_new_individual_data.columns
+### Comparing datasets
+##from pandas.util.testing import assert_frame_equal
+##assert_frame_equal(individual_data["Species.Genus"], new_individual_data["genus_species"])
+#colnames = subset_individual_data.columns
+#new_colnames = subset_new_individual_data.columns
 
 # Packages for reading in temperature data
 # http://www.esrl.noaa.gov/psd/data/gridded/data.UDel_AirT_Precip.html
@@ -58,11 +61,12 @@ def get_all_stackIDs(current_year, month_code):
 
 # Get all July stackID values for each individual in subset dataset
 july_code = 22793
-subset_july_stackIDS = []
+subset_new_july_stackIDS = []
 for each_year in subset_new_individual_data["year"]:
     each_year_stackIDs = get_all_stackIDs(each_year, july_code)
-    subset_july_stackIDS.append(each_year_stackIDs)
+    subset_new_july_stackIDS.append(each_year_stackIDs)
 
+#### beginning of to-be-deleted section
 #def get_prev_years(stackID):
     #"""Get stackID values for same month in all previous years until 1900
     
@@ -83,6 +87,7 @@ for each_year in subset_new_individual_data["year"]:
 #for individual_stackID in subset_individual_data["stackID"]:
     #individual_stackIDs = get_prev_years(individual_stackID)
     #subset_stackIDs.append(individual_stackIDs)
+#### end of deleted section
 
 def get_temp_at_point(raster_file, coordinates, band):
     """Determine temperature value at chosen coordinates and band of raster
@@ -125,19 +130,39 @@ def get_individuals_temps(years_list, file_name, coordinates):
         all_individuals_temps.append(each_temp)
     return all_individuals_temps
 
+#### beginning of to-be-deleted section
+## Get all temps for corresponding July stackIDs for each individual in subset dataset
+#subset_temps = []
+#for i in range(len(subset_individual_data)):
+    #subset_individuals_temps = get_individuals_temps(subset_stackIDs[i], temp_file, 
+                          #individual_data.iloc[i][["Longitude.Transformed", "Latitude"]])
+    #subset_temps.append(subset_individuals_temps)
+#### end of deleted section
+
 # Get all temps for corresponding July stackIDs for each individual in subset dataset
-subset_temps = []
-for i in range(len(subset_individual_data)):
-    subset_individuals_temps = get_individuals_temps(subset_stackIDs[i], temp_file, 
-                          individual_data.iloc[i][["Longitude.Transformed", "Latitude"]])
-    subset_temps.append(subset_individuals_temps)
+subset_new_july_temps = []
+for i in range(len(subset_new_individual_data)):
+    subset_new_individuals_temp = get_individuals_temps(subset_new_july_stackIDS[i], temp_file, 
+                                new_individual_data.iloc[i][["lon", "lat"]])
+    subset_new_july_temps.append(subset_new_individuals_temp)
+    
+
+#### beginning of to-be-deleted section
+## Create final dataset
+## Need to change range to be automated for greatest length
+#column_names = ["Past_Year_{}" .format(year) for year in range(41)]
+#subset_temps = pd.DataFrame(subset_temps, columns=column_names)
+#year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass", 
+                                #"Year.Collected"]], subset_temps], axis=1)
+#### end of deleted section
+
 
 # Create final dataset
 # Need to change range to be automated for greatest length
-column_names = ["Past_Year_{}" .format(year) for year in range(41)]
-subset_temps = pd.DataFrame(subset_temps, columns=column_names)
-year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass", 
-                                "Year.Collected"]], subset_temps], axis=1)
+column_names = ["past_year_{}" .format(year) for year in range(41)]
+subset_new_july_temps = pd.DataFrame(subset_new_july_temps, columns=column_names)
+year_lag_july_subset_new = pd.concat([subset_new_individual_data[["genus_species", "mass", 
+                                "year"]], subset_new_july_temps], axis=1)
 
 
 
