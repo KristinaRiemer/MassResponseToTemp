@@ -1,23 +1,9 @@
 from __future__ import division
 
-#### beginning of to-be-deleted section
-## Read in individual data and create subset to test functions
-#import pandas as pd
-#individual_data = pd.read_csv("FinalSpeciesDataset.csv")
-#individual_data["Longitude.Transformed"] = individual_data["Longitude"] + 360
-#subset_individual_data = individual_data.iloc[0:10]
-#### end of deleted section
-
 # Read in new individual data
 import pandas as pd
-new_individual_data = pd.read_csv("CompleteDatasetUS.csv")
-subset_new_individual_data = new_individual_data.iloc[0:10]
-
-### Comparing datasets
-##from pandas.util.testing import assert_frame_equal
-##assert_frame_equal(individual_data["Species.Genus"], new_individual_data["genus_species"])
-#colnames = subset_individual_data.columns
-#new_colnames = subset_new_individual_data.columns
+individual_data = pd.read_csv("CompleteDatasetUS.csv")
+individual_data_subset = individual_data.iloc[0:10]
 
 # Packages for reading in temperature data
 # http://www.esrl.noaa.gov/psd/data/gridded/data.UDel_AirT_Precip.html
@@ -37,12 +23,11 @@ for each_month in range(1, 13):
     month_names.append(calendar.month_name[each_month])
 month_codes = pd.DataFrame(month_names, columns = ["month"])
 month_codes["code"] = range(22799, 22787, -1)
-    
-# How to use this as a lookup table?
-month_codes["code"][month_codes["month"] == "July"]
+#How to use this as a lookup table?
+#month_codes["code"][month_codes["month"] == "July"]
 
 # Only monthly average for now, later add 3 month average option
-def get_all_stackIDs(current_year, month_code):
+def get_stackIDs(current_year, month_code):
     """Get stackIDs for chosen month in current and previous years until 1900
     
     Args:
@@ -61,33 +46,10 @@ def get_all_stackIDs(current_year, month_code):
 
 # Get all July stackID values for each individual in subset dataset
 july_code = 22793
-subset_new_july_stackIDS = []
-for each_year in subset_new_individual_data["year"]:
-    each_year_stackIDs = get_all_stackIDs(each_year, july_code)
-    subset_new_july_stackIDS.append(each_year_stackIDs)
-
-#### beginning of to-be-deleted section
-#def get_prev_years(stackID):
-    #"""Get stackID values for same month in all previous years until 1900
-    
-    #Args:
-        #stackID: initial/current stackID value
-    
-    #Returns:
-        #List containing initial/current stackID value and previous years' stackIDs
-    #"""
-    #all_stackIDs = []
-    #while stackID > 0:
-        #all_stackIDs.append(stackID)
-        #stackID -= 12
-    #return all_stackIDs
-
-## Get all July stackID values for each individual in subset dataset
-#subset_stackIDs = []
-#for individual_stackID in subset_individual_data["stackID"]:
-    #individual_stackIDs = get_prev_years(individual_stackID)
-    #subset_stackIDs.append(individual_stackIDs)
-#### end of deleted section
+stackIDs_july_subset = []
+for each_year in individual_data_subset["year"]:
+    stackIDs_july_eachyear = get_stackIDs(each_year, july_code)
+    stackIDs_july_subset.append(stackIDs_july_eachyear)
 
 def get_temp_at_point(raster_file, coordinates, band):
     """Determine temperature value at chosen coordinates and band of raster
@@ -113,56 +75,36 @@ def get_temp_at_point(raster_file, coordinates, band):
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
 
-def get_individuals_temps(years_list, file_name, coordinates):
-    """Get all temperature values for corresponding stackIDs for an individual
+def get_multiple_temps(stackIDs_list, file_name, coordinates):
+    """Get all temperature values for list of stackIDs
     
     Args: 
-        years_list: list of stackID values (i.e., months)
+        stackIDs_list: list of stackID values (i.e., months)
         file_name: name of raster file
         coordinates: longitude and latitude of individual
     
     Returns: 
-        List containing all temperatures for individual
+        List containing all respective temperatures for stackIDs in list
     """
-    all_individuals_temps = []    
-    for current_year in years_list: 
-        each_temp = get_temp_at_point(file_name, coordinates, current_year)
-        all_individuals_temps.append(each_temp)
-    return all_individuals_temps
-
-#### beginning of to-be-deleted section
-## Get all temps for corresponding July stackIDs for each individual in subset dataset
-#subset_temps = []
-#for i in range(len(subset_individual_data)):
-    #subset_individuals_temps = get_individuals_temps(subset_stackIDs[i], temp_file, 
-                          #individual_data.iloc[i][["Longitude.Transformed", "Latitude"]])
-    #subset_temps.append(subset_individuals_temps)
-#### end of deleted section
+    temps_list = []    
+    for current_stackID in stackIDs_list: 
+        each_temp = get_temp_at_point(file_name, coordinates, current_stackID)
+        temps_list.append(each_temp)
+    return temps_list
 
 # Get all temps for corresponding July stackIDs for each individual in subset dataset
-subset_new_july_temps = []
-for i in range(len(subset_new_individual_data)):
-    subset_new_individuals_temp = get_individuals_temps(subset_new_july_stackIDS[i], temp_file, 
-                                new_individual_data.iloc[i][["lon", "lat"]])
-    subset_new_july_temps.append(subset_new_individuals_temp)
-    
-
-#### beginning of to-be-deleted section
-## Create final dataset
-## Need to change range to be automated for greatest length
-#column_names = ["Past_Year_{}" .format(year) for year in range(41)]
-#subset_temps = pd.DataFrame(subset_temps, columns=column_names)
-#year_lag_july_subset = pd.concat([subset_individual_data[["Species.Genus", "Mass", 
-                                #"Year.Collected"]], subset_temps], axis=1)
-#### end of deleted section
-
+july_temps_subset = []
+for i in range(len(individual_data_subset)):
+    individual_temps_subset = get_multiple_temps(stackIDs_july_subset[i], temp_file, 
+                                individual_data_subset.iloc[i][["lon", "lat"]])
+    july_temps_subset.append(individual_temps_subset)
 
 # Create final dataset
 # Need to change range to be automated for greatest length
 column_names = ["past_year_{}" .format(year) for year in range(41)]
-subset_new_july_temps = pd.DataFrame(subset_new_july_temps, columns=column_names)
-year_lag_july_subset_new = pd.concat([subset_new_individual_data[["genus_species", "mass", 
-                                "year"]], subset_new_july_temps], axis=1)
+july_temps_subset = pd.DataFrame(july_temps_subset, columns=column_names)
+july_yearlag_subset = pd.concat([individual_data_subset[["genus_species", "mass", 
+                                "year"]], july_temps_subset], axis=1)
 
 
 
@@ -181,8 +123,8 @@ import statsmodels.api as sm
 all_of_them = []
 pp = PdfPages("all_figs.pdf")
 linreg_stats = []
-for unique_species in year_lag_july_subset["Species.Genus"].unique()[0], year_lag_july_subset["Species.Genus"].unique()[-1]:
-    unique_species_data = year_lag_july_subset[year_lag_july_subset["Species.Genus"] == unique_species]
+for unique_species in july_yearlag_subset["Species.Genus"].unique()[0], july_yearlag_subset["Species.Genus"].unique()[-1]:
+    unique_species_data = july_yearlag_subset[july_yearlag_subset["Species.Genus"] == unique_species]
     for current_past_year in column_names:
         unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
         unique_year_mass = pd.concat([unique_species_data["Mass"], unique_year_data], axis=1)
@@ -201,13 +143,13 @@ pp.close()
 
 
 # Using pandas groupby, what is the benefit? 
-by_species = year_lag_july_subset.groupby("Species.Genus")
+by_species = july_yearlag_subset.groupby("Species.Genus")
 for species, species_data in by_species:
     avg_mass = np.mean(species_data["Mass"])
     print "Avg mass of {} is {}" .format(species, avg_mass)
 
 pp2 = PdfPages("all_figs_2.pdf")
-by_species = year_lag_july_subset.groupby("Species.Genus")
+by_species = july_yearlag_subset.groupby("Species.Genus")
 for species, species_data in by_species:
     for current_past_year in column_names:
 
