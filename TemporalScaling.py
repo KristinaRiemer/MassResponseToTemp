@@ -120,33 +120,33 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import statsmodels.api as sm
-all_of_them = []
-pp = PdfPages("all_figs.pdf")
-#linreg_stats = []
-species_r2 = []
-for unique_species in july_yearlag_subset["genus_species"].unique()[0], july_yearlag_subset["genus_species"].unique()[-1]:
-    #print unique_species
-    unique_species_data = july_yearlag_subset[july_yearlag_subset["genus_species"] == unique_species]
-    #print unique_species_data
-    for current_past_year in column_names:
-        unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
-        unique_year_mass = pd.concat([unique_species_data["mass"], unique_year_data], axis=1)
-        all_of_them.append(unique_year_mass)
-        if np.all(pd.notnull(unique_year_mass.iloc[:,1])):
-             # doing linear regression
-            linreg = sm.regression.linear_model.OLS(unique_year_mass.iloc[:,0], unique_year_mass.iloc[:,1])
-            linreg_results = linreg.fit()
-            r2 = linreg_results.rsquared
-            pval = linreg_results.pvalues
-            slope = linreg_results.params
-            #linreg_stats.append([pval, r2, slope])
-            species_r2.append([current_past_year, r2])
-            # plotting points, one figure per species per past year
-            plt.figure()
-            plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
-            plt.plot(unique_year_mass.iloc[:,1], linreg_results.fittedvalues, "r-")
-            pp.savefig() 
-pp.close()
+#all_of_them = []
+#pp = PdfPages("all_figs.pdf")
+##linreg_stats = []
+#species_r2 = []
+#for unique_species in july_yearlag_subset["genus_species"].unique()[0], july_yearlag_subset["genus_species"].unique()[-1]:
+    ##print unique_species
+    #unique_species_data = july_yearlag_subset[july_yearlag_subset["genus_species"] == unique_species]
+    ##print unique_species_data
+    #for current_past_year in column_names:
+        #unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
+        #unique_year_mass = pd.concat([unique_species_data["mass"], unique_year_data], axis=1)
+        #all_of_them.append(unique_year_mass)
+        #if np.all(pd.notnull(unique_year_mass.iloc[:,1])):
+             ## doing linear regression
+            #linreg = sm.regression.linear_model.OLS(unique_year_mass.iloc[:,0], unique_year_mass.iloc[:,1])
+            #linreg_results = linreg.fit()
+            #r2 = linreg_results.rsquared
+            #pval = linreg_results.pvalues
+            #slope = linreg_results.params
+            ##linreg_stats.append([pval, r2, slope])
+            #species_r2.append([current_past_year, r2])
+            ## plotting points, one figure per species per past year
+            #plt.figure()
+            #plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
+            #plt.plot(unique_year_mass.iloc[:,1], linreg_results.fittedvalues, "r-")
+            #pp.savefig() 
+#pp.close()
 
 # Redo what was done above with just a single species (Myodes gapperi), purpose
 # is to get a figure of r2 values for each past year for that species
@@ -154,30 +154,37 @@ pp.close()
 # Get single species subset
 single_species = july_yearlag_subset[july_yearlag_subset["genus_species"] == "Myodes gapperi"]
 
-# Plot each past year/mass combo for single species
-# Refactor this: maybe 3 separate functions, 1 for plot, 1 for lin reg, 1 big one that uses other two?
+# For single species, do lin reg and plot mass and each past year temp, get
+# list of r2 values for each combination
 pp2 = PdfPages("single_species_plots.pdf")
 r2_single_list = []
-#year_list = []
 for each_year in column_names:
-    each_year_temp = single_species[[col for col in unique_species_data.columns if col == each_year]]
+    each_year_temp = single_species[[col for col in single_species.columns if col == each_year]]
     mass_temp = pd.concat([single_species["mass"], each_year_temp], axis=1)
     if np.all(pd.notnull(mass_temp.iloc[:,1])):
+        #print mass_temp
         linreg_single = sm.regression.linear_model.OLS(mass_temp.iloc[:,0], mass_temp.iloc[:,1])
         linreg_results_single = linreg_single.fit()
         r2_single = linreg_results_single.rsquared
-        r2_single_list.append([each_year, r2_single])
-        #r2_single_list.append(r2_single)
-        #year_list.append()
+        r2_single_list.append(r2_single)
         plt.figure()
         plt.plot(mass_temp.iloc[:,1], mass_temp.iloc[:,0], "ro")
         plt.plot(mass_temp.iloc[:,1], linreg_results_single.fittedvalues, "r-")
         pp2.savefig()
 pp2.close()
+r2_single_list = pd.DataFrame(r2_single_list)
+r2_single_list.columns = ["myodes_gapperi"]
 
-# Can't get this into the right format fuuuuuuuuuuuuck
-r2_single_list_test2 = pd.DataFrame(r2_single_list)
-r2_single_list_test = r2_single_list_test.T
+
+
+past_year = pd.DataFrame(range(29))
+past_year.columns = ["past_year"]
+
+r2_single_list = pd.concat([past_year, r2_single_list], axis = 1)
+
+plt.figure()
+plt.plot(r2_single_list["past_year"], r2_single_list["myodes_gapperi"], "bo")
+plt.show()
 
 ## Using pandas groupby, what is the benefit? 
 #by_species = july_yearlag_subset.groupby("Species.Genus")
