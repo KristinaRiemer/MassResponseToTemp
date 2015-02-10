@@ -175,8 +175,40 @@ pp2.close()
 r2_single_list = pd.DataFrame(r2_single_list)
 r2_single_list.columns = ["myodes_gapperi"]
 
+# Need function to create subsets for each species in dataset
+
+# Function to get r2 values list for any particular species for all mass/past 
+# year temp combos
+# Don't know how to generalize this to be able to input any desired stat, so 
+# particular to r2 currently 
+def get_r2_list(dataset, first_variable, second_vari_list):
+    """Get R^2 values for linear regression of one variable with a second 
+    variable across many scales or lags
+    
+    Args:
+        dataset: Dataset that contains both variables
+        first_variable: Column that contains values of the first variable
+        second_vari_list: List of names of columns that contain values of second
+        variable
+    
+    Returns:
+        List containing R^2 values for each first and second variable combination
+    """
+    r2_list = []
+    for each_variable in second_vari_list:
+        each_vari_subset = dataset[[col for col in dataset.columns if col == each_variable]]
+        each_combo = pd.concat([first_variable, each_vari_subset], axis=1)
+        if np.all(pd.notnull(each_combo.iloc[:,1])):
+            linreg = sm.regression.linear_model.OLS(each_combo.iloc[:,0], each_combo.iloc[:,1])
+            linreg_results = linreg.fit()
+            r2 = linreg_results.rsquared
+            r2_list.append(r2)
+    return r2_list
+
+testing_r2_fx = get_r2_list(single_species, single_species["mass"], column_names)
 
 
+###############
 past_year = pd.DataFrame(range(29))
 past_year.columns = ["past_year"]
 
