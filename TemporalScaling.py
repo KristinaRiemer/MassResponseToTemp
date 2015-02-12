@@ -106,81 +106,15 @@ july_temps_subset = pd.DataFrame(july_temps_subset, columns=column_names)
 july_yearlag_subset = pd.concat([individual_data_subset[["genus_species", "mass", 
                                 "year"]], july_temps_subset], axis=1)
 
-
-
-# Subset dataset by unique species with unique past years, select on those subsets
-# with all temps (i.e., no nulls in past year col), graph those subsets and save
-# all in single pdf, get pvalue, r2, and slope from lin reg for each subset
-
-# What do do about RuntimeWarning? Moving close around didn't work
-
-# See dir(linreg_results) for all possible parts of lin reg summary
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import statsmodels.api as sm
-#all_of_them = []
-#pp = PdfPages("all_figs.pdf")
-##linreg_stats = []
-#species_r2 = []
-#for unique_species in july_yearlag_subset["genus_species"].unique()[0], july_yearlag_subset["genus_species"].unique()[-1]:
-    ##print unique_species
-    #unique_species_data = july_yearlag_subset[july_yearlag_subset["genus_species"] == unique_species]
-    ##print unique_species_data
-    #for current_past_year in column_names:
-        #unique_year_data = unique_species_data[[col for col in unique_species_data.columns if col == current_past_year]]
-        #unique_year_mass = pd.concat([unique_species_data["mass"], unique_year_data], axis=1)
-        #all_of_them.append(unique_year_mass)
-        #if np.all(pd.notnull(unique_year_mass.iloc[:,1])):
-             ## doing linear regression
-            #linreg = sm.regression.linear_model.OLS(unique_year_mass.iloc[:,0], unique_year_mass.iloc[:,1])
-            #linreg_results = linreg.fit()
-            #r2 = linreg_results.rsquared
-            #pval = linreg_results.pvalues
-            #slope = linreg_results.params
-            ##linreg_stats.append([pval, r2, slope])
-            #species_r2.append([current_past_year, r2])
-            ## plotting points, one figure per species per past year
-            #plt.figure()
-            #plt.plot(unique_year_mass.iloc[:,1], unique_year_mass.iloc[:,0], "bo")
-            #plt.plot(unique_year_mass.iloc[:,1], linreg_results.fittedvalues, "r-")
-            #pp.savefig() 
-#pp.close()
-
-# Redo what was done above with just a single species (Myodes gapperi), purpose
-# is to get a figure of r2 values for each past year for that species
-
-# Get single species subset
-single_species = july_yearlag_subset[july_yearlag_subset["genus_species"] == "Myodes gapperi"]
-
-# For single species, do lin reg and plot mass and each past year temp, get
-# list of r2 values for each combination
-pp2 = PdfPages("single_species_plots.pdf")
-r2_single_list = []
-for each_year in column_names:
-    each_year_temp = single_species[[col for col in single_species.columns if col == each_year]]
-    mass_temp = pd.concat([single_species["mass"], each_year_temp], axis=1)
-    if np.all(pd.notnull(mass_temp.iloc[:,1])):
-        #print mass_temp
-        linreg_single = sm.regression.linear_model.OLS(mass_temp.iloc[:,0], mass_temp.iloc[:,1])
-        linreg_results_single = linreg_single.fit()
-        r2_single = linreg_results_single.rsquared
-        r2_single_list.append(r2_single)
-        plt.figure()
-        plt.plot(mass_temp.iloc[:,1], mass_temp.iloc[:,0], "ro")
-        plt.plot(mass_temp.iloc[:,1], linreg_results_single.fittedvalues, "r-")
-        pp2.savefig()
-pp2.close()
-r2_single_list = pd.DataFrame(r2_single_list)
-r2_single_list.columns = ["myodes_gapperi"]
-
-# Need function to create subsets for each species in dataset
 
 # Function to get r2 values list for any particular species for all mass/past 
 # year temp combos
-# Don't know how to generalize this to be able to input any desired stat, so 
-# particular to r2 currently 
+# To generalize, will be able to input desired stat
+# See dir(linreg_results) for all possible parts of lin reg summary
 def get_r2_list(dataset, first_variable, second_vari_list):
     """Get R^2 values for linear regression of one variable with a second 
     variable across many scales or lags
@@ -197,41 +131,40 @@ def get_r2_list(dataset, first_variable, second_vari_list):
     r2_list = []
     for each_variable in second_vari_list:
         each_vari_subset = dataset[[col for col in dataset.columns if col == each_variable]]
-        each_combo = pd.concat([first_variable, each_vari_subset], axis=1)
-        if np.all(pd.notnull(each_combo.iloc[:,1])):
-            linreg = sm.regression.linear_model.OLS(each_combo.iloc[:,0], each_combo.iloc[:,1])
+        if np.all(pd.notnull(each_vari_subset)):
+            linreg = sm.regression.linear_model.OLS(first_variable, each_vari_subset)
             linreg_results = linreg.fit()
             r2 = linreg_results.rsquared
             r2_list.append(r2)
     return r2_list
 
-testing_r2_fx = get_r2_list(single_species, single_species["mass"], column_names)
+# Group dataset by species and apply r2 function to each species group to get
+# list containing all r2 values for each species
 
+# Have to temporarily remove the fourth row, species with one individual in subset
+# Automate past year column length somehow? 
+all_r2 = pd.DataFrame(range(41))
+species_list = []
+all_r2.columns = ["past_year"]
+data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
+for species, species_data in data_by_species:
+    species_list.append(species)
+    r2_species = get_r2_list(species_data, species_data["mass"], column_names)
+    r2_species = pd.DataFrame(r2_species)
+    r2_species.columns = [species]
+    all_r2[species] = r2_species
 
-###############
-past_year = pd.DataFrame(range(29))
-past_year.columns = ["past_year"]
+# Create PDF containing fig for each species of past year and r2 value
+pp = PdfPages("all_r2_figs.pdf")
+for each_species in species_list: 
+    species_r2 = all_r2[[col for col in all_r2.columns if col == each_species]]
+    plt.figure()
+    plt.plot(all_r2["past_year"], species_r2, "bo")
+    pp.savefig()
+pp.close()
 
-r2_single_list = pd.concat([past_year, r2_single_list], axis = 1)
+# Fx that creates PDF containing plots, for lin reg plots and r2/other stats plots?
 
-plt.figure()
-plt.plot(r2_single_list["past_year"], r2_single_list["myodes_gapperi"], "bo")
-plt.show()
+# For lin reg abline plots, do same x-axis as scatterplot and do y linreg_results.fittedvalues
 
-## Using pandas groupby, what is the benefit? 
-#by_species = july_yearlag_subset.groupby("Species.Genus")
-#for species, species_data in by_species:
-    #avg_mass = np.mean(species_data["Mass"])
-    #print "Avg mass of {} is {}" .format(species, avg_mass)
-
-#pp2 = PdfPages("all_figs_2.pdf")
-#by_species = july_yearlag_subset.groupby("Species.Genus")
-#for species, species_data in by_species:
-    #for current_past_year in column_names:
-
-
-
-
-
-
-
+# What do do about RuntimeWarning? Moving close around didn't work
