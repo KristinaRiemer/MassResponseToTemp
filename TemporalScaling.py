@@ -1,7 +1,12 @@
 from __future__ import division
 
-# Read in new individual data
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+import statsmodels.api as sm
+
+# Read in new individual data
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 individual_data_subset = individual_data.iloc[0:10]
 
@@ -106,10 +111,46 @@ july_temps_subset = pd.DataFrame(july_temps_subset, columns=column_names)
 july_yearlag_subset = pd.concat([individual_data_subset[["genus_species", "mass", 
                                 "year"]], july_temps_subset], axis=1)
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-import statsmodels.api as sm
+# Function to create PDF for each species containing individual plots for mass 
+# and each previous year's temperature
+
+# What do do about RuntimeWarning? Moving close around didn't work
+def plot_linreg(dataset, first_variable, second_vari_list, plot_name):
+    """Get scatterplots of first and second variables with linear reg line, where
+    second variable is across many lags or scales
+    
+    Args:
+        dataset: Dataset that contains both variables
+        first_variable: Column that contains values of first variable
+        second_vari_list: List of names of columns that contain values of second
+        variable
+        plot_name: Desired name of pdf
+    
+    Returns:
+        PDF with all scatterplots of first and second variables, with first on
+        x-axis and second on y-axis
+    """
+    pp = PdfPages(plot_name+"_linreg.pdf")
+    for each_variable in second_vari_list:
+            each_vari_subset = dataset[[col for col in dataset.columns if col == each_variable]]
+            each_combo = pd.concat([first_variable, each_vari_subset], axis=1)
+            if np.all(pd.notnull(each_combo.iloc[:,1])):
+                linreg = sm.regression.linear_model.OLS(each_combo.iloc[:,0], each_combo.iloc[:,1])
+                linreg_results = linreg.fit()   
+                plt.figure()
+                plt.plot(each_combo.iloc[:,1], each_combo.iloc[:,0], "bo")
+                plt.plot(each_combo.iloc[:,1], linreg_results.fittedvalues, "r-")
+                plt.xlabel("Temperature from "+each_variable)
+                plt.ylabel("Mass (g)")
+                pp.savefig()
+    pp.close()
+
+# Group dataset by species and get pdfs of all mass-temp (one for each past year)
+# plots for each species
+data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
+for species, species_data in data_by_species:
+    species = species.replace(" ", "_")
+    linreg_plots = plot_linreg(species_data, species_data["mass"], column_names, species)
 
 # Function to get r2 values list for any particular species for all mass/past 
 # year temp combos
@@ -148,6 +189,7 @@ species_list = []
 all_r2.columns = ["past_year"]
 data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
 for species, species_data in data_by_species:
+    species = species.replace(" ", "_")
     species_list.append(species)
     r2_species = get_r2_list(species_data, species_data["mass"], column_names)
     r2_species = pd.DataFrame(r2_species)
@@ -160,11 +202,9 @@ for each_species in species_list:
     species_r2 = all_r2[[col for col in all_r2.columns if col == each_species]]
     plt.figure()
     plt.plot(all_r2["past_year"], species_r2, "bo")
+    plt.xlabel("Past Year")
+    plt.ylabel("R^2")
+    plt.title(each_species)
     pp.savefig()
 pp.close()
 
-# Fx that creates PDF containing plots, for lin reg plots and r2/other stats plots?
-
-# For lin reg abline plots, do same x-axis as scatterplot and do y linreg_results.fittedvalues
-
-# What do do about RuntimeWarning? Moving close around didn't work
