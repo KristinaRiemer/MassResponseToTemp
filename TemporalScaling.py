@@ -196,15 +196,52 @@ for species, species_data in data_by_species:
     r2_species.columns = [species]
     all_r2[species] = r2_species
 
-# Create PDF containing fig for each species of past year and r2 value
-pp = PdfPages("all_r2_figs.pdf")
+# Repeat function and code for r2 list but for slope instead
+def get_slope_list(dataset, first_variable, second_vari_list):
+    """Get R^2 values for linear regression of one variable with a second 
+    variable across many scales or lags
+    
+    Args:
+        dataset: Dataset that contains both variables
+        first_variable: Column that contains values of the first variable
+        second_vari_list: List of names of columns that contain values of second
+        variable
+    
+    Returns:
+        List containing R^2 values for each first and second variable combination
+    """
+    slope_list = []
+    for each_variable in second_vari_list:
+        each_vari_subset = dataset[[col for col in dataset.columns if col == each_variable]]
+        if np.all(pd.notnull(each_vari_subset)):
+            linreg = sm.regression.linear_model.OLS(first_variable, each_vari_subset)
+            linreg_results = linreg.fit()
+            slope = linreg_results.params[0]
+            slope_list.append(slope)
+    return slope_list
+
+all_slope = pd.DataFrame(range(41))
+species_list = []
+all_slope.columns = ["past_year"]
+data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
+for species, species_data in data_by_species:
+    species = species.replace(" ", "_")
+    species_list.append(species)
+    slope_species = get_slope_list(species_data, species_data["mass"], column_names)
+    slope_species = pd.DataFrame(slope_species)
+    slope_species.columns = [species]
+    all_slope[species] = slope_species
+
+# Create PDF containing fig for each species of past year and r2 value/slope
+pp = PdfPages("all_stats_figs.pdf")
 for each_species in species_list: 
     species_r2 = all_r2[[col for col in all_r2.columns if col == each_species]]
+    species_slope = all_slope[[col for col in all_slope.columns if col == each_species]]
     plt.figure()
     plt.plot(all_r2["past_year"], species_r2, "bo")
+    plt.plot(all_slope["past_year"], species_slope, "ro")
     plt.xlabel("Past Year")
     plt.ylabel("R^2")
     plt.title(each_species)
     pp.savefig()
 pp.close()
-
