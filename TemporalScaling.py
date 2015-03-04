@@ -1,38 +1,56 @@
 from __future__ import division
-
 import pandas as pd
+from osgeo import gdal
+import calendar
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import statsmodels.api as sm
 
-# Read in new individual data
+# Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 individual_data_subset = individual_data.iloc[0:10]
 
-# Packages for reading in temperature data
-# http://www.esrl.noaa.gov/psd/data/gridded/data.UDel_AirT_Precip.html
-from osgeo import gdal
-from osgeo.gdalconst import *
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
-
-# Temperature dataset
 temp_file = "air.mon.mean.v301.nc"
 
-# List of months with corresponding codes for stackID
-# stackID = year * 12 - monthcode
-import calendar
-month_names = []
-for each_month in range(1, 13):
-    month_names.append(calendar.month_name[each_month])
-month_codes = pd.DataFrame(month_names, columns = ["month"])
-month_codes["code"] = range(22799, 22787, -1)
-#How to use this as a lookup table?
-#month_codes["code"][month_codes["month"] == "July"]
+# Functions
+def create_month_codes_list(jan_code, dec_code, diff):
+    """Create list of month names and corresponding codes
+    
+    Args: 
+        jan_code: Code corresponding to month of January
+        dec_code: Code corresponding to month of December
+        diff: What value to add/subtract between each month code
+    
+    Returns: 
+        List of month names and codes
+    """
+    month_names = []
+    for each_month in range(1, 13):
+        month_names.append(calendar.month_name[each_month])
+    month_codes = pd.DataFrame(month_names, columns = ["month"])
+    month_codes["code"] = range(jan_code, dec_code, diff)
+    return month_codes
 
-# Only monthly average for now, later add 3 month average option
+def get_multiple_stackIDs(year_list, code):
+    """Get list of stackIDs lists for multiple chosen years for chosen month
+    
+    Args: 
+        year_list: List of chosen years
+        code: Chosen month
+    
+    Returns: List of stackID lists for multiple years
+    """
+    multiple_stackIDs = []
+    for each_year in year_list:
+        stackIDs_eachyear = get_stackIDs(each_year, code)
+        multiple_stackIDs.append(stackIDs_eachyear)
+    return multiple_stackIDs
+
 def get_stackIDs(current_year, month_code):
+    # TODO: incorporate 3 month average option
     """Get stackIDs for chosen month in current and previous years until 1900
     
     Args:
@@ -48,13 +66,6 @@ def get_stackIDs(current_year, month_code):
         all_stackIDs.append(current_stackID)
         current_stackID -= 12
     return all_stackIDs
-
-# Get all July stackID values for each individual in subset dataset
-july_code = 22793
-stackIDs_july_subset = []
-for each_year in individual_data_subset["year"]:
-    stackIDs_july_eachyear = get_stackIDs(each_year, july_code)
-    stackIDs_july_subset.append(stackIDs_july_eachyear)
 
 def get_temp_at_point(raster_file, coordinates, band):
     """Determine temperature value at chosen coordinates and band of raster
@@ -80,7 +91,7 @@ def get_temp_at_point(raster_file, coordinates, band):
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
 
-def get_multiple_temps(stackIDs_list, file_name, coordinates):
+def get_temps_list(stackIDs_list, file_name, coordinates):
     """Get all temperature values for list of stackIDs
     
     Args: 
@@ -97,25 +108,8 @@ def get_multiple_temps(stackIDs_list, file_name, coordinates):
         temps_list.append(each_temp)
     return temps_list
 
-# Get all temps for corresponding July stackIDs for each individual in subset dataset
-july_temps_subset = []
-for i in range(len(individual_data_subset)):
-    individual_temps_subset = get_multiple_temps(stackIDs_july_subset[i], temp_file, 
-                                individual_data_subset.iloc[i][["lon", "lat"]])
-    july_temps_subset.append(individual_temps_subset)
-
-# Create final dataset
-# Need to change range to be automated for greatest length
-column_names = ["past_year_{}" .format(year) for year in range(41)]
-july_temps_subset = pd.DataFrame(july_temps_subset, columns=column_names)
-july_yearlag_subset = pd.concat([individual_data_subset[["genus_species", "mass", 
-                                "year"]], july_temps_subset], axis=1)
-
-# Function to create PDF for each species containing individual plots for mass 
-# and each previous year's temperature
-
-# What do do about RuntimeWarning? Moving close around didn't work
 def plot_linreg(dataset, first_variable, second_vari_list, plot_name):
+    # FIXME: RuntimeWarning; didn't help to move location of close
     """Get scatterplots of first and second variables with linear reg line, where
     second variable is across many lags or scales
     
@@ -145,18 +139,8 @@ def plot_linreg(dataset, first_variable, second_vari_list, plot_name):
                 pp.savefig()
     pp.close()
 
-# Group dataset by species and get pdfs of all mass-temp (one for each past year)
-# plots for each species
-data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
-for species, species_data in data_by_species:
-    species = species.replace(" ", "_")
-    linreg_plots = plot_linreg(species_data, species_data["mass"], column_names, species)
-
-# Function to get r2 values list for any particular species for all mass/past 
-# year temp combos
-# To generalize, will be able to input desired stat
-# See dir(linreg_results) for all possible parts of lin reg summary
 def get_r2_list(dataset, first_variable, second_vari_list):
+    # TODO: be able to input desired stat to generalize, would eliminate slope fx
     """Get R^2 values for linear regression of one variable with a second 
     variable across many scales or lags
     
@@ -179,24 +163,6 @@ def get_r2_list(dataset, first_variable, second_vari_list):
             r2_list.append(r2)
     return r2_list
 
-# Group dataset by species and apply r2 function to each species group to get
-# list containing all r2 values for each species
-
-# Have to temporarily remove the fourth row, species with one individual in subset
-# Automate past year column length somehow? 
-all_r2 = pd.DataFrame(range(41))
-species_list = []
-all_r2.columns = ["past_year"]
-data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
-for species, species_data in data_by_species:
-    species = species.replace(" ", "_")
-    species_list.append(species)
-    r2_species = get_r2_list(species_data, species_data["mass"], column_names)
-    r2_species = pd.DataFrame(r2_species)
-    r2_species.columns = [species]
-    all_r2[species] = r2_species
-
-# Repeat function and code for r2 list but for slope instead
 def get_slope_list(dataset, first_variable, second_vari_list):
     """Get R^2 values for linear regression of one variable with a second 
     variable across many scales or lags
@@ -220,6 +186,63 @@ def get_slope_list(dataset, first_variable, second_vari_list):
             slope_list.append(slope)
     return slope_list
 
+
+# List of months with corresponding stackID codes
+month_codes = create_month_codes_list(22799, 22787, -1)
+
+# Get all July stackID values for each individual in subset dataset
+# TODO: use month_names as lookup table, e.g., month_codes["code"][month_codes["month"] == "July"]
+july_code = 22793 
+stackIDs_july_subset = get_multiple_stackIDs(individual_data_subset["year"], july_code)
+
+# Get all temps for corresponding July stackIDs for each individual in subset dataset
+temps_july_subset = []
+for i in range(len(individual_data_subset)):
+    individual_temps_subset = get_temps_list(stackIDs_july_subset[i], temp_file, 
+                                individual_data_subset.iloc[i][["lon", "lat"]])
+    temps_july_subset.append(individual_temps_subset)
+
+# TODO: get below refactor of above code to work, coords input is problem
+#def get_multiple_temps_lists(original_dataset, all_stackIDs, temps_lookup, coords_names): 
+    #multiple_temps_lists = []
+    #for i in range(len(original_dataset)):
+        #each_temps_list = get_temps_list(all_stackIDs[i], temps_lookup, original_dataset.iloc[i]coords_names)
+        #multiple_temps_lists.append(each_temps_list)
+    #return multiple_temps_lists
+
+#temps_july_subset_test = get_multiple_temps_lists(individual_data_subset, stackIDs_july_subset, temp_file, [["lon", "lat"]])
+    
+# Create final dataset
+# Need to change range to be automated for greatest length
+column_names = ["past_year_{}" .format(year) for year in range(41)]
+temps_july_subset = pd.DataFrame(temps_july_subset, columns=column_names)
+july_yearlag_subset = pd.concat([individual_data_subset[["genus_species", "mass", 
+                                "year"]], temps_july_subset], axis=1)
+
+# Group dataset by species and get pdfs of all mass-temp (one for each past year)
+# plots for each species
+data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
+for species, species_data in data_by_species:
+    species = species.replace(" ", "_")
+    linreg_plots = plot_linreg(species_data, species_data["mass"], column_names, species)
+
+
+# Generate r2 values for each species and past year
+# FIXME: remove fourth row restriction, only applies to subset dataset
+# TODO: automate past year column length
+all_r2 = pd.DataFrame(range(41))
+species_list = []
+all_r2.columns = ["past_year"]
+data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
+for species, species_data in data_by_species:
+    species = species.replace(" ", "_")
+    species_list.append(species)
+    r2_species = get_r2_list(species_data, species_data["mass"], column_names)
+    r2_species = pd.DataFrame(r2_species)
+    r2_species.columns = [species]
+    all_r2[species] = r2_species
+
+# Generate slope values for each species and past year
 all_slope = pd.DataFrame(range(41))
 species_list = []
 all_slope.columns = ["past_year"]
