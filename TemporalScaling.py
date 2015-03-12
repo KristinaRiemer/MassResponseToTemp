@@ -11,16 +11,13 @@ import statsmodels.api as sm
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 individual_data_subset = individual_data.iloc[0:10]
 
-# TODO: Automate length
-past_year_names = ["past_year_{}" .format(year) for year in range(41)]
-
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
 temp_file = "air.mon.mean.v301.nc"
 
 # Functions
-def create_month_codes_list(jan_code, dec_code, diff):
-    """Create list of month names and corresponding codes
+def create_month_codes_dict(jan_code, dec_code, diff):
+    """Create dict of month names and corresponding codes
     
     Args: 
         jan_code: Code corresponding to month of January
@@ -28,13 +25,15 @@ def create_month_codes_list(jan_code, dec_code, diff):
         diff: What value to add/subtract between each month code
     
     Returns: 
-        List of month names and codes
+        Dict of month names and codes
     """
     month_names = []
     for each_month in range(1, 13):
         month_names.append(calendar.month_name[each_month])
-    month_codes = pd.DataFrame(month_names, columns = ["month"])
-    month_codes["code"] = range(jan_code, dec_code, diff)
+    codes = range(jan_code, dec_code, diff)
+    month_codes = {}
+    for month, code in zip(month_names, codes):
+        month_codes[month] = code
     return month_codes
 
 def get_stackIDs(current_year, month_code):
@@ -54,21 +53,6 @@ def get_stackIDs(current_year, month_code):
         all_stackIDs.append(current_stackID)
         current_stackID -= 12
     return all_stackIDs
-
-def get_multiple_stackIDs(year_list, code):
-    """Get list of stackIDs lists for multiple chosen years for chosen month
-    
-    Args: 
-        year_list: List of chosen years
-        code: Chosen month
-    
-    Returns: List of stackID lists for multiple years
-    """
-    multiple_stackIDs = []
-    for each_year in year_list:
-        stackIDs_eachyear = get_stackIDs(each_year, code)
-        multiple_stackIDs.append(stackIDs_eachyear)
-    return multiple_stackIDs
 
 def get_temp_at_point(raster_file, coordinates, band):
     """Determine temperature value at chosen coordinates and band of raster
@@ -93,6 +77,10 @@ def get_temp_at_point(raster_file, coordinates, band):
     scale_factor = single_band.GetScale()    #get scale factor to unpack
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
+
+temps_single_test = [get_multiple_temps_lists(stackID, temp_file, lon, lat) for stackID, lon, lat in stackIDs_july_subset, individual_data_subset["lon"], individual_data_subset["lat"]]
+
+temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, temp_file, individual_data_subset["lon"], individual_data_subset["lat"])
 
 def get_temps_list(stackIDs_list, file_name, coordinates):
     """Get all temperature values for list of stackIDs
@@ -304,15 +292,19 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
 
 
 # List of months with corresponding stackID codes
-month_codes = create_month_codes_list(22799, 22787, -1)
+month_codes = create_month_codes_dict(22799, 22787, -1)
 
 # Get all July stackID values for each individual in subset dataset
-# TODO: use month_names as lookup table, e.g., month_codes["code"][month_codes["month"] == "July"]
-july_code = 22793 
-stackIDs_july_subset = get_multiple_stackIDs(individual_data_subset["year"], july_code)
+stackIDs_july_subset = [get_stackIDs(year, month_codes["July"]) for year in individual_data_subset["year"]]
+
+#stackIDs_july_subset = get_multiple_stackIDs(individual_data_subset["year"], month_codes["July"])
 
 # Get all July temperatures for each individual in subset dataset
 temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, temp_file, individual_data_subset["lon"], individual_data_subset["lat"])
+
+# Create past year names list
+max_past_years = individual_data_subset["year"].max() - 1899
+past_year_names = ["past_year_{}" .format(year) for year in range(max_past_years)]
 
 # Create final temperature dataset
 final_temps_july_subset = create_temp_dataset(temps_july_subset, individual_data_subset["genus_species"], individual_data_subset["mass"], individual_data_subset["year"], past_year_names)
