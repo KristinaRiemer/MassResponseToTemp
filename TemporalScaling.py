@@ -128,12 +128,12 @@ def get_multiple_temps_lists(all_stackIDs, temps_lookup, coords1, coords2):
         multiple_temps_lists.append(each_temps_list)
     return multiple_temps_lists
 
-def create_temp_dataset(number_pastyears, dataset, species_col, mass_col, year_col):
-    # TODO: Automate number of past years
+def create_temp_dataset(max_years, dataset, species_col, mass_col, year_col):
+    # TODO: Automate number of past years or pass in max of 110
     """Put temperature lists into usable Pandas format
     
     Args: 
-        number_pastyears: Maximum number of past years with temp data
+        max_years: Maximum possible number of past years with temp data
         dataset: Temperature list of lists dataset
         species_col: Column containing species information for each individual
         mass_col: Column containing mass information for each individual
@@ -143,13 +143,14 @@ def create_temp_dataset(number_pastyears, dataset, species_col, mass_col, year_c
         Pandas dataset with columns for species, mass, year, and all past year
         temperatures for each individual
     """
-    column_names_test = ["past_year_{}" .format(year) for year in range(number_pastyears)]
-    with_column_names = pd.DataFrame(dataset, columns = column_names_test)
-    temp_dataset_final = pd.concat([species_col, mass_col, year_col, with_column_names], axis = 1)
+    column_names = ["past_year_{}" .format(year) for year in range(max_years)]
+    temp_dataset = pd.DataFrame(dataset, columns = column_names)
+    temp_dataset_final = pd.concat([species_col, mass_col, year_col, temp_dataset], axis = 1)            
     return temp_dataset_final
 
 def plot_linreg(dataset, first_variable, second_vari_list, plot_name):
     # FIXME: RuntimeWarning; didn't help to move location of close
+    # TODO: Create single plot for each species containing lines for each past year
     """Get scatterplots of first and second variables with linear reg line, where
     second variable is across many lags or scales
     
@@ -178,6 +179,25 @@ def plot_linreg(dataset, first_variable, second_vari_list, plot_name):
                 plt.ylabel("Mass (g)")
                 pp.savefig()
     pp.close()
+
+def create_masstemp_plots (max_years, dataset, groupby_col_name, dep_var_name):
+    """Set of plots for each species with each past year temps and masses
+    
+    Args: 
+        max_years: Maximum possible number of past years with temp data
+        dataset: Dataset containing all past years' temperatures for each individual
+        groupby_col_name: Name of species column
+        dep_var_name: Name of mass column
+        
+    Returns: 
+        PDF for each species with mass-temp plots
+    """
+    column_names = ["past_year_{}" .format(year) for year in range(max_years)]
+    data_by_species = dataset.groupby(groupby_col_name)
+    for species, species_data in data_by_species: 
+        species = species.replace(" ", "_")
+        linreg_plots = plot_linreg(species_data, species_data[dep_var_name], column_names, species)
+    return linreg_plots
 
 def get_r2_list(dataset, first_variable, second_vari_list):
     # TODO: be able to input desired stat to generalize, would eliminate slope fx
@@ -226,6 +246,61 @@ def get_slope_list(dataset, first_variable, second_vari_list):
             slope_list.append(slope)
     return slope_list
 
+def get_multiple_stat_lists(stat_fx, max_years, dataset, groupby_col_name, dep_var_name): 
+    # FIXME: remove fourth row restriction, only applies to subset dataset
+    # TODO: automate past year column length
+    """Dataset containing desired stat for each species and each past year
+    
+    Args: 
+        stat_fx: Desired statistic's function
+        max_years: Maximum possible number of past years with temp data
+        dataset: Dataset containing all past years' temperatures for each individual
+        groupby_col_name: Name of species column
+        dep_var_name: Name of mass column
+        
+    Returns: 
+        Stats dataset
+    """
+    all_stat = pd.DataFrame(range(max_years))
+    species_list = []
+    all_stat.columns = ["past_year"]
+    data_by_species = dataset.groupby(groupby_col_name)
+    for species, species_data in data_by_species:
+        species = species.replace(" ", "_")
+        species_list.append(species)
+        stat_species = stat_fx(species_data, species_data[dep_var_name], column_names)
+        stat_species = pd.DataFrame(stat_species)
+        stat_species.columns = [species]
+        all_stat[species] = stat_species
+    return all_stat
+
+def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
+    # FIXME: awful function
+    """Plot of past year and stats (r2 & slope) for each species
+    
+    Args: 
+        fig_name: Desired name of final PDF
+        sp_list: List of species names
+        r2_list: Dataset containing r2 values for all species
+        slope_list: Dataset containing slope values for all species
+        ind_var_name: Name of independent variable (i.e., past year)
+        
+    Returns: 
+        PDF with stats plot for each species
+    """
+    pp = PdfPages(fig_name)
+    for each_species in sp_list: 
+        species_r2 = r2_list[[col for col in r2_list.columns if col == each_species]]
+        species_slope = slope_list[[col for col in slope_list.columns if col == each_species]]
+        plt.figure()
+        plt.plot(r2_list[ind_var_name], species_r2, "bo")
+        plt.plot(slope_list[ind_var_name], species_slope, "ro")
+        plt.xlabel("Past Year")
+        plt.ylabel("R^2")
+        plt.title(each_species)
+        pp.savefig()
+    pp.close()
+
 
 # List of months with corresponding stackID codes
 month_codes = create_month_codes_list(22799, 22787, -1)
@@ -241,51 +316,21 @@ temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, temp_file, in
 # Create final temperature dataset
 final_temps_july_subset = create_temp_dataset(41, temps_july_subset, individual_data_subset["genus_species"], individual_data_subset["mass"], individual_data_subset["year"])
 
-# Group dataset by species and get pdfs of all mass-temp (one for each past year)
-# plots for each species
-data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
-for species, species_data in data_by_species:
-    species = species.replace(" ", "_")
-    linreg_plots = plot_linreg(species_data, species_data["mass"], column_names, species)
+# Individual mass-temp plots for each past year for each species
+create_masstemp_plots(41, final_temps_july_subset.drop([4]), "genus_species", "mass")
+
+# FIXME: column_names is used several times, need to do something better
+column_names = ["past_year_{}" .format(year) for year in range(41)]
 
 # Generate r2 values for each species and past year
-# FIXME: remove fourth row restriction, only applies to subset dataset
-# TODO: automate past year column length
-all_r2 = pd.DataFrame(range(41))
-species_list = []
-all_r2.columns = ["past_year"]
-data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
-for species, species_data in data_by_species:
-    species = species.replace(" ", "_")
-    species_list.append(species)
-    r2_species = get_r2_list(species_data, species_data["mass"], column_names)
-    r2_species = pd.DataFrame(r2_species)
-    r2_species.columns = [species]
-    all_r2[species] = r2_species
+final_r2 = get_multiple_stat_lists(get_r2_list, 41, final_temps_july_subset.drop([4]), "genus_species", "mass")
 
 # Generate slope values for each species and past year
-all_slope = pd.DataFrame(range(41))
-species_list = []
-all_slope.columns = ["past_year"]
-data_by_species = july_yearlag_subset.drop([4]).groupby("genus_species")
-for species, species_data in data_by_species:
-    species = species.replace(" ", "_")
-    species_list.append(species)
-    slope_species = get_slope_list(species_data, species_data["mass"], column_names)
-    slope_species = pd.DataFrame(slope_species)
-    slope_species.columns = [species]
-    all_slope[species] = slope_species
+final_slope = get_multiple_stat_lists(get_slope_list, 41, final_temps_july_subset.drop([4]), "genus_species", "mass")
+
+# Create list of species names with underscores
+# FIXME: automate species list, put into stats fx
+species_list = ["Microtus_californicus", "Myodes_gapperi"]
 
 # Create PDF containing fig for each species of past year and r2 value/slope
-pp = PdfPages("all_stats_figs.pdf")
-for each_species in species_list: 
-    species_r2 = all_r2[[col for col in all_r2.columns if col == each_species]]
-    species_slope = all_slope[[col for col in all_slope.columns if col == each_species]]
-    plt.figure()
-    plt.plot(all_r2["past_year"], species_r2, "bo")
-    plt.plot(all_slope["past_year"], species_slope, "ro")
-    plt.xlabel("Past Year")
-    plt.ylabel("R^2")
-    plt.title(each_species)
-    pp.savefig()
-pp.close()
+create_stats_fig("all_stats_fig.pdf", species_list, final_r2, final_slope, "past_year")
