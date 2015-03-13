@@ -78,10 +78,6 @@ def get_temp_at_point(raster_file, coordinates, band):
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
 
-temps_single_test = [get_multiple_temps_lists(stackID, temp_file, lon, lat) for stackID, lon, lat in stackIDs_july_subset, individual_data_subset["lon"], individual_data_subset["lat"]]
-
-temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, temp_file, individual_data_subset["lon"], individual_data_subset["lat"])
-
 def get_temps_list(stackIDs_list, file_name, coordinates):
     """Get all temperature values for list of stackIDs
     
@@ -123,7 +119,6 @@ def create_temp_dataset(dataset, species_col, mass_col, year_col, col_names):
     """Put temperature lists into usable Pandas format
     
     Args: 
-        max_years: Maximum possible number of past years with temp data
         dataset: Temperature list of lists dataset
         species_col: Column containing species information for each individual
         mass_col: Column containing mass information for each individual
@@ -169,19 +164,18 @@ def plot_linreg(dataset, first_variable, second_vari_list, plot_name):
                 pp.savefig()
     pp.close()
 
-def create_masstemp_plots (max_years, dataset, groupby_col_name, dep_var_name, col_names):
+def create_masstemp_plots (dataset, groupby_col_name, dep_var_name, col_names):
     """Set of plots for each species with each past year temps and masses
     
     Args: 
-        max_years: Maximum possible number of past years with temp data
         dataset: Dataset containing all past years' temperatures for each individual
         groupby_col_name: Name of species column
         dep_var_name: Name of mass column
+        col_names: Names of temperature columns
         
     Returns: 
         PDF for each species with mass-temp plots
     """
-    #column_names = ["past_year_{}" .format(year) for year in range(max_years)]
     data_by_species = dataset.groupby(groupby_col_name)
     for species, species_data in data_by_species: 
         species = species.replace(" ", "_")
@@ -246,6 +240,7 @@ def get_multiple_stat_lists(stat_fx, max_years, dataset, groupby_col_name, dep_v
         dataset: Dataset containing all past years' temperatures for each individual
         groupby_col_name: Name of species column
         dep_var_name: Name of mass column
+        col_names: Names of temperature columns
         
     Returns: 
         Stats dataset
@@ -261,7 +256,7 @@ def get_multiple_stat_lists(stat_fx, max_years, dataset, groupby_col_name, dep_v
         stat_species = pd.DataFrame(stat_species)
         stat_species.columns = [species]
         all_stat[species] = stat_species
-    return all_stat
+    return species_list, all_stat
 
 def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
     # FIXME: awful function
@@ -297,8 +292,6 @@ month_codes = create_month_codes_dict(22799, 22787, -1)
 # Get all July stackID values for each individual in subset dataset
 stackIDs_july_subset = [get_stackIDs(year, month_codes["July"]) for year in individual_data_subset["year"]]
 
-#stackIDs_july_subset = get_multiple_stackIDs(individual_data_subset["year"], month_codes["July"])
-
 # Get all July temperatures for each individual in subset dataset
 temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, temp_file, individual_data_subset["lon"], individual_data_subset["lat"])
 
@@ -310,17 +303,13 @@ past_year_names = ["past_year_{}" .format(year) for year in range(max_past_years
 final_temps_july_subset = create_temp_dataset(temps_july_subset, individual_data_subset["genus_species"], individual_data_subset["mass"], individual_data_subset["year"], past_year_names)
 
 # Individual mass-temp plots for each past year for each species
-create_masstemp_plots(41, final_temps_july_subset.drop([4]), "genus_species", "mass", past_year_names)
+create_masstemp_plots(final_temps_july_subset.drop([4]), "genus_species", "mass", past_year_names)
 
 # Generate r2 values for each species and past year
-final_r2 = get_multiple_stat_lists(get_r2_list, 41, final_temps_july_subset.drop([4]), "genus_species", "mass", past_year_names)
+species_list, final_r2 = get_multiple_stat_lists(get_r2_list, max_past_years, final_temps_july_subset.drop([4]), "genus_species", "mass", past_year_names)
 
 # Generate slope values for each species and past year
-final_slope = get_multiple_stat_lists(get_slope_list, 41, final_temps_july_subset.drop([4]), "genus_species", "mass", past_year_names)
-
-# Create list of species names with underscores
-# FIXME: automate species list, put into stats fx
-species_list = ["Microtus_californicus", "Myodes_gapperi"]
+species_list, final_slope = get_multiple_stat_lists(get_slope_list, max_past_years, final_temps_july_subset.drop([4]), "genus_species", "mass", past_year_names)
 
 # Create PDF containing fig for each species of past year and r2 value/slope
 create_stats_fig("all_stats_fig.pdf", species_list, final_r2, final_slope, "past_year")
