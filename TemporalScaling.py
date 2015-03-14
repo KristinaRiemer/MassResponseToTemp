@@ -10,6 +10,7 @@ import statsmodels.api as sm
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 individual_data_subset = individual_data.iloc[0:10]
+individual_data_subset = individual_data_subset[individual_data_subset["genus_species"] != "Microtus ochrogaster"]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -78,7 +79,7 @@ def get_temp_at_point(raster_file, coordinates, band):
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
 
-def get_temps_list(stackIDs_list, file_name, coordinates):
+def get_temps_list(stackIDs_list, file_name, coords):
     """Get all temperature values for list of stackIDs
     
     Args: 
@@ -91,7 +92,7 @@ def get_temps_list(stackIDs_list, file_name, coordinates):
     """
     temps_list = []    
     for current_stackID in stackIDs_list: 
-        each_temp = get_temp_at_point(file_name, coordinates, current_stackID)
+        each_temp = get_temp_at_point(file_name, coords, current_stackID)
         temps_list.append(each_temp)
     return temps_list
 
@@ -115,20 +116,18 @@ def get_multiple_temps_lists(all_stackIDs, temps_lookup, coords1, coords2):
         multiple_temps_lists.append(each_temps_list)
     return multiple_temps_lists
 
-def create_temp_dataset(dataset, species_col, mass_col, year_col, col_names):
-    """Put temperature lists into usable Pandas format
+def create_temp_dataset(list_of_list, col_names, species_col, mass_col, year_col):
+    """Turn list into usable Pandas dataframe with additional columns
     
     Args: 
         dataset: Temperature list of lists dataset
-        species_col: Column containing species information for each individual
-        mass_col: Column containing mass information for each individual
-        year_col: Column containing year information for each individual
+        col_names: Name of columns for original list
+        
     
     Returns: 
-        Pandas dataset with columns for species, mass, year, and all past year
-        temperatures for each individual
+        Pandas dataset with named columns and added columns
     """
-    temp_dataset = pd.DataFrame(dataset, columns = col_names)
+    temp_dataset = pd.DataFrame(list_of_list, columns = col_names)
     temp_dataset_final = pd.concat([species_col, mass_col, year_col, temp_dataset], axis = 1)            
     return temp_dataset_final
 
@@ -231,7 +230,6 @@ def get_slope_list(dataset, first_variable, second_vari_list):
 
 def get_multiple_stat_lists(stat_fx, max_years, dataset, groupby_col_name, dep_var_name, col_names): 
     # FIXME: remove fourth row restriction, only applies to subset dataset
-    # TODO: automate past year column length
     """Dataset containing desired stat for each species and each past year
     
     Args: 
@@ -259,7 +257,6 @@ def get_multiple_stat_lists(stat_fx, max_years, dataset, groupby_col_name, dep_v
     return species_list, all_stat
 
 def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
-    # FIXME: awful function
     """Plot of past year and stats (r2 & slope) for each species
     
     Args: 
@@ -293,23 +290,31 @@ month_codes = create_month_codes_dict(22799, 22787, -1)
 stackIDs_july_subset = [get_stackIDs(year, month_codes["July"]) for year in individual_data_subset["year"]]
 
 # Get all July temperatures for each individual in subset dataset
-temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, temp_file, individual_data_subset["lon"], individual_data_subset["lat"])
+temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, temp_file, 
+                    individual_data_subset["lon"], individual_data_subset["lat"])
 
 # Create past year names list
 max_past_years = individual_data_subset["year"].max() - 1899
 past_year_names = ["past_year_{}" .format(year) for year in range(max_past_years)]
 
 # Create final temperature dataset
-final_temps_july_subset = create_temp_dataset(temps_july_subset, individual_data_subset["genus_species"], individual_data_subset["mass"], individual_data_subset["year"], past_year_names)
+final_temps_july_subset = create_temp_dataset(temps_july_subset, past_year_names, 
+                        individual_data_subset["genus_species"], individual_data_subset["mass"], 
+                        individual_data_subset["year"])
 
 # Individual mass-temp plots for each past year for each species
-create_masstemp_plots(final_temps_july_subset.drop([4]), "genus_species", "mass", past_year_names)
+create_masstemp_plots(final_temps_july_subset, "genus_species", "mass", 
+                      past_year_names)
 
 # Generate r2 values for each species and past year
-species_list, final_r2 = get_multiple_stat_lists(get_r2_list, max_past_years, final_temps_july_subset.drop([4]), "genus_species", "mass", past_year_names)
+species_list, final_r2 = get_multiple_stat_lists(get_r2_list, max_past_years, 
+                        final_temps_july_subset, "genus_species", "mass", 
+                        past_year_names)
 
 # Generate slope values for each species and past year
-species_list, final_slope = get_multiple_stat_lists(get_slope_list, max_past_years, final_temps_july_subset.drop([4]), "genus_species", "mass", past_year_names)
+species_list, final_slope = get_multiple_stat_lists(get_slope_list, max_past_years, 
+                            final_temps_july_subset, "genus_species", 
+                            "mass", past_year_names)
 
 # Create PDF containing fig for each species of past year and r2 value/slope
 create_stats_fig("all_stats_fig.pdf", species_list, final_r2, final_slope, "past_year")
