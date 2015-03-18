@@ -210,15 +210,6 @@ def get_r2_list(dataset, first_variable, second_vari_list):
             r2_list.append(r2)
     return r2_list
 
-# R2 test
-r2_test_data = [[1, 1, 4], [2, 2, 3], [3, 3, 2], [4, 4, 1]]
-r2_test_data = pd.DataFrame(r2_test_data, columns = ["first_variable", "second_vari_1", "second_vari_2"])
-second_vari_list = ["second_vari_1", "second_vari_2"]
-
-plot_linreg(r2_test_data, r2_test_data["first_variable"], second_vari_list, "test")
-
-r2_test = get_r2_list(r2_test_data, r2_test_data["first_variable"], second_vari_list)
-
 def get_slope_list(dataset, first_variable, second_vari_list):
     """Get R^2 values for linear regression of one variable with a second 
     variable across many scales or lags
@@ -336,3 +327,42 @@ create_stats_fig("all_stats_fig.pdf", species_list, final_r2, final_slope, "past
 # Timing code run
 final_time = time.time()
 total_time = (final_time - initial_time) / 60
+
+# Linear regression test
+test_data = [[1, 1, 4], [2, 2, 3], [3, 3, 2], [4, 4, 1]]
+test_data = pd.DataFrame(test_data, columns = ["first_variable", "second_vari_1", "second_vari_2"])
+second_vari_list = ["second_vari_1", "second_vari_2"]
+
+plot_linreg(test_data, test_data["first_variable"], second_vari_list, "test")
+
+r2_test = get_r2_list(test_data, test_data["first_variable"], second_vari_list)
+
+slope_test = get_slope_list(test_data, test_data["first_variable"], second_vari_list)
+
+linreg_test = sm.regression.linear_model.OLS(test_data["first_variable"], test_data["second_vari_2"])
+results_test = linreg_test.fit()
+r2 = results_test.rsquared
+slope = results_test.params[0]
+
+
+y = [1, 2, 3, 4]
+x = [1, 2, 3, 4]
+# Need to add constant to independent variable?
+#x = sm.add_constant(x)
+
+est = sm.OLS(y, x)
+est2 = est.fit()
+print est2.summary()
+
+print est2.rsquared
+# Want param[1] not param[0]?
+# This is not the slope, it's a regression coefficient
+# print est2.params[1]
+
+
+from scipy import stats
+
+x = [1, 2, 3, 4]
+y = [4, 3, 2, -6]
+slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+print slope, r_value ** 2
