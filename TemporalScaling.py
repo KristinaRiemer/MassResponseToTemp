@@ -7,14 +7,15 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import statsmodels.api as sm
 import time
+from scipy import stats
 
 # Timing code run
 initial_time = time.time()
 
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
-# Larger subset is 0:50 without 39
-individual_data_subset = individual_data.iloc[0:10].drop([4])
+# Smaller subset is 0:10 without 4, larger subset is 0:50 without 39
+individual_data_subset = individual_data.iloc[0:50].drop([39])
 individual_data_subset.index = range(len(individual_data_subset))
 
 gdal.AllRegister()
@@ -324,44 +325,11 @@ species_list, final_slope = get_multiple_stat_lists(get_slope_list, max_past_yea
 # Create PDF containing fig for each species of past year and r2 value/slope
 create_stats_fig("all_stats_fig.pdf", species_list, final_r2, final_slope, "past_year")
 
-# Timing code run
+# Timing code run in minutes
 final_time = time.time()
 total_time = (final_time - initial_time) / 60
 
-# Linear regression test
-test_data = [[1, 1, 4], [2, 2, 3], [3, 3, 2], [4, 4, 1]]
-test_data = pd.DataFrame(test_data, columns = ["first_variable", "second_vari_1", "second_vari_2"])
-second_vari_list = ["second_vari_1", "second_vari_2"]
-
-plot_linreg(test_data, test_data["first_variable"], second_vari_list, "test")
-
-r2_test = get_r2_list(test_data, test_data["first_variable"], second_vari_list)
-
-slope_test = get_slope_list(test_data, test_data["first_variable"], second_vari_list)
-
-linreg_test = sm.regression.linear_model.OLS(test_data["first_variable"], test_data["second_vari_2"])
-results_test = linreg_test.fit()
-r2 = results_test.rsquared
-slope = results_test.params[0]
-
-
-y = [1, 2, 3, 4]
-x = [1, 2, 3, 4]
-# Need to add constant to independent variable?
-#x = sm.add_constant(x)
-
-est = sm.OLS(y, x)
-est2 = est.fit()
-print est2.summary()
-
-print est2.rsquared
-# Want param[1] not param[0]?
-# This is not the slope, it's a regression coefficient
-# print est2.params[1]
-
-
-from scipy import stats
-
+# TODO: Replace lin reg method with what's below
 x = [1, 2, 3, 4]
 y = [4, 3, 2, -6]
 slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
