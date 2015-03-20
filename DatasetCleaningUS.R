@@ -33,8 +33,6 @@ extract_component = function(dataset_column, regex){
   }
 }
 
-# I don't think it's worth it to generalize this function, it's too specific
-# to this problem
 extract_individuals_genus_species = function(dataset_column){
   # Get species and genus from current identification for each individual
   #
@@ -111,6 +109,31 @@ extract_year = function(dataset_col){
   years = as.numeric(years)
 }
 
+remove_rows = function(factors_numbers, col_name, dataset){
+  # Remove rows from dataset based on their contents in one column, contents = factors
+  #
+  # Args: 
+  #   factors_numbers: From alphabetized unique list of column's factors, numbers
+  #   of factors that are to be kept
+  #   col_name: Name of column
+  #   dataset: Dataset from which rows will be removed
+  #
+  # Return: 
+  #   Dataset containing only desired rows
+  all_col_factors = table(col_name)
+  all_col_factors = all_col_factors[all_col_factors != 0]
+  desired_col_factors = c()
+  for (i in factors_numbers){
+    desired_col_factors = append(desired_col_factors, row.names(all_col_factors)[i])
+  }
+  new_dataset = c()
+  for (col_factor in desired_col_factors){
+    temporary = subset(dataset, col_name == col_factor)
+    new_dataset = rbind(new_dataset, temporary)
+  }
+  return(new_dataset)
+}
+
 species_crit = function(dataset, for_col, by_col, fx, col_name){
   # Get all minimum or maximum values of one variable for each species
   #
@@ -164,11 +187,13 @@ individual_data$year = extract_year(individual_data$Date.Collected)
 #----SUBSETTING DATASET----
 
 # Subset dataset to retain only individuals with mass, species ID, 
-# coordinates (in US), and collected 1900-2010
+# coordinates (in US), collected 1900-2010, and are adults
 individual_data = individual_data[complete.cases(individual_data$mass),]
 individual_data = individual_data[complete.cases(individual_data$genus_species),]
 individual_data = individual_data[(complete.cases(individual_data$lat) & complete.cases(individual_data$lon)),]
 individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
+adult_factors = c(1, 2, 4, 6, 12, 15, 23)
+individual_data = remove_rows(adult_factors, individual_data$Sex.Stage, individual_data)
 
 # Create list of species info (number individuals, year range, lat range) needed 
 # to later subset based on species ID
@@ -190,7 +215,7 @@ species_data$lat_range = species_data$max_lat - species_data$min_lat
 
 # Subset dataset to retain individuals whose species has at least 30 individuals, 
 # 20 years of data, and 5 latitudinal degrees of data
-# Collapse into one line or refactor?
+# TODO: refactor?
 individual_data = individual_data[individual_data$genus_species %in% species_data$genus_species[species_data$individuals >= 30],]
 individual_data = individual_data[individual_data$genus_species %in% species_data$genus_species[species_data$year_range >= 20],]
 individual_data = individual_data[individual_data$genus_species %in% species_data$genus_species[species_data$lat_range >= 5],]
