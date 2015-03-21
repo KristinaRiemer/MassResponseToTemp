@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import statsmodels.api as sm
 import time
-from scipy import stats
 
 # Timing code run
 initial_time = time.time()
@@ -15,7 +14,7 @@ initial_time = time.time()
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 # Smaller subset is 0:10 without 4, larger subset is 0:50 without 39
-individual_data_subset = individual_data.iloc[0:50].drop([39])
+individual_data_subset = individual_data.iloc[0:10].drop([4])
 individual_data_subset.index = range(len(individual_data_subset))
 
 gdal.AllRegister()
@@ -159,15 +158,29 @@ def plot_linreg(dataset, first_variable, second_vari_list, plot_name):
             each_vari_subset = dataset[[col for col in dataset.columns if col == each_variable]]
             each_combo = pd.concat([first_variable, each_vari_subset], axis=1)
             if np.all(pd.notnull(each_combo.iloc[:,1])):
+                #est = smf.ols(formula = "mass ~ each_variable", data = dataset).fit()  
                 linreg = sm.regression.linear_model.OLS(each_combo.iloc[:,0], each_combo.iloc[:,1])
-                linreg_results = linreg.fit()   
+                linreg_results = linreg.fit()
                 plt.figure()
                 plt.plot(each_combo.iloc[:,1], each_combo.iloc[:,0], "bo")
+                #Change linreg_results to est
                 plt.plot(each_combo.iloc[:,1], linreg_results.fittedvalues, "r-")
                 plt.xlabel("Temperature from "+each_variable)
                 plt.ylabel("Mass (g)")
                 pp.savefig()
+    print each_variable
+    print type(each_combo)
     pp.close()
+
+    #est = smf.ols(formula = "mass ~ past_year_0", data = final_temps_july_subset).fit()
+    #print est.summary()
+    #print est.fittedvalues
+    #print est.params[0] #intercept
+    #print est.params[1] #slope
+    
+    #plt.plot(final_temps_july_subset["past_year_0"], final_temps_july_subset["mass"], "bo")
+    #plt.plot(final_temps_july_subset["past_year_0"], est.fittedvalues, "r-")
+    #plt.show()
 
 def create_masstemp_plots (dataset, groupby_col_name, dep_var_name, col_names):
     """Set of plots for each species with each past year temps and masses
@@ -330,7 +343,14 @@ final_time = time.time()
 total_time = (final_time - initial_time) / 60
 
 # TODO: Replace lin reg method with what's below
-x = [1, 2, 3, 4]
-y = [4, 3, 2, -6]
-slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-print slope, r_value ** 2
+import statsmodels.formula.api as smf
+
+est = smf.ols(formula = "mass ~ past_year_0", data = final_temps_july_subset).fit()
+print est.summary()
+print est.fittedvalues
+print est.params[0] #intercept
+print est.params[1] #slope
+
+plt.plot(final_temps_july_subset["past_year_0"], final_temps_july_subset["mass"], "bo")
+plt.plot(final_temps_july_subset["past_year_0"], est.fittedvalues, "r-")
+plt.show()
