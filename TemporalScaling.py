@@ -15,7 +15,7 @@ initial_time = time.time()
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 # Smaller subset is 0:10 without 4, larger subset is 0:50 without 15 (temp outlier)
-individual_data_subset = individual_data.iloc[10:16]
+individual_data_subset = individual_data.iloc[0:50]
 individual_data_subset.index = range(len(individual_data_subset))
 
 gdal.AllRegister()
@@ -306,9 +306,14 @@ final_temps_july_subset = create_temp_dataset(temps_july_subset, past_year_names
                         individual_data_subset["genus_species"], individual_data_subset["mass"], 
                         individual_data_subset["year"])
 
-# Remove individuals with missing temp data (i.e., 3276)
-for temp_col in past_year_names:
-    testing_del = final_temps_july_subset[(final_temps_july_subset[temp_col] < 3276) | (final_temps_july_subset[temp_col] > 3277)]
+# Dataset of individuals with missing temp data (i.e., ~3276.7) to check
+# FIXME: remove when no longer useful
+removed_individuals = final_temps_july_subset[(final_temps_july_subset["past_year_0"] 
+                        > 3276) & (final_temps_july_subset["past_year_0"] < 3277)]
+
+# Remove individuals with missing temp data (i.e., ~3276.7) in current year temp
+final_temps_july_subset = final_temps_july_subset[(final_temps_july_subset["past_year_0"] 
+                        < 3276) | (final_temps_july_subset["past_year_0"] > 3277)]
 
 # Individual mass-temp plots for each past year for each species
 create_masstemp_plots(final_temps_july_subset, "genus_species", "mass", 
