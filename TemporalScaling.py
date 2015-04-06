@@ -278,8 +278,8 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
         species_r2 = r2_list[[col for col in r2_list.columns if col == each_species]]
         species_slope = slope_list[[col for col in slope_list.columns if col == each_species]]
         plt.figure()
-        plt.plot(r2_list[ind_var_name], species_r2, "bo")
-        plt.plot(slope_list[ind_var_name], species_slope, "ro")
+        plt.plot(r2_list[ind_var_name], species_r2, color = "purple", marker = "o", linestyle = "None")
+        plt.plot(slope_list[ind_var_name], species_slope, color = "yellow", marker = "o", linestyle = "None")
         plt.xlabel("Past Year")
         plt.ylabel("R^2")
         plt.title(each_species)
