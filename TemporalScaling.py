@@ -14,8 +14,8 @@ initial_time = time.time()
 
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
-# Smaller subset is 0:10 without 4, larger subset is 0:50 without 15 (temp outlier)
-individual_data_subset = individual_data.iloc[0:50]
+# Smaller subset is 0:10 without 4, larger subset is 0:50
+individual_data_subset = individual_data[(individual_data["genus_species"] == "Myotis yumanensis") | (individual_data["genus_species"] == "Microtus californicus")]
 individual_data_subset.index = range(len(individual_data_subset))
 
 gdal.AllRegister()
