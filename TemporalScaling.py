@@ -9,20 +9,6 @@ import statsmodels.api as sm
 import time
 import statsmodels.formula.api as smf
 
-# Timing code run
-initial_time = time.time()
-
-# Datasets
-individual_data = pd.read_csv("CompleteDatasetUS.csv")
-# Smaller subset is 0:10 without 4, larger subset is 0:50
-individual_data_subset = individual_data[(individual_data["genus_species"] == "Myotis yumanensis") | (individual_data["genus_species"] == "Microtus californicus")]
-individual_data_subset.index = range(len(individual_data_subset))
-
-gdal.AllRegister()
-driver = gdal.GetDriverByName("netCDF")
-temp_file = "air.mon.mean.v301.nc"
-
-# Functions
 def create_month_codes_dict(jan_code, dec_code, diff):
     """Create dict of month names and corresponding codes
     
@@ -55,10 +41,7 @@ def get_stackIDs(current_year, month_code):
         List of stackIDs for chosen month from current year back to 1900
     """
     current_stackID = current_year * 12 - month_code
-    all_stackIDs = []
-    while current_stackID > 0:
-        all_stackIDs.append(current_stackID)
-        current_stackID -= 12
+    all_stackIDs = range(current_stackID, 0, -12)
     return all_stackIDs
 
 def get_temp_at_point(raster_file, coordinates, band):
@@ -286,6 +269,18 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
         pp.savefig()
     pp.close()
 
+# Timing code run
+initial_time = time.time()
+
+# Datasets
+individual_data = pd.read_csv("CompleteDatasetUS.csv")
+# Smaller subset is 0:10 without 4, larger subset is 0:50
+individual_data_subset = individual_data[(individual_data["genus_species"] == "Myotis yumanensis") | (individual_data["genus_species"] == "Microtus californicus")]
+individual_data_subset.index = range(len(individual_data_subset))
+
+gdal.AllRegister()
+driver = gdal.GetDriverByName("netCDF")
+temp_file = "air.mon.mean.v301.nc"
 
 # List of months with corresponding stackID codes
 month_codes = create_month_codes_dict(22799, 22787, -1)
