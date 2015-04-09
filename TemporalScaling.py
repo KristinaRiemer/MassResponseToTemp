@@ -15,7 +15,8 @@ initial_time = time.time()
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 # Smaller subset is 0:10 without 4, larger subset is 0:50
-individual_data_subset = individual_data[(individual_data["genus_species"] == "Myotis yumanensis") | (individual_data["genus_species"] == "Microtus californicus")]
+individual_data_subset = individual_data[individual_data["genus_species"] == "Myotis yumanensis"]
+#| (individual_data["genus_species"] == "Microtus californicus")]
 individual_data_subset.index = range(len(individual_data_subset))
 
 gdal.AllRegister()
@@ -160,7 +161,7 @@ def plot_linreg(dataset, first_variable, second_vari_list, plot_name):
             each_vari_subset = dataset[[col for col in dataset.columns if col == each_variable]]
             each_combo = pd.concat([first_variable, each_vari_subset], axis=1)
             if np.all(pd.notnull(each_combo.iloc[:,1])):
-                est = smf.ols(formula = "mass~" + each_variable, data = each_combo).fit()  
+                est = smf.ols(formula = "mass ~ {}".format(each_variable), data = each_combo).fit()  
                 plt.figure()
                 plt.plot(each_combo.iloc[:,1], each_combo.iloc[:,0], "bo")
                 plt.plot(each_combo.iloc[:,1], est.fittedvalues, "r-")
