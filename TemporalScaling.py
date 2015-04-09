@@ -15,8 +15,7 @@ initial_time = time.time()
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 # Smaller subset is 0:10 without 4, larger subset is 0:50
-individual_data_subset = individual_data[individual_data["genus_species"] == "Myotis yumanensis"]
-#| (individual_data["genus_species"] == "Microtus californicus")]
+individual_data_subset = individual_data[(individual_data["genus_species"] == "Myotis yumanensis") | (individual_data["genus_species"] == "Microtus californicus")]
 individual_data_subset.index = range(len(individual_data_subset))
 
 gdal.AllRegister()
@@ -73,16 +72,14 @@ def get_temp_at_point(raster_file, coordinates, band):
     Returns: 
         Unpacked temperature at coordinates in band
     """
-    entire_raster = gdal.Open(raster_file)    #opens raster file
-    single_band = entire_raster.GetRasterBand(band)    #get desired band from raster stack
-    geotrans_raster = entire_raster.GetGeoTransform()    #geotranforms raster to get gt points below
-    #entire_raster = None    #closes file, considered good practice, causes to abort?
-    x = int((coordinates[0] - geotrans_raster[0])/geotrans_raster[1])    #calculates offset for x
-    y = int((coordinates[1] - geotrans_raster[3])/geotrans_raster[5])    #calculates offset for y
-    band_array = single_band.ReadAsArray()    #creates array of temperatures for specific band
-    packed_temp = band_array[y, x]    #outputs packed temp at offset from that array (short integer)
-    add_offset = single_band.GetOffset()    #get offset to unpack
-    scale_factor = single_band.GetScale()    #get scale factor to unpack
+    single_band = raster_file.GetRasterBand(band)
+    geotrans_raster = raster_file.GetGeoTransform()
+    x = int((coordinates[0] - geotrans_raster[0])/geotrans_raster[1])
+    y = int((coordinates[1] - geotrans_raster[3])/geotrans_raster[5])
+    band_array = single_band.ReadAsArray()
+    packed_temp = band_array[y, x]
+    add_offset = single_band.GetOffset()
+    scale_factor = single_band.GetScale()
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
 
@@ -297,8 +294,10 @@ month_codes = create_month_codes_dict(22799, 22787, -1)
 stackIDs_july_subset = [get_stackIDs(year, month_codes["July"]) for year in individual_data_subset["year"]]
 
 # Get all July temperatures for each individual in subset dataset
-temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, temp_file, 
+open_temp_file = gdal.Open(temp_file)
+temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, open_temp_file, 
                     individual_data_subset["lon"], individual_data_subset["lat"])
+open_temp_file = None
 
 # Create past year names list
 max_past_years = individual_data_subset["year"].max() - 1899
