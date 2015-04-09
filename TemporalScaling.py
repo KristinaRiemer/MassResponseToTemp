@@ -269,14 +269,10 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
         pp.savefig()
     pp.close()
 
-# Timing code run
-initial_time = time.time()
-
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
-# Smaller subset is 0:10 without 4, larger subset is 0:50
-individual_data_subset = individual_data[(individual_data["genus_species"] == "Myotis yumanensis") | (individual_data["genus_species"] == "Microtus californicus")]
-individual_data_subset.index = range(len(individual_data_subset))
+#individual_data_subset = individual_data[(individual_data["genus_species"] == "Myotis yumanensis") | (individual_data["genus_species"] == "Microtus californicus")]
+#individual_data_subset.index = range(len(individual_data_subset))
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -286,22 +282,22 @@ temp_file = "air.mon.mean.v301.nc"
 month_codes = create_month_codes_dict(22799, 22787, -1)
 
 # Get all July stackID values for each individual in subset dataset
-stackIDs_july_subset = [get_stackIDs(year, month_codes["July"]) for year in individual_data_subset["year"]]
+stackIDs_july_subset = [get_stackIDs(year, month_codes["July"]) for year in individual_data["year"]]
 
 # Get all July temperatures for each individual in subset dataset
 open_temp_file = gdal.Open(temp_file)
 temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, open_temp_file, 
-                    individual_data_subset["lon"], individual_data_subset["lat"])
+                    individual_data["lon"], individual_data["lat"])
 open_temp_file = None
 
 # Create past year names list
-max_past_years = individual_data_subset["year"].max() - 1899
+max_past_years = individual_data["year"].max() - 1899
 past_year_names = ["past_year_{}" .format(year) for year in range(max_past_years)]
 
 # Create final temperature dataset
 final_temps_july_subset = create_temp_dataset(temps_july_subset, past_year_names, 
-                        individual_data_subset["genus_species"], individual_data_subset["mass"], 
-                        individual_data_subset["year"])
+                        individual_data["genus_species"], individual_data["mass"], 
+                        individual_data["year"])
 
 # Dataset of individuals with missing temp data (i.e., ~3276.7) to check
 # FIXME: remove when no longer useful
@@ -328,7 +324,3 @@ species_list, final_slope = get_multiple_stat_lists(get_slope_list, max_past_yea
 
 # Create PDF containing fig for each species of past year and r2 value/slope
 create_stats_fig("all_stats_fig.pdf", species_list, final_r2, final_slope, "past_year")
-
-# Timing code run in minutes
-final_time = time.time()
-total_time = (final_time - initial_time) / 60
