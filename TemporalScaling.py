@@ -271,8 +271,28 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
 
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
-#individual_data_subset = individual_data[(individual_data["genus_species"] == "Myotis yumanensis") | (individual_data["genus_species"] == "Microtus californicus")]
-#individual_data_subset.index = range(len(individual_data_subset))
+
+# Attempt to create new dataset for single individual
+individual_example = pd.DataFrame(individual_data.iloc[0]).transpose()
+
+# TODO: automate choice of N for each individual based on collection year
+N = 24
+
+auto_N = individual_example["year"] - 1899
+
+individual_ex_allyears = pd.DataFrame(np.tile(individual_example, (N, 1)), columns=individual_example.columns).join(pd.DataFrame({'lag': np.repeat(np.arange(N), len(individual_example))}))
+
+individual_ex_allyears["temp_year"] = individual_ex_allyears["year"] - individual_ex_allyears["lag"]
+
+#for each_individual in individual_data: 
+    #print each_individual["year"]
+
+#for each_individual in individual_data: 
+    #individual_df = each_individual.DataFrame
+    ##individual_df = pd.DataFrame(individual_data.iloc[x]).transpose()
+    ##return individual_df
+
+
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
