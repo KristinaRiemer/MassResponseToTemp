@@ -15,9 +15,16 @@ Input files: Family-named files in SmithsonianFamilyData subfolder
 Output files: all_species.csv  
 
 2. Script name: DatasetCleaningUS.R  
-Purpose: Remove individuals from mammals collection data that lack mass value, species identification, and location  
-Input files: all_species.csv, CensusFile.txt (US county coordinates)  
-Output files: CompleteDatasetUS.csv  
+Purpose: Retain only individuals from mammals collection data that fulfill all following criteria:
+  * Mass
+  * Taxonomic ID down to species level
+  * Location (latitude and longitude either in data or looked up using US county location)
+  * Collection year
+  * Is of a species for which there are 30+ individuals
+  * Is of a species for which the individuals have 5+ latitudinal degree range
+  * Is of a species for which the individuals have 20+ collection year range
+   Input files: all_species.csv, CensusFile.txt (US county coordinates)  
+   Output files: CompleteDatasetUS.csv  
 
 3. Script name: TemporalScaling.py  
 Purpose: Characterize mass-temp relationships for species using current year temperatures and all past years  
