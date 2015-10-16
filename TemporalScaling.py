@@ -270,12 +270,45 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
     pp.close()
 
 # Datasets
+import pandas as pd
+import numpy as np
+
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
+subset = individual_data.iloc[0:4]
+
+subset["year_repeats"] = subset["year"] - 1899
+
+subset_attempt = subset.loc[np.repeat(subset.index.values, subset.year_repeats)]
+
+
+for number in range(len(subset)): 
+    #print number
+    new_dataset = pd.DataFrame(subset.iloc[number]).transpose()
+    new_dataset2 = new_dataset.loc[np.repeat(new_dataset.index.values, new_dataset.year_repeats)]
+    print new_dataset2
+
+
+
+apply_ex = subset["year"].apply(np.sqrt)
+
+def individual_dataset(x):
+    new_dataset = pd.DataFrame(x).transpose()
+    return new_dataset
+
+testing_fx = individual_dataset(individual_data.iloc[0])
+
+individual_data.apply(individual_dataset)
+
+subset.apply(individual_dataset)
+
+for row in subset: 
+    new_dat = individual_dataset(row)
+    #return new_dat
+
 
 # Attempt to create new dataset for single individual
 individual_example = pd.DataFrame(individual_data.iloc[0]).transpose()
 
-# TODO: automate choice of N for each individual based on collection year
 N = 24
 
 auto_N = individual_example["year"] - 1899
@@ -284,13 +317,6 @@ individual_ex_allyears = pd.DataFrame(np.tile(individual_example, (N, 1)), colum
 
 individual_ex_allyears["temp_year"] = individual_ex_allyears["year"] - individual_ex_allyears["lag"]
 
-#for each_individual in individual_data: 
-    #print each_individual["year"]
-
-#for each_individual in individual_data: 
-    #individual_df = each_individual.DataFrame
-    ##individual_df = pd.DataFrame(individual_data.iloc[x]).transpose()
-    ##return individual_df
 
 
 
