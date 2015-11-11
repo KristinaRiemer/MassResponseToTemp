@@ -273,67 +273,27 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
 import pandas as pd
 import numpy as np
 
+# TODO: turn this into a dataset transformation function
+
+# Create subset of 4 individuals to work with
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 subset = individual_data.iloc[0:4]
 
+# Add column with number of years from collection date back to 1900
 subset["year_repeats"] = subset["year"] - 1899
 
+# Copy each individual's row those number of years
 subset_attempt = subset.loc[np.repeat(subset.index.values, subset.year_repeats)]
 
-subset_attempt["lag"] = np.NaN
-
-i = 0
-j = 1
-for index in subset_attempt["lag"]:
-    subset_attempt["lag"][i] = j
-    #i = i + 1
-    j = j + 1
-
-k = 0
-for row in subset_attempt["lag"]: 
-    row = k
-    k = k + 1
-    
-
-
-
-
-#for number in range(len(subset)): 
-    ##print number
-    #new_dataset = pd.DataFrame(subset.iloc[number]).transpose()
-    #new_dataset2 = new_dataset.loc[np.repeat(new_dataset.index.values, new_dataset.year_repeats)]
-    #print new_dataset2
-
-
-
-#apply_ex = subset["year"].apply(np.sqrt)
-
-#def individual_dataset(x):
-    #new_dataset = pd.DataFrame(x).transpose()
-    #return new_dataset
-
-#testing_fx = individual_dataset(individual_data.iloc[0])
-
-#individual_data.apply(individual_dataset)
-
-#subset.apply(individual_dataset)
-
-#for row in subset: 
-    #new_dat = individual_dataset(row)
-    ##return new_dat
-
-
-# Attempt to create new dataset for single individual
-individual_example = pd.DataFrame(individual_data.iloc[0]).transpose()
-
-N = 24
-
-auto_N = individual_example["year"] - 1899
-
-individual_ex_allyears = pd.DataFrame(np.tile(individual_example, (N, 1)), columns=individual_example.columns).join(pd.DataFrame({'lag': np.repeat(np.arange(N), len(individual_example))}))
-
-individual_ex_allyears["temp_year"] = individual_ex_allyears["year"] - individual_ex_allyears["lag"]
-
+# This creates a new dataset, want to just tack new column onto initial one? 
+subset_attempt_lag = []
+grouped_by_index = subset_attempt.groupby(level = 0)
+for index, index_data in grouped_by_index: 
+    index_length = len(index_data)
+    lag_col = range(index_length)
+    print index, lag_col
+    #index_data["lag"] = range(index_length)
+    #subset_attempt_lag.append(index_data)
 
 
 
