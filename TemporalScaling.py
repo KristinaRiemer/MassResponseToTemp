@@ -273,8 +273,6 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
 import pandas as pd
 import numpy as np
 
-# TODO: turn this into a dataset transformation function
-
 # Create subset of 4 individuals to work with
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 subset = individual_data.iloc[0:4]
@@ -283,17 +281,17 @@ subset = individual_data.iloc[0:4]
 subset["year_repeats"] = subset["year"] - 1899
 
 # Copy each individual's row those number of years
-subset_attempt = subset.loc[np.repeat(subset.index.values, subset.year_repeats)]
+subset_copies = subset.loc[np.repeat(subset.index.values, subset.year_repeats)]
 
-# This creates a new dataset, want to just tack new column onto initial one? 
-subset_attempt_lag = []
-grouped_by_index = subset_attempt.groupby(level = 0)
-for index, index_data in grouped_by_index: 
-    index_length = len(index_data)
-    lag_col = range(index_length)
-    print index, lag_col
-    #index_data["lag"] = range(index_length)
-    #subset_attempt_lag.append(index_data)
+# Create lag column for each individual
+subset_lag = pd.DataFrame()
+grouped_by_individual = subset_copies.groupby(level = 0)
+for individual, individual_data in grouped_by_individual:
+    individual_data["lag"] = np.asarray(range(len(individual_data)))
+    subset_lag = subset_lag.append(individual_data)
+
+# Add year for temperature lookup
+subset_lag["temp_year"] = subset_lag["year"] - subset_lag["lag"]
 
 
 
