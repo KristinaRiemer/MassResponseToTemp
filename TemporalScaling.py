@@ -325,6 +325,11 @@ create_stats_fig("all_stats_fig.pdf", species_list, final_r2, final_slope, "past
 # DATA RESTRUCTURE
 # TODO: Incorporate all previous code using new dataset
 
+import pandas as pd
+import numpy as np
+import calendar
+
+
 def duplicate_rows(dataset, formula): 
     """Duplicate each row of dataset using number in created column
     
@@ -338,8 +343,6 @@ def duplicate_rows(dataset, formula):
     dataset["number_duplicates"] = formula
     duplicates_dataset = dataset.loc[np.repeat(dataset.index.values, dataset["number_duplicates"])]
     return duplicates_dataset
-
-# Create iterative column based on number of row duplicates
 
 def create_lag_column(dataset): 
     """Add column that starts at zero and adds one for each set of duplicates
@@ -357,9 +360,42 @@ def create_lag_column(dataset):
         lag_dataset = lag_dataset.append(duplicate_data)
     return lag_dataset
 
+def create_month_codes_dict(jan_code, dec_code, diff):
+    """Create dictionary of month names and corresponding codes
+    
+    Args: 
+        jan_code: Code corresponding to month of January
+        dec_code: Code corresponding to month of December
+        diff: What value to add/subtract between each month code
+    
+    Returns: 
+        Dictionary of month names and codes
+    """
+    month_names = []
+    for each_month in range(1, 13):
+        month_names.append(calendar.month_name[each_month])
+    codes = range(jan_code, dec_code, diff)
+    month_codes = {}
+    for month, code in zip(month_names, codes):
+        month_codes[month] = code
+    return month_codes
+
+def get_stackID(year, month_code):
+    # TODO: incorporate 3 month average option
+    """Get stackID for chosen month and year
+    
+    Args:
+        year: Year for stackID
+        month_code: Code for chosen month
+    
+    Returns:
+        StackID for month and year
+    """
+    stackID = year * 12 - month_code
+    return stackID
+
+
 # Datasets
-import pandas as pd
-import numpy as np
 
 # Create subset of 4 individuals to work with
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
@@ -373,3 +409,55 @@ lag_subset = create_lag_column(duplicates_subset)
 
 # Add year for temperature lookup
 lag_subset["temp_year"] = lag_subset["year"] - lag_subset["lag"]
+
+# List of months with corresponding stackID codes
+month_codes = create_month_codes_dict(22799, 22787, -1)
+
+# Get stackIDs for July and year
+lag_subset["stackID_july"] = get_stackID(lag_subset["temp_year"], month_codes["July"])
+
+from osgeo import gdal
+gdal.AllRegister()
+driver = gdal.GetDriverByName("netCDF")
+temp_file = "air.mon.mean.v301.nc"
+
+open_temp_file = gdal.Open(temp_file)
+
+test_temp = get_temp_at_point(open_temp_file, pd.DataFrame[lag_subset["lon"], lag_subset["lat"]], lag_subset["stackID_july"])
+#test_coords = [lag_subset["lon"], lag_subset["lat"]]
+#test_stackIDs = lag_subset["stackID_july"].values.tolist()
+#test_temp = get_temp_at_point(open_temp_file, test_coords, test_stackIDs)
+
+open_temp_file = None
+
+
+gdal.AllRegister()
+driver = gdal.GetDriverByName("netCDF")
+temp_file = "air.mon.mean.v301.nc"
+
+def get_temp_at_point(raster_file, coordinates, band):
+    """Determine temperature value at chosen coordinates and band of raster
+    
+    Args:
+        raster_file: file name of raster
+        coordinates: chosen coordinates, order is longitude and latitude
+        band: chosen band (i.e., month)
+    
+    Returns: 
+        Unpacked temperature at coordinates in band
+    """
+    single_band = raster_file.GetRasterBand(band)
+    geotrans_raster = raster_file.GetGeoTransform()
+    x = int((coordinates[0] - geotrans_raster[0])/geotrans_raster[1])
+    y = int((coordinates[1] - geotrans_raster[3])/geotrans_raster[5])
+    band_array = single_band.ReadAsArray()
+    packed_temp = band_array[y, x]
+    add_offset = single_band.GetOffset()
+    scale_factor = single_band.GetScale()
+    unpacked_temp = add_offset + (packed_temp * scale_factor)
+    return unpacked_temp
+
+open_temp_file = gdal.Open(temp_file)
+temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, open_temp_file, 
+                    individual_data["lon"], individual_data["lat"])
+open_temp_file = None
