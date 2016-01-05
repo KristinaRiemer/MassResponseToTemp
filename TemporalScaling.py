@@ -269,31 +269,6 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
         pp.savefig()
     pp.close()
 
-# Datasets
-import pandas as pd
-import numpy as np
-
-# Create subset of 4 individuals to work with
-individual_data = pd.read_csv("CompleteDatasetUS.csv")
-subset = individual_data.iloc[0:4]
-
-# Add column with number of years from collection date back to 1900
-subset["year_repeats"] = subset["year"] - 1899
-
-# Copy each individual's row those number of years
-subset_copies = subset.loc[np.repeat(subset.index.values, subset.year_repeats)]
-
-# Create lag column for each individual
-subset_lag = pd.DataFrame()
-grouped_by_individual = subset_copies.groupby(level = 0)
-for individual, individual_data in grouped_by_individual:
-    individual_data["lag"] = np.asarray(range(len(individual_data)))
-    subset_lag = subset_lag.append(individual_data)
-
-# Add year for temperature lookup
-subset_lag["temp_year"] = subset_lag["year"] - subset_lag["lag"]
-
-
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -345,3 +320,56 @@ species_list, final_slope = get_multiple_stat_lists(get_slope_list, max_past_yea
 
 # Create PDF containing fig for each species of past year and r2 value/slope
 create_stats_fig("all_stats_fig.pdf", species_list, final_r2, final_slope, "past_year")
+
+
+# DATA RESTRUCTURE
+# TODO: Incorporate all previous code using new dataset
+
+def duplicate_rows(dataset, formula): 
+    """Duplicate each row of dataset using number in created column
+    
+    Args: 
+        dataset: Pandas dataframe to be duplicated
+        formula: Used to create column that specifies number of duplicates
+    
+    Returns: 
+        Dataframe with rows duplicated specified number of times
+    """
+    dataset["number_duplicates"] = formula
+    duplicates_dataset = dataset.loc[np.repeat(dataset.index.values, dataset["number_duplicates"])]
+    return duplicates_dataset
+
+# Create iterative column based on number of row duplicates
+
+def create_lag_column(dataset): 
+    """Add column that starts at zero and adds one for each set of duplicates
+    
+    Args: 
+        dataset: Pandas dataframe to add column to
+    
+    Returns: 
+        Dataframe with new lag column
+    """
+    lag_dataset = pd.DataFrame()
+    grouped_by_duplicate = dataset.groupby(level = 0)
+    for duplicate, duplicate_data in grouped_by_duplicate: 
+        duplicate_data["lag"] = np.asarray(range(len(duplicate_data)))
+        lag_dataset = lag_dataset.append(duplicate_data)
+    return lag_dataset
+
+# Datasets
+import pandas as pd
+import numpy as np
+
+# Create subset of 4 individuals to work with
+individual_data = pd.read_csv("CompleteDatasetUS.csv")
+subset = individual_data.iloc[0:4]
+
+# Duplicate individual rows based on number of years between 1900 and collection year
+duplicates_subset = duplicate_rows(subset, subset["year"] - 1899)
+
+# Create year lag column for each individual
+lag_subset = create_lag_column(duplicates_subset)   
+
+# Add year for temperature lookup
+lag_subset["temp_year"] = lag_subset["year"] - lag_subset["lag"]
