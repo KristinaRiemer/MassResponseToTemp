@@ -270,6 +270,8 @@ def create_stats_fig(fig_name, sp_list, r2_list, slope_list, ind_var_name):
     pp.close()
 
 
+individual_data = pd.read_csv("CompleteDatasetUS.csv")
+
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
 temp_file = "air.mon.mean.v301.nc"
@@ -328,7 +330,7 @@ create_stats_fig("all_stats_fig.pdf", species_list, final_r2, final_slope, "past
 import pandas as pd
 import numpy as np
 import calendar
-
+from osgeo import gdal
 
 def duplicate_rows(dataset, formula): 
     """Duplicate each row of dataset using number in created column
@@ -394,47 +396,6 @@ def get_stackID(year, month_code):
     stackID = year * 12 - month_code
     return stackID
 
-
-# Datasets
-
-# Create subset of 4 individuals to work with
-individual_data = pd.read_csv("CompleteDatasetUS.csv")
-subset = individual_data.iloc[0:4]
-
-# Duplicate individual rows based on number of years between 1900 and collection year
-duplicates_subset = duplicate_rows(subset, subset["year"] - 1899)
-
-# Create year lag column for each individual
-lag_subset = create_lag_column(duplicates_subset)   
-
-# Add year for temperature lookup
-lag_subset["temp_year"] = lag_subset["year"] - lag_subset["lag"]
-
-# List of months with corresponding stackID codes
-month_codes = create_month_codes_dict(22799, 22787, -1)
-
-# Get stackIDs for July and year
-lag_subset["stackID_july"] = get_stackID(lag_subset["temp_year"], month_codes["July"])
-
-from osgeo import gdal
-gdal.AllRegister()
-driver = gdal.GetDriverByName("netCDF")
-temp_file = "air.mon.mean.v301.nc"
-
-open_temp_file = gdal.Open(temp_file)
-
-test_temp = get_temp_at_point(open_temp_file, pd.DataFrame[lag_subset["lon"], lag_subset["lat"]], lag_subset["stackID_july"])
-#test_coords = [lag_subset["lon"], lag_subset["lat"]]
-#test_stackIDs = lag_subset["stackID_july"].values.tolist()
-#test_temp = get_temp_at_point(open_temp_file, test_coords, test_stackIDs)
-
-open_temp_file = None
-
-
-gdal.AllRegister()
-driver = gdal.GetDriverByName("netCDF")
-temp_file = "air.mon.mean.v301.nc"
-
 def get_temp_at_point(raster_file, coordinates, band):
     """Determine temperature value at chosen coordinates and band of raster
     
@@ -457,7 +418,32 @@ def get_temp_at_point(raster_file, coordinates, band):
     unpacked_temp = add_offset + (packed_temp * scale_factor)
     return unpacked_temp
 
+# Datasets
+individual_data = pd.read_csv("CompleteDatasetUS.csv")
+subset = individual_data.iloc[0:4] # Create subset of 4 individuals to work with
+
+gdal.AllRegister()
+driver = gdal.GetDriverByName("netCDF")
+temp_file = "air.mon.mean.v301.nc"
+
+# Duplicate individual rows based on number of years between 1900 and collection year
+duplicates_subset = duplicate_rows(subset, subset["year"] - 1899)
+
+# Create year lag column for each individual
+lag_subset = create_lag_column(duplicates_subset)   
+
+# Add year for temperature lookup
+lag_subset["temp_year"] = lag_subset["year"] - lag_subset["lag"]
+
+# List of months with corresponding stackID codes
+month_codes = create_month_codes_dict(22799, 22787, -1)
+
+# Get stackIDs for July and year
+lag_subset["stackID_july"] = get_stackID(lag_subset["temp_year"], month_codes["July"])
+
+# TODO: Refactor this
 open_temp_file = gdal.Open(temp_file)
-temps_july_subset = get_multiple_temps_lists(stackIDs_july_subset, open_temp_file, 
-                    individual_data["lon"], individual_data["lat"])
+for i in range(len(lag_subset)): 
+    temp = get_temp_at_point(open_temp_file, lag_subset[["lon", "lat"]].iloc[i], lag_subset["stackID_july"].iloc[i])
+    print i, temp
 open_temp_file = None
