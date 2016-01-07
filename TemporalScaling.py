@@ -396,27 +396,34 @@ def get_stackID(year, month_code):
     stackID = year * 12 - month_code
     return stackID
 
-def get_temp_at_point(raster_file, coordinates, band):
-    """Determine temperature value at chosen coordinates and band of raster
+def get_temps_list(raster_file, dataset, coordinates, band): 
+    # FIXME: Might have to move raster open inside for loop to decrease lookup time
+    """Get temperatures for lists of locations and stackIDs
     
-    Args:
-        raster_file: file name of raster
-        coordinates: chosen coordinates, order is longitude and latitude
-        band: chosen band (i.e., month)
+    Args: 
+        raster_file: File of temperatures
+        dataset: Dataframe with locations and stackIDs
+        coordinates: Dataframe columns with location coordinates
+        band: Dataframe column with stackID corresponding to desired month and year
     
     Returns: 
-        Unpacked temperature at coordinates in band
+        List of temperatures for coordinates and stackIDs
     """
-    single_band = raster_file.GetRasterBand(band)
-    geotrans_raster = raster_file.GetGeoTransform()
-    x = int((coordinates[0] - geotrans_raster[0])/geotrans_raster[1])
-    y = int((coordinates[1] - geotrans_raster[3])/geotrans_raster[5])
-    band_array = single_band.ReadAsArray()
-    packed_temp = band_array[y, x]
-    add_offset = single_band.GetOffset()
-    scale_factor = single_band.GetScale()
-    unpacked_temp = add_offset + (packed_temp * scale_factor)
-    return unpacked_temp
+    open_file = gdal.Open(raster_file)
+    all_temps = []
+    for i in range(len(dataset)): 
+        single_band = open_file.GetRasterBand(band.iloc[i])
+        geotrans_raster = open_file.GetGeoTransform()
+        x = int((coordinates.iloc[i][0] - geotrans_raster[0])/geotrans_raster[1])
+        y = int((coordinates.iloc[i][1] - geotrans_raster[3])/geotrans_raster[5])
+        band_array = single_band.ReadAsArray()
+        packed_temp = band_array[y, x]
+        add_offset = single_band.GetOffset()
+        scale_factor = single_band.GetScale()
+        unpacked_temp = add_offset + (packed_temp * scale_factor)
+        all_temps.append(unpacked_temp)  
+    open_file = None
+    return all_temps
 
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
@@ -441,9 +448,5 @@ month_codes = create_month_codes_dict(22799, 22787, -1)
 # Get stackIDs for July and year
 lag_subset["stackID_july"] = get_stackID(lag_subset["temp_year"], month_codes["July"])
 
-# TODO: Refactor this
-open_temp_file = gdal.Open(temp_file)
-for i in range(len(lag_subset)): 
-    temp = get_temp_at_point(open_temp_file, lag_subset[["lon", "lat"]].iloc[i], lag_subset["stackID_july"].iloc[i])
-    print i, temp
-open_temp_file = None
+# Get temperatures for July
+lag_subset["july_temps"] = get_temps_list(temp_file, lag_subset, lag_subset[["lon", "lat"]], lag_subset["stackID_july"])
