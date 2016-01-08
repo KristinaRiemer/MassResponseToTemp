@@ -450,3 +450,67 @@ lag_subset["stackID_july"] = get_stackID(lag_subset["temp_year"], month_codes["J
 
 # Get temperatures for July
 lag_subset["july_temps"] = get_temps_list(temp_file, lag_subset, lag_subset[["lon", "lat"]], lag_subset["stackID_july"])
+
+# TODO: Missing data removal
+
+# Rewriting linear regression
+
+data_by_species = lag_subset.groupby("genus_species")
+for species, species_data in data_by_species: 
+    print species, species_data["mass"]
+    
+by_species_yearlag = lag_subset.groupby(["genus_species", "lag"])
+for species_lag, species_lag_data in by_species_yearlag: 
+    print species_lag, species_lag_data["july_temps"]
+
+
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+for speciesXlag, lin_reg_data in lag_subset.iloc[0:106].groupby(["genus_species", "lag"]): 
+    print speciesXlag, lin_reg_data["july_temps"], lin_reg_data["mass"]
+    each_linreg = smf.ols(formula = "mass ~ july_temps", data = lin_reg_data).fit()
+    print each_linreg.summary()
+    plt.plot(lin_reg_data["july_temps"], lin_reg_data["mass"], "bo")
+    plt.plot(lin_reg_data["july_temps"], each_linreg.fittedvalues, "r-")
+    plt.show()
+
+plt.plot(lag_subset["july_temps"], lag_subset["mass"], "bo")
+plt.show()
+
+
+def plot_linreg(dataset, first_variable, second_vari_list, plot_name):
+    # FIXME: RuntimeWarning; didn't help to move location of close
+    # TODO: Create single plot for each species containing lines for each past year
+    # TODO: Remove each_combo if it's unnecessary
+    pp = PdfPages(plot_name+"_linreg.pdf")
+    for each_variable in second_vari_list:
+            each_vari_subset = dataset[[col for col in dataset.columns if col == each_variable]]
+            each_combo = pd.concat([first_variable, each_vari_subset], axis=1)
+            if np.all(pd.notnull(each_combo.iloc[:,1])):
+                est = smf.ols(formula = "mass ~ {}".format(each_variable), data = each_combo).fit()  
+                plt.figure()
+                plt.plot(each_combo.iloc[:,1], each_combo.iloc[:,0], "bo")
+                plt.plot(each_combo.iloc[:,1], est.fittedvalues, "r-")
+                plt.xlabel("Temperature from "+each_variable)
+                plt.ylabel("Mass (g)")
+                pp.savefig()
+    pp.close()
+
+def create_masstemp_plots (dataset, groupby_col_name, dep_var_name, col_names):
+    """Set of plots for each species with each past year temps and masses
+    
+    Args: 
+        dataset: Dataset containing all past years' temperatures for each individual
+        groupby_col_name: Name of species column
+        dep_var_name: Name of mass column
+        col_names: Names of temperature columns
+        
+    Returns: 
+        PDF for each species with mass-temp plots
+    """
+    data_by_species = dataset.groupby(groupby_col_name)
+    for species, species_data in data_by_species: 
+        species = species.replace(" ", "_")
+        linreg_plots = plot_linreg(species_data, species_data[dep_var_name], col_names, species)
+    return linreg_plots
