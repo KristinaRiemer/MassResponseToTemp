@@ -1,3 +1,4 @@
+# Using Vernet mammal dataset downloaded from KNB repository
 #-----DATASETS------
 
 # Read in Vertnet dataset (size metric only)
@@ -106,11 +107,15 @@ for (i in 1:nrow(individual_data)){
 
 table(count_check_all)
 
+# Using trait extraction data provided by Rob Guralnick
 
+individual_data = read.csv("VertnetTraitExtraction.csv", na.strings = c("", " ", "null"))
 
-
-
-
-
-
-
+# Removing individuals w/ NAs for following variables: mass, species ID, coordinates, collection year, life stage info
+individual_data_variables = individual_data[!is.na(individual_data$normalized_body_mass),]
+individual_data_variables2 = individual_data_variables[!is.na(individual_data_variables$scientificname),]
+individual_data_variables3 = individual_data_variables2[!is.na(individual_data_variables2$decimallatitude),]
+individual_data_variables4 = individual_data_variables3[!is.na(individual_data_variables3$decimallongitude),]
+individual_data_variables5 = individual_data_variables4[!is.na(individual_data_variables4$year),]
+individual_data_variables6 = individual_data_variables5[!is.na(individual_data_variables5$autoextract_life_stage),]
+# ~117,000 individuals of ~6,700 unique species ID remain
