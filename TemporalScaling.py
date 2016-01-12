@@ -460,9 +460,10 @@ import statsmodels.formula.api as smf
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-
+stats_pdf = PdfPages("all_stats.pdf")
 for species, species_data in lag_subset.groupby("genus_species"): 
-    pp = PdfPages(species + "_test.pdf")
+    linreg_pdf = PdfPages(species + "_linreg.pdf")
+    species_stats = []
     for lag, lag_data in species_data.groupby("lag"):
         if len(lag_data) > 1:
             est = smf.ols(formula = "mass ~ july_temps", data = lag_data).fit()
@@ -471,7 +472,20 @@ for species, species_data in lag_subset.groupby("genus_species"):
             plt.plot(lag_data["july_temps"], est.fittedvalues, "r-")
             plt.xlabel("Temperature from year lag " + str(lag))
             plt.ylabel("Mass(g)")
-            pp.savefig()
-    pp.close()
+            linreg_pdf.savefig()
+            species_stats.append({"lag": lag, "r_squared": est.rsquared, "slope": est.params[1]})
+    species_stats_df = pd.DataFrame(species_stats)
+    plt.figure()
+    plt.plot(species_stats_df["lag"], species_stats_df["r_squared"], color = "purple", marker = "o", linestyle = "None")
+    plt.axhline(y = 1, color = "purple", linestyle = "--", linewidth = 3)
+    plt.plot(species_stats_df["lag"], species_stats_df["slope"], color = "yellow", marker = "o", linestyle = "None")
+    plt.axhline(y = 0, color = "yellow", linestyle = "--", linewidth = 3)
+    plt.suptitle(species)
+    plt.xlabel("Lag")
+    plt.ylabel("R^2/Slope")
+    stats_pdf.savefig()
+    linreg_pdf.close()
+stats_pdf.close()
+
 
 
