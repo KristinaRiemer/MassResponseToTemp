@@ -331,6 +331,9 @@ import pandas as pd
 import numpy as np
 import calendar
 from osgeo import gdal
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 def duplicate_rows(dataset, formula): 
     """Duplicate each row of dataset using number in created column
@@ -425,6 +428,49 @@ def get_temps_list(raster_file, dataset, coordinates, band):
     open_file = None
     return all_temps
 
+def linear_regression(dataset, speciesID_col, lag_col):
+    # FIXME: Docstring should be more descriptive
+    """Plot linear regression for all lags of each species, create dataframe of linear regression
+    r2 and slope for all lags of each species, and plot latter for each species
+    
+    Args: 
+        dataset: Dataframe containing temperature for each individual at all lags
+        speciesID_col: Dataframe column of species identification
+        lag_col: Dataframe column of lag
+    
+    Returns: 
+        For each species, many linear regression plots and one stats plot; stats dataframe
+    """
+    stats_pdf = PdfPages("all_stats.pdf")
+    all_stats = pd.DataFrame()
+    for species, species_data in dataset.groupby(speciesID_col):
+        linreg_pdf = PdfPages(species + "_linreg.pdf")
+        stats_list = []
+        for lag, lag_data in species_data.groupby(lag_col): 
+            if len(lag_data) > 1: 
+                linreg = smf.ols(formula = "mass ~ july_temps", data = lag_data).fit()
+                plt.figure()
+                plt.plot(lag_data["july_temps"], lag_data["mass"], "bo")
+                plt.plot(lag_data["july_temps"], linreg.fittedvalues, "r-")
+                plt.xlabel("Temperature from year lag " + str(lag))
+                plt.ylabel("Mass(g)")
+                linreg_pdf.savefig()
+                stats_list.append({"genus_species": species, "lag": lag, "r_squared": linreg.rsquared, "slope": linreg.params[1]})
+        stats_df = pd.DataFrame(stats_list)
+        plt.figure()
+        plt.plot(stats_df["lag"], stats_df["r_squared"], color = "purple", marker = "o", linestyle = "None")
+        plt.axhline(y = 1, color = "purple", linestyle = "--", linewidth = 3)
+        plt.plot(stats_df["lag"], stats_df["slope"], color = "yellow", marker = "o", linestyle = "None")
+        plt.axhline(y = 0, color = "yellow", linestyle = "--", linewidth = 3)
+        plt.suptitle(species)
+        plt.xlabel("Lag")
+        plt.ylabel("R^2/Slope")
+        stats_pdf.savefig()
+        linreg_pdf.close()
+        all_stats = all_stats.append(stats_df)
+    stats_pdf.close()
+    return all_stats
+
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
 subset = individual_data.iloc[0:4] # Create subset of 4 individuals to work with
@@ -453,39 +499,5 @@ lag_subset["july_temps"] = get_temps_list(temp_file, lag_subset, lag_subset[["lo
 
 # TODO: Missing data removal
 
-# Rewriting linear regression
-
-
-import statsmodels.formula.api as smf
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-
-stats_pdf = PdfPages("all_stats.pdf")
-for species, species_data in lag_subset.groupby("genus_species"): 
-    linreg_pdf = PdfPages(species + "_linreg.pdf")
-    species_stats = []
-    for lag, lag_data in species_data.groupby("lag"):
-        if len(lag_data) > 1:
-            est = smf.ols(formula = "mass ~ july_temps", data = lag_data).fit()
-            plt.figure()
-            plt.plot(lag_data["july_temps"], lag_data["mass"], "bo")
-            plt.plot(lag_data["july_temps"], est.fittedvalues, "r-")
-            plt.xlabel("Temperature from year lag " + str(lag))
-            plt.ylabel("Mass(g)")
-            linreg_pdf.savefig()
-            species_stats.append({"lag": lag, "r_squared": est.rsquared, "slope": est.params[1]})
-    species_stats_df = pd.DataFrame(species_stats)
-    plt.figure()
-    plt.plot(species_stats_df["lag"], species_stats_df["r_squared"], color = "purple", marker = "o", linestyle = "None")
-    plt.axhline(y = 1, color = "purple", linestyle = "--", linewidth = 3)
-    plt.plot(species_stats_df["lag"], species_stats_df["slope"], color = "yellow", marker = "o", linestyle = "None")
-    plt.axhline(y = 0, color = "yellow", linestyle = "--", linewidth = 3)
-    plt.suptitle(species)
-    plt.xlabel("Lag")
-    plt.ylabel("R^2/Slope")
-    stats_pdf.savefig()
-    linreg_pdf.close()
-stats_pdf.close()
-
-
-
+# Create linear regression and stats plots for each species, and dataframe with r2 and slope
+linreg_stats = linear_regression(lag_subset, "genus_species", "lag")
