@@ -111,11 +111,36 @@ table(count_check_all)
 
 individual_data = read.csv("VertnetTraitExtraction.csv", na.strings = c("", " ", "null"))
 
-# Removing individuals w/ NAs for following variables: mass, species ID, coordinates, collection year, life stage info
-individual_data_variables = individual_data[!is.na(individual_data$normalized_body_mass),]
-individual_data_variables2 = individual_data_variables[!is.na(individual_data_variables$scientificname),]
-individual_data_variables3 = individual_data_variables2[!is.na(individual_data_variables2$decimallatitude),]
-individual_data_variables4 = individual_data_variables3[!is.na(individual_data_variables3$decimallongitude),]
-individual_data_variables5 = individual_data_variables4[!is.na(individual_data_variables4$year),]
-individual_data_variables6 = individual_data_variables5[!is.na(individual_data_variables5$autoextract_life_stage),]
-# ~117,000 individuals of ~6,700 unique species ID remain
+# Create column containing only mass value for each individual
+
+library(stringr)
+dataset_column = individual_data$normalized_body_mass
+
+for (current_row in individual_data$normalized_body_mass){
+  component = str_match(current_row, )
+  print(component) 
+}
+
+extract_component(individual_data$normalized_body_mass[1:20], "[\"total weight\", ([0-9.]*)]")
+
+gsub("([0-9.]*)", "\\1", individual_data$normalized_body_mass[1])
+
+
+extract_component = function(dataset_column, regex){
+  # Pull out numerical component of strings
+  #
+  # Args: 
+  #   dataset_column: Column that contains strings
+  #   regex: Regular expression to specify string surrounding numerical component
+  #
+  # Returns: 
+  #   Vector that contains extracted numerical components
+  components_list = vector()
+  for (current_row in dataset_column){
+    component = str_match(dataset_column, regex)
+    component = as.numeric(component[,2])
+    components_list = append(components_list, component)
+    return(components_list)
+  }
+}
+
