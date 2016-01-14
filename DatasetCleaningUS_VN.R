@@ -109,23 +109,13 @@ table(count_check_all)
 
 # Using trait extraction data provided by Rob Guralnick
 
+#-------DATASETS----------
+
 individual_data = read.csv("VertnetTraitExtraction.csv", na.strings = c("", " ", "null"))
 
-# Create column containing only mass value for each individual
+#-------FUNCTIONS---------
 
 library(stringr)
-dataset_column = individual_data$normalized_body_mass
-
-for (current_row in individual_data$normalized_body_mass){
-  component = str_match(current_row, )
-  print(component) 
-}
-
-extract_component(individual_data$normalized_body_mass[1:20], "[\"total weight\", ([0-9.]*)]")
-
-gsub("([0-9.]*)", "\\1", individual_data$normalized_body_mass[1])
-
-
 extract_component = function(dataset_column, regex){
   # Pull out numerical component of strings
   #
@@ -143,4 +133,10 @@ extract_component = function(dataset_column, regex){
     return(components_list)
   }
 }
+
+#-----FUNCTIONS ON ENTIRE DATASET
+
+# Create column containing only mass value for each individual
+individual_data$mass = extract_component(individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
+
 
