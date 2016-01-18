@@ -149,14 +149,13 @@ def linear_regression(dataset, speciesID_col, lag_col):
 
 # Datasets
 individual_data = pd.read_csv("CompleteDatasetUS.csv")
-subset = individual_data.iloc[0:64] # Create subset of 4 individuals to work with
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
 temp_file = "air.mon.mean.v301.nc"
 
 # Duplicate individual rows based on number of years between 1900 and collection year
-duplicates_data = duplicate_rows(subset, subset["year"] - 1899)
+duplicates_data = duplicate_rows(individual_data, individual_data["year"] - 1899)
 
 # Create year lag column for each individual
 lag_data = create_lag_column(duplicates_data)   
