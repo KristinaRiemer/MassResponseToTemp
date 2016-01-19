@@ -3,7 +3,7 @@
 #-------DATASETS----------
 
 individual_data = read.csv("VertnetTraitExtraction.csv", na.strings = c("", " ", "null"))
-subset_individual_data = individual_data[1:100000,]
+subset_individual_data = individual_data[1:200,]
 
 #-------FUNCTIONS---------
 
@@ -60,18 +60,31 @@ subset_individual_data$mass = extract_component(subset_individual_data$normalize
 subset_individual_data$genus_species = extract_genus_species(subset_individual_data$scientificname)
 
 
-# Checking genus and species
-# Example use from Scott Chamberlain: http://recology.info/2013/01/tnrs-use-case/
+# Checking taxonomy using EOL Global Names Resolver
 library(taxize)
 
+#Single individual
+tax_test = gnr_resolve(names = subset_individual_data$genus_species[1])
+tax_test = gnr_resolve(names = "Lasiurus borealis")
+
+#Several individuals
 tax_test_list = c()
 for (i in 1:10){
-  tax_test = gnr_resolve(names = individual_data$scientificname[i])
+  tax_test = gnr_resolve(names = subset_individual_data$genus_species[i])
   tax_test_list = append(tax_test_list, tax_test)
 }
 
-tax_test = gnr_resolve(names = individual_data$scientificname[1])
-tax_test = gnr_resolve(names = "Reithrodontomys megalatis")
+# Example for checking many species IDs from Scott Chamberlain: 
+# http://recology.info/2013/01/tnrs-use-case/
+library(plyr)
+slice <- function(input, by = 2) {
+  starts <- seq(1, length(input), by)
+  tt <- lapply(starts, function(y) input[y:(y + (by - 1))])
+  llply(tt, function(x) x[!is.na(x)])
+}
+species_split <- slice(subset_individual_data$genus_species, by = 100)
 
+tnrs_safe <- failwith(NULL, tnrs)  # in case some calls fail, will continue
+out <- llply(species_split, function(x) tnrs_safe(x, getpost = "POST", sleep = 3))
 
-
+lapply(out, head)[1:2]
