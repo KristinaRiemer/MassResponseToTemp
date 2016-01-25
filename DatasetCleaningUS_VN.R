@@ -64,8 +64,9 @@ subset_individual_data$genus_species = extract_genus_species(subset_individual_d
 library(taxize)
 
 #Single individual
-tax_test = gnr_resolve(names = subset_individual_data$genus_species[1])
-tax_test = gnr_resolve(names = "Lasiurus borealis")
+tax_test = gnr_resolve(names = subset_individual_data$genus_species[1], best_match_only = TRUE)
+#tax_test = gnr_resolve(names = "Lasiurus borealis")
+tax_test_df = as.data.frame(tax_test)
 
 #Several individuals
 tax_test_list = c()
@@ -73,6 +74,8 @@ for (i in 1:10){
   tax_test = gnr_resolve(names = subset_individual_data$genus_species[i])
   tax_test_list = append(tax_test_list, tax_test)
 }
+
+tax_test_list_df = as.data.frame(tax_test_list)
 
 # Example for checking many species IDs from Scott Chamberlain: 
 # http://recology.info/2013/01/tnrs-use-case/
@@ -88,3 +91,20 @@ tnrs_safe <- failwith(NULL, tnrs)  # in case some calls fail, will continue
 out <- llply(species_split, function(x) tnrs_safe(x, getpost = "POST", sleep = 3))
 
 lapply(out, head)[1:2]
+
+# TODO: Check coordinates
+# 1: change to numeric values from factors
+# 2: longitude transformation needed
+# TODO: specify which coordinate system data is in and needs to be
+latitude = as.numeric(levels(subset_individual_data$decimallatitude))[subset_individual_data$decimallatitude]
+range(latitude, na.rm = TRUE)
+
+longitude = as.numeric(as.character(subset_individual_data$decimallongitude))
+longitude2 = as.numeric(levels(subset_individual_data$decimallongitude))[subset_individual_data$decimallongitude]
+longitude3 = as.numeric(levels(subset_individual_data$decimallongitude))[as.integer(subset_individual_data$decimallongitude)]
+range(longitude, na.rm = TRUE)
+
+longitude = longitude + 360
+
+# TODO: Check collection year
+
