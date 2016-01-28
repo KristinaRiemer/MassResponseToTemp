@@ -1,9 +1,9 @@
 # Using trait extraction data provided by Rob Guralnick
 
 #-------DATASETS----------
-
-individual_data = read.csv("VertnetTraitExtraction.csv", na.strings = c("", " ", "null"))
-subset_individual_data = individual_data[1:200,]
+library(readr)
+individual_data = read_csv("VertnetTraitExtraction.csv")
+subset_individual_data = individual_data_test[1:200,]
 
 #-------FUNCTIONS---------
 
@@ -93,16 +93,8 @@ out <- llply(species_split, function(x) tnrs_safe(x, getpost = "POST", sleep = 3
 lapply(out, head)[1:2]
 
 # TODO: Check coordinates
-# 1: change to numeric values from factors
 # 2: longitude transformation needed
 # TODO: specify which coordinate system data is in and needs to be
-latitude = as.numeric(levels(subset_individual_data$decimallatitude))[subset_individual_data$decimallatitude]
-range(latitude, na.rm = TRUE)
-
-longitude = as.numeric(as.character(subset_individual_data$decimallongitude))
-longitude2 = as.numeric(levels(subset_individual_data$decimallongitude))[subset_individual_data$decimallongitude]
-longitude3 = as.numeric(levels(subset_individual_data$decimallongitude))[as.integer(subset_individual_data$decimallongitude)]
-range(longitude, na.rm = TRUE)
 
 longitude = longitude + 360
 
