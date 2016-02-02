@@ -3,7 +3,7 @@
 #-------DATASETS----------
 library(readr)
 individual_data = read_csv("VertnetTraitExtraction.csv")
-subset_individual_data = individual_data_test[1:200,]
+subset_individual_data = individual_data[1:200,]
 
 #-------FUNCTIONS---------
 
@@ -95,8 +95,28 @@ lapply(out, head)[1:2]
 # TODO: Check coordinates
 # 2: longitude transformation needed
 # TODO: specify which coordinate system data is in and needs to be
+# Ranges needed for temp raster
+#lat DD: should be -90 to 90 (are -161 to 8841)
+  #handful of values are too big or too small
+#lon DD: should be -180 to 180 (are -5610 to 180)
+  #no values are too big, 5 values are too small
+#Need lon range to be 0 to 360
+# TODO: turn decimal coordinates that are outside of range into NA
 
-longitude = longitude + 360
+individual_data$decimallatitude[individual_data$decimallatitude > 90 | individual_data$decimallatitude < -90] = NA
+individual_data$decimallongitude[individual_data$decimallongitude > 180 | individual_data$decimallongitude < -180] = NA
+
+longitudes = c()
+for(current_row in individual_data$decimallongitude){
+  if(current_row < 0){
+    lon = current_row + 360
+  } else {
+    lon = current_row
+  }
+  longitudes = append(longitudes, lon)
+}
+
+individual_data$longitude = individual_data$decimallongitude + 360
 
 # TODO: Check collection year
 
