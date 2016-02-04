@@ -3,7 +3,7 @@
 #-------DATASETS----------
 library(readr)
 individual_data = read_csv("VertnetTraitExtraction.csv")
-subset_individual_data = individual_data[1:200,]
+subset_individual_data = individual_data[1:1000,]
 
 #-------FUNCTIONS---------
 
@@ -63,19 +63,35 @@ subset_individual_data$genus_species = extract_genus_species(subset_individual_d
 # Checking taxonomy using EOL Global Names Resolver
 library(taxize)
 
+# TODO: Turn identifications that end with spp/sp into NA
+
 #Single individual
-tax_test = gnr_resolve(names = subset_individual_data$genus_species[1], best_match_only = TRUE)
+tax_test = gnr_resolve(names = subset_individual_data$genus_species[255])
 #tax_test = gnr_resolve(names = "Lasiurus borealis")
 tax_test_df = as.data.frame(tax_test)
 
 #Several individuals
+ptm = proc.time()
 tax_test_list = c()
-for (i in 1:10){
+tax_test_list_scores = c()
+for (i in 1:200){
   tax_test = gnr_resolve(names = subset_individual_data$genus_species[i])
+  #print(tax_test$results$score[1])
   tax_test_list = append(tax_test_list, tax_test)
+  tax_test_list_scores = append(tax_test_list_scores, tax_test$score[1])
 }
+proc.time() - ptm
 
-tax_test_list_df = as.data.frame(tax_test_list)
+for (i in 251:260){
+  taxonomy_check = gnr_resolve(names = subset_individual_data$genus_species[i])
+  if(taxonomy_check$submitted_name[1] == word(taxonomy_check$matched_name[1], 1, 2)){
+    print(taxonomy_check$submitted_name[1])
+  } else {
+    # TODO: what really needs to go here is check if first 5 or so matched_names
+    # are the same, then use first matched name to replace submitted
+    print(NA)
+  }
+}
 
 # Example for checking many species IDs from Scott Chamberlain: 
 # http://recology.info/2013/01/tnrs-use-case/
