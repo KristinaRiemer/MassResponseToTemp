@@ -87,11 +87,18 @@ for (i in 251:260){
   if(taxonomy_check$submitted_name[1] == word(taxonomy_check$matched_name[1], 1, 2)){
     print(taxonomy_check$submitted_name[1])
   } else {
-    # TODO: what really needs to go here is check if first 5 or so matched_names
-    # are the same, then use first matched name to replace submitted
-    print(NA)
+    # TODO: test this on case where matched names aren't equal (in 1000 subset)
+    first_match = word(taxonomy_check$matched_name[1], 1, 2)
+    next_four = word(taxonomy_check$matched_name[2:5], 1, 2)
+    number_matches = length(which(next_four %in% first_match))
+    if(number_matches == 4){
+      print(word(taxonomy_check$matched_name[1], 1, 2))
+    } else {
+      print(NA)
+    }
   }
 }
+
 
 # Example for checking many species IDs from Scott Chamberlain: 
 # http://recology.info/2013/01/tnrs-use-case/
