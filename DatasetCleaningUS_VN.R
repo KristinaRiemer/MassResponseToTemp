@@ -66,7 +66,7 @@ library(taxize)
 # TODO: Turn identifications that end with spp/sp into NA
 
 #Single individual
-tax_test = gnr_resolve(names = subset_individual_data$genus_species[255])
+tax_test = gnr_resolve(names = subset_individual_data$genus_species[118])
 #tax_test = gnr_resolve(names = "Lasiurus borealis")
 tax_test_df = as.data.frame(tax_test)
 
@@ -74,7 +74,7 @@ tax_test_df = as.data.frame(tax_test)
 ptm = proc.time()
 tax_test_list = c()
 tax_test_list_scores = c()
-for (i in 1:200){
+for (i in 1:1000){
   tax_test = gnr_resolve(names = subset_individual_data$genus_species[i])
   #print(tax_test$results$score[1])
   tax_test_list = append(tax_test_list, tax_test)
@@ -82,22 +82,28 @@ for (i in 1:200){
 }
 proc.time() - ptm
 
-for (i in 251:260){
-  taxonomy_check = gnr_resolve(names = subset_individual_data$genus_species[i])
-  if(taxonomy_check$submitted_name[1] == word(taxonomy_check$matched_name[1], 1, 2)){
-    print(taxonomy_check$submitted_name[1])
-  } else {
-    # TODO: test this on case where matched names aren't equal (in 1000 subset)
-    first_match = word(taxonomy_check$matched_name[1], 1, 2)
-    next_four = word(taxonomy_check$matched_name[2:5], 1, 2)
-    number_matches = length(which(next_four %in% first_match))
-    if(number_matches == 4){
-      print(word(taxonomy_check$matched_name[1], 1, 2))
-    } else {
-      print(NA)
+resolved_IDs = c()
+for (i in 100:200){
+  taxonomy_check = gnr_resolve(names = subset_individual_data$genus_species[i]) #lookup possible matching names
+  if(sapply(gregexpr("\\S+", taxonomy_check$matched_name[1]), length) > 1){ #limit to submitted names w/ matching names that have at least two words
+    if(taxonomy_check$submitted_name[1] == word(taxonomy_check$matched_name[1], 1, 2)){ #where submitted names are same as matching...
+      ID = taxonomy_check$submitted_name[1] #...keep these
+    } else { #then if they don't match, assume a type in submitted name
+      first_match = word(taxonomy_check$matched_name[1], 1, 2) 
+      next_four = word(taxonomy_check$matched_name[2:5], 1, 2)
+      number_matches = length(which(next_four %in% first_match))
+      if(number_matches == 4){ #this is making sure that the first 5 matching names are identical
+        ID = word(taxonomy_check$matched_name[1], 1, 2) #use matching name if so
+      } else {
+        ID = NA #if 5 matching names don't match
+      }
     }
+  } else {
+    ID = NA #if matching name is only one word (just species probably)
   }
+  resolved_IDs = append(resolved_IDs, ID)
 }
+
 
 
 # Example for checking many species IDs from Scott Chamberlain: 
