@@ -63,27 +63,10 @@ subset_individual_data$genus_species = extract_genus_species(subset_individual_d
 # Checking taxonomy using EOL Global Names Resolver
 library(taxize)
 
-# TODO: Turn identifications that end with spp/sp into NA
-
-#Single individual
-tax_test = gnr_resolve(names = subset_individual_data$genus_species[118])
-#tax_test = gnr_resolve(names = "Lasiurus borealis")
-tax_test_df = as.data.frame(tax_test)
-
-#Several individuals
 ptm = proc.time()
-tax_test_list = c()
-tax_test_list_scores = c()
-for (i in 1:1000){
-  tax_test = gnr_resolve(names = subset_individual_data$genus_species[i])
-  #print(tax_test$results$score[1])
-  tax_test_list = append(tax_test_list, tax_test)
-  tax_test_list_scores = append(tax_test_list_scores, tax_test$score[1])
-}
-proc.time() - ptm
 
 resolved_IDs = c()
-for (i in 100:200){
+for (i in 1:1000){
   taxonomy_check = gnr_resolve(names = subset_individual_data$genus_species[i]) #lookup possible matching names
   if(sapply(gregexpr("\\S+", taxonomy_check$matched_name[1]), length) > 1){ #limit to submitted names w/ matching names that have at least two words
     if(taxonomy_check$submitted_name[1] == word(taxonomy_check$matched_name[1], 1, 2)){ #where submitted names are same as matching...
@@ -104,18 +87,21 @@ for (i in 100:200){
   resolved_IDs = append(resolved_IDs, ID)
 }
 
-
+proc.time() - ptm
 
 # Example for checking many species IDs from Scott Chamberlain: 
 # http://recology.info/2013/01/tnrs-use-case/
+
+# TODO: replace plyr functions (llply, failwith) with dplyr if possible
 library(plyr)
-slice <- function(input, by = 2) {
+slice <- function(input, by) {
   starts <- seq(1, length(input), by)
   tt <- lapply(starts, function(y) input[y:(y + (by - 1))])
   llply(tt, function(x) x[!is.na(x)])
 }
 species_split <- slice(subset_individual_data$genus_species, by = 100)
 
+# TODO: replace tnrs with gnr_resolve 
 tnrs_safe <- failwith(NULL, tnrs)  # in case some calls fail, will continue
 out <- llply(species_split, function(x) tnrs_safe(x, getpost = "POST", sleep = 3))
 
@@ -148,4 +134,4 @@ for(current_row in individual_data$decimallongitude){
 individual_data$longitude = individual_data$decimallongitude + 360
 
 # TODO: Check collection year
-
+# Will have to find unusual years, check them, and remove if necessary
