@@ -3,7 +3,7 @@
 #-------DATASETS----------
 library(readr)
 individual_data = read_csv("VertnetTraitExtraction.csv")
-subset_individual_data = individual_data[1:1000,]
+subset_individual_data = individual_data[1:10000,]
 
 #-------FUNCTIONS---------
 
@@ -61,12 +61,13 @@ subset_individual_data$genus_species = extract_genus_species(subset_individual_d
 
 
 # Checking taxonomy using EOL Global Names Resolver
+# TODO: use best_match_only argument? 
 library(taxize)
 
 ptm = proc.time()
 
 resolved_IDs = c()
-for (i in 1:1000){
+for (i in 1:10000){
   taxonomy_check = gnr_resolve(names = subset_individual_data$genus_species[i]) #lookup possible matching names
   if(sapply(gregexpr("\\S+", taxonomy_check$matched_name[1]), length) > 1){ #limit to submitted names w/ matching names that have at least two words
     if(taxonomy_check$submitted_name[1] == word(taxonomy_check$matched_name[1], 1, 2)){ #where submitted names are same as matching...
@@ -88,24 +89,6 @@ for (i in 1:1000){
 }
 
 proc.time() - ptm
-
-# Example for checking many species IDs from Scott Chamberlain: 
-# http://recology.info/2013/01/tnrs-use-case/
-
-# TODO: replace plyr functions (llply, failwith) with dplyr if possible
-library(plyr)
-slice <- function(input, by) {
-  starts <- seq(1, length(input), by)
-  tt <- lapply(starts, function(y) input[y:(y + (by - 1))])
-  llply(tt, function(x) x[!is.na(x)])
-}
-species_split <- slice(subset_individual_data$genus_species, by = 100)
-
-# TODO: replace tnrs with gnr_resolve 
-tnrs_safe <- failwith(NULL, tnrs)  # in case some calls fail, will continue
-out <- llply(species_split, function(x) tnrs_safe(x, getpost = "POST", sleep = 3))
-
-lapply(out, head)[1:2]
 
 # TODO: Check coordinates
 # 2: longitude transformation needed
