@@ -3,7 +3,7 @@
 #-------DATASETS----------
 library(readr)
 individual_data = read_csv("VertnetTraitExtraction.csv")
-subset_individual_data = individual_data[1:10000,]
+subset_individual_data = individual_data[1:1000,]
 
 #-------FUNCTIONS---------
 
@@ -59,20 +59,24 @@ subset_individual_data$mass = extract_component(subset_individual_data$normalize
 # Create column for genus and species identification
 subset_individual_data$genus_species = extract_genus_species(subset_individual_data$scientificname)
 
+# Create reference table of names for taxonomy resolution
+original_names = unique(subset_individual_data$genus_species)
+tax_res = data.frame(original_names)
 
-# Checking taxonomy using EOL Global Names Resolver
-# TODO: use best_match_only argument? 
+# Check taxonomy of reference names using EOL Global Names Resolver
 library(taxize)
 
 ptm = proc.time()
 
+# TODO: Make this loop more readable
+# TODO: Refactor this
 resolved_IDs = c()
-for (i in 1:10000){
-  taxonomy_check = gnr_resolve(names = subset_individual_data$genus_species[i]) #lookup possible matching names
+for (i in 1:nrow(tax_res)){
+  taxonomy_check = gnr_resolve(names = tax_res$original_names[i]) #lookup possible matching names
   if(sapply(gregexpr("\\S+", taxonomy_check$matched_name[1]), length) > 1){ #limit to submitted names w/ matching names that have at least two words
     if(taxonomy_check$submitted_name[1] == word(taxonomy_check$matched_name[1], 1, 2)){ #where submitted names are same as matching...
       ID = taxonomy_check$submitted_name[1] #...keep these
-    } else { #then if they don't match, assume a type in submitted name
+    } else { #then if they don't match, assume a typo in submitted name
       first_match = word(taxonomy_check$matched_name[1], 1, 2) 
       next_four = word(taxonomy_check$matched_name[2:5], 1, 2)
       number_matches = length(which(next_four %in% first_match))
@@ -89,6 +93,10 @@ for (i in 1:10000){
 }
 
 proc.time() - ptm
+
+# Use resolved reference names to get correct names in dataset
+tax_res$resolved_names = resolved_IDs
+subset_individual_data$res_genus_species = tax_res$resolved_names[match(subset_individual_data$genus_species, tax_res$original_names)]
 
 # TODO: Check coordinates
 # 2: longitude transformation needed
