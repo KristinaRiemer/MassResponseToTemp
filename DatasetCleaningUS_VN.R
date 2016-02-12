@@ -59,6 +59,12 @@ subset_individual_data$mass = extract_component(subset_individual_data$normalize
 # Create column for genus and species identification
 subset_individual_data$genus_species = extract_genus_species(subset_individual_data$scientificname)
 
+# Remove coordinates outside of range and transform longitudes
+subset_individual_data$decimallatitude[subset_individual_data$decimallatitude > 90 | subset_individual_data$decimallatitude < -90] = NA
+subset_individual_data$decimallongitude[subset_individual_data$decimallongitude > 180 | subset_individual_data$decimallongitude < -180] = NA
+subset_individual_data$longitude = ifelse(subset_individual_data$decimallongitude < 0, subset_individual_data$decimallongitude + 360, subset_individual_data$decimallongitude)
+
+
 # Create reference table of names for taxonomy resolution
 original_names = unique(subset_individual_data$genus_species)
 tax_res = data.frame(original_names)
@@ -97,32 +103,6 @@ proc.time() - ptm
 # Use resolved reference names to get correct names in dataset
 tax_res$resolved_names = resolved_IDs
 subset_individual_data$res_genus_species = tax_res$resolved_names[match(subset_individual_data$genus_species, tax_res$original_names)]
-
-# TODO: Check coordinates
-# 2: longitude transformation needed
-# TODO: specify which coordinate system data is in and needs to be
-# Ranges needed for temp raster
-#lat DD: should be -90 to 90 (are -161 to 8841)
-  #handful of values are too big or too small
-#lon DD: should be -180 to 180 (are -5610 to 180)
-  #no values are too big, 5 values are too small
-#Need lon range to be 0 to 360
-# TODO: turn decimal coordinates that are outside of range into NA
-
-individual_data$decimallatitude[individual_data$decimallatitude > 90 | individual_data$decimallatitude < -90] = NA
-individual_data$decimallongitude[individual_data$decimallongitude > 180 | individual_data$decimallongitude < -180] = NA
-
-longitudes = c()
-for(current_row in individual_data$decimallongitude){
-  if(current_row < 0){
-    lon = current_row + 360
-  } else {
-    lon = current_row
-  }
-  longitudes = append(longitudes, lon)
-}
-
-individual_data$longitude = individual_data$decimallongitude + 360
 
 # TODO: Check collection year
 # Will have to find unusual years, check them, and remove if necessary
