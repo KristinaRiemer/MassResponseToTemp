@@ -3,7 +3,7 @@
 #-------DATASETS----------
 library(readr)
 individual_data = read_csv("VertnetTraitExtraction.csv")
-subset_individual_data = individual_data[1:1000,]
+subset_individual_data = individual_data[1:100000,]
 
 #-------FUNCTIONS---------
 
@@ -50,6 +50,10 @@ extract_genus_species = function(dataset_column){
   }
   return(list_IDs)
 }
+
+# TODO: turn for loop function into ifelse
+#ifelse(sapply(gregexpr("\\S+", subset_individual_data$scientificname), length) < 2, NA, 
+#ifelse(sapply(gregexpr("\\S+", subset_individual_data$scientificname), length) >= 2, word(subset_individual_data$scientificname, 1, 2), NA))
 
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
@@ -103,6 +107,3 @@ proc.time() - ptm
 # Use resolved reference names to get correct names in dataset
 tax_res$resolved_names = resolved_IDs
 subset_individual_data$res_genus_species = tax_res$resolved_names[match(subset_individual_data$genus_species, tax_res$original_names)]
-
-# TODO: Check collection year
-# Will have to find unusual years, check them, and remove if necessary
