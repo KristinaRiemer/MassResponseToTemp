@@ -3,7 +3,7 @@
 #-------DATASETS----------
 library(readr)
 individual_data = read_csv("VertnetTraitExtraction.csv")
-subset_individual_data = individual_data[1:100000,]
+subset_individual_data = individual_data[1:100,]
 
 #-------FUNCTIONS---------
 
@@ -50,10 +50,6 @@ extract_genus_species = function(dataset_column){
   }
   return(list_IDs)
 }
-
-# TODO: turn for loop function into ifelse
-#ifelse(sapply(gregexpr("\\S+", subset_individual_data$scientificname), length) < 2, NA, 
-#ifelse(sapply(gregexpr("\\S+", subset_individual_data$scientificname), length) >= 2, word(subset_individual_data$scientificname, 1, 2), NA))
 
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
@@ -103,6 +99,32 @@ for (i in 1:nrow(tax_res)){
 }
 
 proc.time() - ptm
+
+count_words = function(name){
+  number_words = sapply(gregexpr("\\S+", name), length)
+  return(number_words)
+}
+
+all_names_match = function(names){
+  clean_names = lapply(names, function(x) word(x, 1, 2))
+  length(unique(clean_names)) == 1
+}
+
+resolved_IDs_new = c()
+for (i in 1:nrow(tax_res)){
+  taxonomy_check = gnr_resolve(names = tax_res$original_names[i])
+  first_match = word(taxonomy_check$matched_name[1], 1, 2)
+  if(count_words(first_match) < 2){
+    IDs = NA
+  } else if(tax_res$original_names[i] == first_match){
+    IDs = tax_res$original_names[i]
+  } else if(all_names_match(taxonomy_check$matched_name[1:5])){
+    IDs = first_match
+  }
+  print(IDs)
+  #resolved_IDs_new = append(resolved_IDs_new, IDs)
+}
+
 
 # Use resolved reference names to get correct names in dataset
 tax_res$resolved_names = resolved_IDs
