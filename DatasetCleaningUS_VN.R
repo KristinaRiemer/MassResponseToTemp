@@ -104,14 +104,20 @@ resolve_names = function(names_list){
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
 # Create column containing only mass value for each individual
-subset_individual_data$mass = extract_component(subset_individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
+#individual_data$mass = extract_component(individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
 
 # Create column containing only genus and species
-subset_individual_data$genus_species = extract_genus_species(subset_individual_data$scientificname)
+ptm = proc.time()
+individual_data$genus_species = extract_genus_species(individual_data$scientificname)
+proc.time() - ptm
+
+write.csv(individual_data, file = "VN_taxonomy.csv")
+individual_data_taxonomy = read_csv("VN_taxonomy.csv")
 
 # Check and fix taxonomic names using EOL Global Names Resolver
-original_names = unique(subset_individual_data$genus_species)
+original_names = unique(individual_data_taxonomy$genus_species)
 unique_names = data.frame(original_names)
+###############
 unique_names$resolved_names = resolve_names(unique_names$original_names)
 subset_individual_data$clean_genus_species = unique_names$resolved_names[match(subset_individual_data$genus_species, unique_names$original_names)]
 
