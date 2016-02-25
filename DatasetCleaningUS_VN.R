@@ -3,7 +3,7 @@
 #-------DATASETS----------
 library(readr)
 individual_data = read_csv("VertnetTraitExtraction.csv")
-subset_individual_data = individual_data[1:100,]
+subset_individual_data = individual_data[1:500,]
 
 #-------FUNCTIONS---------
 
@@ -51,81 +51,71 @@ extract_genus_species = function(dataset_column){
   return(list_IDs)
 }
 
+count_words = function(string){
+  # Count the number of words in a string
+  #
+  # Args: 
+  #   string: The string for which the number of words is desired
+  #
+  # Returns: 
+  #   Number of words in the string
+  number_words = sapply(gregexpr("\\S+", string), length)
+  return(number_words)
+}
+
+all_names_match = function(strings){
+  # Determine if multiple strings are identical after extracting first two words
+  # of each
+  # 
+  # Args: 
+  #   strings: The strings that are cleaned and matched
+  #
+  # Returns: 
+  #   TRUE if all strings match, FALSE if any of them do not
+  clean_names = lapply(strings, function(x) word(x, 1, 2))
+  length(unique(clean_names)) == 1
+}
+
+library(taxize)
+resolve_names = function(names_list){
+  # Check and clean up taxonomic names
+  #
+  # Args: 
+  #   names_list: List of taxonomic names
+  #
+  # Returns: 
+  #   List where NAs are names that only had genus, original name is retained if
+  #   correct, and new name if original name had typo
+  resolved_names = c()
+  for (i in 1:length(names_list)){
+    tax_out = gnr_resolve(names = names_list[i])
+    if(count_words(tax_out$matched_name[1]) < 2){
+      name = NA
+    } else if(tax_out$submitted_name[1] == word(tax_out$matched_name[1], 1, 2)){
+      name = tax_out$submitted_name[1]
+    } else if(all_names_match(tax_out$matched_name[1:5])){
+      name = word(tax_out$matched_name[1], 1, 2)
+    }
+    resolved_names = append(resolved_names, name)
+  }
+  return(resolved_names)
+}
+
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
 # Create column containing only mass value for each individual
 subset_individual_data$mass = extract_component(subset_individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
 
-# Create column for genus and species identification
+# Create column containing only genus and species
 subset_individual_data$genus_species = extract_genus_species(subset_individual_data$scientificname)
+
+# Check and fix taxonomic names using EOL Global Names Resolver
+original_names = unique(subset_individual_data$genus_species)
+unique_names = data.frame(original_names)
+unique_names$resolved_names = resolve_names(unique_names$original_names)
+subset_individual_data$clean_genus_species = unique_names$resolved_names[match(subset_individual_data$genus_species, unique_names$original_names)]
 
 # Remove coordinates outside of range and transform longitudes
 subset_individual_data$decimallatitude[subset_individual_data$decimallatitude > 90 | subset_individual_data$decimallatitude < -90] = NA
 subset_individual_data$decimallongitude[subset_individual_data$decimallongitude > 180 | subset_individual_data$decimallongitude < -180] = NA
 subset_individual_data$longitude = ifelse(subset_individual_data$decimallongitude < 0, subset_individual_data$decimallongitude + 360, subset_individual_data$decimallongitude)
-
-
-# Create reference table of names for taxonomy resolution
-original_names = unique(subset_individual_data$genus_species)
-tax_res = data.frame(original_names)
-
-# Check taxonomy of reference names using EOL Global Names Resolver
-library(taxize)
-
-ptm = proc.time()
-
-# TODO: Make this loop more readable
-# TODO: Refactor this
-resolved_IDs = c()
-for (i in 1:nrow(tax_res)){
-  taxonomy_check = gnr_resolve(names = tax_res$original_names[i]) #lookup possible matching names
-  if(sapply(gregexpr("\\S+", taxonomy_check$matched_name[1]), length) > 1){ #limit to submitted names w/ matching names that have at least two words
-    if(taxonomy_check$submitted_name[1] == word(taxonomy_check$matched_name[1], 1, 2)){ #where submitted names are same as matching...
-      ID = taxonomy_check$submitted_name[1] #...keep these
-    } else { #then if they don't match, assume a typo in submitted name
-      first_match = word(taxonomy_check$matched_name[1], 1, 2) 
-      next_four = word(taxonomy_check$matched_name[2:5], 1, 2)
-      number_matches = length(which(next_four %in% first_match))
-      if(number_matches == 4){ #this is making sure that the first 5 matching names are identical
-        ID = word(taxonomy_check$matched_name[1], 1, 2) #use matching name if so
-      } else {
-        ID = NA #if 5 matching names don't match
-      }
-    }
-  } else {
-    ID = NA #if matching name is only one word (just species probably)
-  }
-  resolved_IDs = append(resolved_IDs, ID)
-}
-
-proc.time() - ptm
-
-count_words = function(name){
-  number_words = sapply(gregexpr("\\S+", name), length)
-  return(number_words)
-}
-
-all_names_match = function(names){
-  clean_names = lapply(names, function(x) word(x, 1, 2))
-  length(unique(clean_names)) == 1
-}
-
-resolved_IDs_new = c()
-for (i in 1:nrow(tax_res)){
-  taxonomy_check = gnr_resolve(names = tax_res$original_names[i])
-  first_match = word(taxonomy_check$matched_name[1], 1, 2)
-  if(count_words(first_match) < 2){
-    IDs = NA
-  } else if(tax_res$original_names[i] == first_match){
-    IDs = tax_res$original_names[i]
-  } else if(all_names_match(taxonomy_check$matched_name[1:5])){
-    IDs = first_match
-  }
-  print(IDs)
-  #resolved_IDs_new = append(resolved_IDs_new, IDs)
-}
-
-
-# Use resolved reference names to get correct names in dataset
-tax_res$resolved_names = resolved_IDs
-subset_individual_data$res_genus_species = tax_res$resolved_names[match(subset_individual_data$genus_species, tax_res$original_names)]
