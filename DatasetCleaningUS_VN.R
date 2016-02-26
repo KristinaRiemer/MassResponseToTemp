@@ -106,6 +106,17 @@ resolve_names = function(names_list){
 # Create column containing only mass value for each individual
 #individual_data$mass = extract_component(individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
 
+subset_individual_data$genus_species = extract_genus_species(subset_individual_data$scientificname)
+subset_original_names = unique(subset_individual_data$genus_species)
+subset_unique_names = data.frame(subset_original_names)
+chunks = split(subset_unique_names, 1:5)
+
+lapply(chunks, function(x) {y = resolve_names(x); Sys.sleep(3); print(y)})
+
+lapply(m, function(x) {y = x^2 ; Sys.sleep(3); print(y)})
+
+
+
 # Create column containing only genus and species
 ptm = proc.time()
 individual_data$genus_species = extract_genus_species(individual_data$scientificname)
