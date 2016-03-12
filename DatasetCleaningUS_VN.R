@@ -3,7 +3,7 @@
 #-------DATASETS----------
 library(readr)
 individual_data = read_csv("VertnetTraitExtraction.csv")
-subset_individual_data = individual_data[1:2175,]
+subset_individual_data = individual_data[1:1000,]
 
 #-------FUNCTIONS---------
 
@@ -76,6 +76,19 @@ all_names_match = function(strings){
   length(unique(clean_names)) == 1
 }
 
+chunk_df = function(df){
+  # Split dataframe up into chunks of 100 rows
+  # 
+  # Args: 
+  #   df: Dataframe to be split up
+  #
+  # Returns: 
+  #   Lists of 100 rows of entire dataframe
+  chunk_nums = seq(100, round(nrow(df), digits = -2), 100)
+  chunks = lapply(seq_along(chunk_nums), function(x) df[(chunk_nums - 99)[x]:chunk_nums[x],])
+  return(chunks)
+}
+
 library(taxize)
 resolve_names = function(names_list){
   # Check and clean up taxonomic names
@@ -101,41 +114,36 @@ resolve_names = function(names_list){
   return(resolved_names)
 }
 
+check_chunks = function(chunks_list, names_list){
+  # Run taxonomy resolution fx on all chunks and clean up output
+  # 
+  # Args: 
+  #   chunks_list: Chunks of dataframe
+  # 
+  # Returns: 
+  #   List of all clean names that can be combined with original names
+  checked_chunks = lapply(chunks_list, function(x) {y = resolve_names(x) 
+  Sys.sleep(3)
+  return(y)})
+  checked_chunks = unlist(checked_chunks)
+  checked_chunks = checked_chunks[1:nrow(names_list)]
+  return(checked_chunks)
+}
+
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
 # Create column containing only mass value for each individual
 subset_individual_data$mass = extract_component(subset_individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
-#individual_data$mass = extract_component(individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
 
 # Create column containing only genus and species
 subset_individual_data$genus_species = extract_genus_species(subset_individual_data$scientificname)
-#ptm = proc.time()
-#individual_data$genus_species = extract_genus_species(individual_data$scientificname)
-#proc.time() - ptm
 
-#write.csv(individual_data, file = "VN_taxonomy.csv")
-#individual_data_taxonomy = read_csv("VN_taxonomy.csv")
-
-# Check and fix taxonomic names using EOL Global Names Resolver
-original_names = unique(individual_data_taxonomy$genus_species)
-unique_names = data.frame(original_names)
-###############
-unique_names$resolved_names = resolve_names(unique_names$original_names)
-subset_individual_data$clean_genus_species = unique_names$resolved_names[match(subset_individual_data$genus_species, unique_names$original_names)]
-
-### Chunking dataset to avoid overloading taxize API
+# Fix taxonomic names using EOL Global Names Resolver, chunk dataset to not overload API
 subset_names = data.frame(unique(subset_individual_data$genus_species))
 colnames(subset_names) = "original"
-
-# One function, to chunk dataset by 100s
-chunk_num = seq(100, round(nrow(subset_names), digits = -2), 100)
-chunks = lapply(seq_along(chunk_num), function(i) subset_names[(chunk_num-99)[i]:chunk_num[i], ])
-
-# Second function, to check tax of chunks and remove NAs from bottom
-checked_chunks = lapply(chunks, function(x) {y = resolve_names(x); Sys.sleep(3); return(y)})
-checked_chunks = unlist(checked_chunks)
-checked_chunks = checked_chunks[1:nrow(subset_names)]
-subset_names$checked = checked_chunks
+chunks = chunk_df(subset_names)
+subset_names$checked = check_chunks(chunks, subset_names)
+subset_individual_data$clean_genus_species = subset_names$checked[match(subset_individual_data$genus_species, subset_names$original)]
 
 # Remove coordinates outside of range and transform longitudes
 subset_individual_data$decimallatitude[subset_individual_data$decimallatitude > 90 | subset_individual_data$decimallatitude < -90] = NA
