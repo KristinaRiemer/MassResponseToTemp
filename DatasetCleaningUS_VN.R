@@ -3,7 +3,6 @@
 #-------DATASETS----------
 library(readr)
 individual_data = read_csv("VertnetTraitExtraction.csv")
-subset_individual_data = individual_data[1:1000,]
 
 #-------FUNCTIONS---------
 
@@ -72,7 +71,7 @@ all_names_match = function(strings){
   #
   # Returns: 
   #   TRUE if all strings match, FALSE if any of them do not
-  clean_names = lapply(strings, function(x) word(x, 1, 2))
+  clean_names = lapply(strings, function(x) try(word(x, 1, 2), silent = TRUE))
   length(unique(clean_names)) == 1
 }
 
@@ -90,6 +89,7 @@ chunk_df = function(df){
 }
 
 library(taxize)
+library(spatstat)
 resolve_names = function(names_list){
   # Check and clean up taxonomic names
   #
@@ -102,13 +102,18 @@ resolve_names = function(names_list){
   resolved_names = c()
   for (i in 1:length(names_list)){
     tax_out = gnr_resolve(names = names_list[i])
-    if(count_words(tax_out$matched_name[1]) < 2){
+    if(is.empty(tax_out)){
+      name = NA
+    } else if(count_words(tax_out$matched_name[1]) < 2){
       name = NA
     } else if(tax_out$submitted_name[1] == word(tax_out$matched_name[1], 1, 2)){
       name = tax_out$submitted_name[1]
     } else if(all_names_match(tax_out$matched_name[1:5])){
       name = word(tax_out$matched_name[1], 1, 2)
+    } else {
+      name = NA
     }
+    print(name)
     resolved_names = append(resolved_names, name)
   }
   return(resolved_names)
@@ -123,8 +128,9 @@ check_chunks = function(chunks_list, names_list){
   # Returns: 
   #   List of all clean names that can be combined with original names
   checked_chunks = lapply(chunks_list, function(x) {y = resolve_names(x) 
-  Sys.sleep(3)
-  return(y)})
+                                                    Sys.sleep(3)
+                                                    print(y)
+                                                    return(y)})
   checked_chunks = unlist(checked_chunks)
   checked_chunks = checked_chunks[1:nrow(names_list)]
   return(checked_chunks)
@@ -132,20 +138,29 @@ check_chunks = function(chunks_list, names_list){
 
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
+ptm = proc.time()
 # Create column containing only mass value for each individual
-subset_individual_data$mass = extract_component(subset_individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
+individual_data$mass = extract_component(individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
+proc.time() - ptm
 
+ptm = proc.time()
 # Create column containing only genus and species
-subset_individual_data$genus_species = extract_genus_species(subset_individual_data$scientificname)
+individual_data$genus_species = extract_genus_species(individual_data$scientificname)
+proc.time() - ptm
 
+ptm = proc.time()
 # Fix taxonomic names using EOL Global Names Resolver, chunk dataset to not overload API
-subset_names = data.frame(unique(subset_individual_data$genus_species))
+subset_names = data.frame(unique(individual_data$genus_species))
 colnames(subset_names) = "original"
 chunks = chunk_df(subset_names)
-subset_names$checked = check_chunks(chunks, subset_names)
-subset_individual_data$clean_genus_species = subset_names$checked[match(subset_individual_data$genus_species, subset_names$original)]
+checked_names = check_chunks(chunks, subset_names)
+proc.time() - ptm
+
+#######################
+subset_names$checked = checked_names
+individual_data$clean_genus_species = subset_names$checked[match(individual_data$genus_species, subset_names$original)]
 
 # Remove coordinates outside of range and transform longitudes
-subset_individual_data$decimallatitude[subset_individual_data$decimallatitude > 90 | subset_individual_data$decimallatitude < -90] = NA
-subset_individual_data$decimallongitude[subset_individual_data$decimallongitude > 180 | subset_individual_data$decimallongitude < -180] = NA
-subset_individual_data$longitude = ifelse(subset_individual_data$decimallongitude < 0, subset_individual_data$decimallongitude + 360, subset_individual_data$decimallongitude)
+individual_data$decimallatitude[individual_data$decimallatitude > 90 | individual_data$decimallatitude < -90] = NA
+individual_data$decimallongitude[individual_data$decimallongitude > 180 | individual_data$decimallongitude < -180] = NA
+individual_data$longitude = ifelse(individual_data$decimallongitude < 0, individual_data$decimallongitude + 360, individual_data$decimallongitude)
