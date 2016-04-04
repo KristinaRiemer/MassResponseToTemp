@@ -156,11 +156,21 @@ chunks = chunk_df(subset_names)
 checked_names = check_chunks(chunks, subset_names)
 proc.time() - ptm
 
-#######################
 subset_names$checked = checked_names
+
+#######################
+write.csv(subset_names, file = "temporary_names.csv")
+write.csv(individual_data, file = "temporary_all_data.csv")
+individual_data = read_csv("temporary_all_data.csv")
+subset_names = read_csv("temporary_names.csv")
+
+subset_names[subset_names == "Environmental Halophage"] = NA
+subset_names$checked = gsub("sp\\.", NA, subset_names$checked)
 individual_data$clean_genus_species = subset_names$checked[match(individual_data$genus_species, subset_names$original)]
 
 # Remove coordinates outside of range and transform longitudes
 individual_data$decimallatitude[individual_data$decimallatitude > 90 | individual_data$decimallatitude < -90] = NA
 individual_data$decimallongitude[individual_data$decimallongitude > 180 | individual_data$decimallongitude < -180] = NA
 individual_data$longitude = ifelse(individual_data$decimallongitude < 0, individual_data$decimallongitude + 360, individual_data$decimallongitude)
+
+# TODO: check when genus == species and isn't real species
