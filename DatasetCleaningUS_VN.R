@@ -173,4 +173,15 @@ individual_data$decimallatitude[individual_data$decimallatitude > 90 | individua
 individual_data$decimallongitude[individual_data$decimallongitude > 180 | individual_data$decimallongitude < -180] = NA
 individual_data$longitude = ifelse(individual_data$decimallongitude < 0, individual_data$decimallongitude + 360, individual_data$decimallongitude)
 
+#----SUBSETTING DATASET----
+
+# Subset dataset to retain only individuals with mass, species ID, 
+# coordinates (in US), collected 1900-2010, ...
+individual_data = individual_data[complete.cases(individual_data$mass),]
+individual_data = individual_data[complete.cases(individual_data$clean_genus_species),]
+individual_data = individual_data[(complete.cases(individual_data$decimallatitude) & complete.cases(individual_data$longitude)),]
+individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
+
+# TODO: limit to adults?
+# TODO: subset individualcount to 1, if applicable
 # TODO: check when genus == species and isn't real species
