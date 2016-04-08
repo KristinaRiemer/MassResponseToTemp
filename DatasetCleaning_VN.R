@@ -244,4 +244,5 @@ new_species_data = merge(new_species_data, min_lat)
 new_species_data$year_range = new_species_data$max_year - new_species_data$min_year
 new_species_data$lat_range = new_species_data$max_lat - new_species_data$min_lat
 
-# TODO: limit to adults?
+# Save dataset as CSV to be used as input for Python code
+write.csv(individual_data, "CompleteDatasetVN.csv")
