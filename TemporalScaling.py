@@ -148,7 +148,9 @@ def linear_regression(dataset, speciesID_col, lag_col):
     return all_stats
 
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetUS.csv")
+#individual_data = pd.read_csv("CompleteDatasetUS.csv")
+full_individual_data = pd.read_csv("CompleteDatasetVN.csv")
+individual_data = full_individual_data[(full_individual_data["clean_genus_species"] == "Lasiurus borealis") | (full_individual_data["clean_genus_species"] == "Didelphis virginiana")]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -158,7 +160,7 @@ temp_file = "air.mon.mean.v301.nc"
 duplicates_data = duplicate_rows(individual_data, individual_data["year"] - 1899)
 
 # Create year lag column for each individual
-lag_data = create_lag_column(duplicates_data)   
+lag_data = create_lag_column(duplicates_data)
 
 # Add year for temperature lookup
 lag_data["temp_year"] = lag_data["year"] - lag_data["lag"]
@@ -171,10 +173,10 @@ lag_data["stackID_july"] = get_stackID(lag_data["temp_year"], month_codes["July"
 temp_data = lag_data
 
 # Get temperatures for July
-temp_data["july_temps"] = get_temps_list(temp_file, temp_data, temp_data[["lon", "lat"]], temp_data["stackID_july"])
+temp_data["july_temps"] = get_temps_list(temp_file, temp_data, temp_data[["longitude", "decimallatitude"]], temp_data["stackID_july"])
 
 # Remove rows with missing data values (i.e., 3276.7)
 temp_data = temp_data[temp_data["july_temps"] < 3276]
 
 # Create linear regression and stats plots for each species, and dataframe with r2 and slope
-linreg_stats = linear_regression(temp_data, "genus_species", "lag")
+linreg_stats = linear_regression(temp_data, "clean_genus_species", "lag")
