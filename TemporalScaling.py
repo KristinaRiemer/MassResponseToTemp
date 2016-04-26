@@ -1,11 +1,14 @@
 from __future__ import division
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 import pandas as pd
 import numpy as np
 import calendar
 from osgeo import gdal
 import statsmodels.formula.api as smf
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
+import time
 
 def duplicate_rows(dataset, formula): 
     """Duplicate each row of dataset using number in created column
@@ -119,7 +122,7 @@ def linear_regression(dataset, speciesID_col, lag_col):
         linreg_pdf = PdfPages(species + "_linreg.pdf")
         stats_list = []
         for lag, lag_data in species_data.groupby(lag_col): 
-            if len(lag_data) > 1: 
+            if len(lag_data) > 15: 
                 print species, lag
                 linreg = smf.ols(formula = "mass ~ july_temps", data = lag_data).fit()
                 plt.figure()
@@ -129,10 +132,7 @@ def linear_regression(dataset, speciesID_col, lag_col):
                 plt.ylabel("Mass(g)")
                 linreg_pdf.savefig()
                 stats_list.append({"genus_species": species, "lag": lag, "r_squared": linreg.rsquared, "slope": linreg.params[1]})
-                #print stats_list
-                #print species_data
         stats_df = pd.DataFrame(stats_list)
-        #print stats_df
         plt.figure()
         plt.plot(stats_df["lag"], stats_df["r_squared"], color = "purple", marker = "o", linestyle = "None")
         plt.axhline(y = 1, color = "purple", linestyle = "--", linewidth = 3)
@@ -148,19 +148,34 @@ def linear_regression(dataset, speciesID_col, lag_col):
     return all_stats
 
 # Datasets
-#individual_data = pd.read_csv("CompleteDatasetUS.csv")
+#individual_data = pd.read_csv("CompleteDatasetVN.csv")
 full_individual_data = pd.read_csv("CompleteDatasetVN.csv")
-individual_data = full_individual_data[(full_individual_data["clean_genus_species"] == "Lasiurus borealis") | (full_individual_data["clean_genus_species"] == "Didelphis virginiana")]
+individual_data = full_individual_data[(full_individual_data["clean_genus_species"] == "Lasiurus borealis") | 
+                                       (full_individual_data["clean_genus_species"] == "Didelphis virginiana") |
+                                       (full_individual_data["clean_genus_species"] == "Ondatra zibethicus") |
+                                       (full_individual_data["clean_genus_species"] == "Peromyscus leucopus") | 
+                                       (full_individual_data["clean_genus_species"] == "Microtus ochrogaster") |
+                                       (full_individual_data["clean_genus_species"] == "Chaetodipus hispidus") |
+                                       (full_individual_data["clean_genus_species"] == "Synaptomys cooperi") |
+                                       (full_individual_data["clean_genus_species"] == "Onychomys leucogaster") |
+                                       (full_individual_data["clean_genus_species"] == "Geomys bursarius") |
+                                       (full_individual_data["clean_genus_species"] == "Eptesicus fuscus")]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
 temp_file = "air.mon.mean.v301.nc"
 
+duplication_initial = time.time()
 # Duplicate individual rows based on number of years between 1900 and collection year
 duplicates_data = duplicate_rows(individual_data, individual_data["year"] - 1899)
+duplication_final = time.time()
+duplication_total = (duplication_final - duplication_initial) / 60 #time in mins
 
+lag_initial = time.time()
 # Create year lag column for each individual
 lag_data = create_lag_column(duplicates_data)
+lag_final = time.time()
+lag_total = (lag_final - lag_initial) / 60
 
 # Add year for temperature lookup
 lag_data["temp_year"] = lag_data["year"] - lag_data["lag"]
@@ -168,15 +183,32 @@ lag_data["temp_year"] = lag_data["year"] - lag_data["lag"]
 # List of months with corresponding stackID codes
 month_codes = create_month_codes_dict(22799, 22787, -1)
 
+si_initial = time.time()
 # Get stackIDs for July and year
 lag_data["stackID_july"] = get_stackID(lag_data["temp_year"], month_codes["July"])
 temp_data = lag_data
+si_final = time.time()
+si_total = (si_final - si_initial) / 60
 
+temp_initial = time.time()
 # Get temperatures for July
 temp_data["july_temps"] = get_temps_list(temp_file, temp_data, temp_data[["longitude", "decimallatitude"]], temp_data["stackID_july"])
+temp_final = time.time()
+temp_total = (temp_final - temp_initial) / 60
 
 # Remove rows with missing data values (i.e., 3276.7)
 temp_data = temp_data[temp_data["july_temps"] < 3276]
 
+stats_initial = time.time()
 # Create linear regression and stats plots for each species, and dataframe with r2 and slope
 linreg_stats = linear_regression(temp_data, "clean_genus_species", "lag")
+stats_final = time.time()
+stats_total = (stats_final - stats_initial) / 60
+
+print "duplication", duplication_total
+print "lag", lag_total
+print "stackID", si_total
+print "temp lookup", temp_total
+print "stats", stats_total
+time_total = duplication_total + lag_total + si_total + temp_total + stats_total
+print time_total
