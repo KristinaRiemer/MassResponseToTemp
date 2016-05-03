@@ -35,9 +35,12 @@ def create_lag_column(dataset):
     """
     lag_dataset = pd.DataFrame()
     grouped_by_duplicate = dataset.groupby(level = 0)
+    loop_number = 1 # temporary print
     for duplicate, duplicate_data in grouped_by_duplicate: 
         duplicate_data["lag"] = np.asarray(range(len(duplicate_data)))
         lag_dataset = lag_dataset.append(duplicate_data)
+        print "lag percent completion %f" % (loop_number/number_individuals*100) # temporary print
+        loop_number += 1 # temporary print
     return lag_dataset
 
 def create_month_codes_dict(jan_code, dec_code, diff):
@@ -89,6 +92,7 @@ def get_temps_list(raster_file, dataset, coordinates, band):
     """
     open_file = gdal.Open(raster_file)
     all_temps = []
+    loop_number = 1 # temporary print
     for i in range(len(dataset)): 
         single_band = open_file.GetRasterBand(band.iloc[i])
         geotrans_raster = open_file.GetGeoTransform()
@@ -99,7 +103,9 @@ def get_temps_list(raster_file, dataset, coordinates, band):
         add_offset = single_band.GetOffset()
         scale_factor = single_band.GetScale()
         unpacked_temp = add_offset + (packed_temp * scale_factor)
-        all_temps.append(unpacked_temp)  
+        all_temps.append(unpacked_temp) 
+        print "temp percent completion %f" % (loop_number/number_lookups*100) # temporary print
+        loop_number += 1 # temporary print
     open_file = None
     return all_temps
 
@@ -118,12 +124,13 @@ def linear_regression(dataset, speciesID_col, lag_col):
     """
     stats_pdf = PdfPages("all_stats.pdf")
     all_stats = pd.DataFrame()
+    loop_number = 1 # temporary print
     for species, species_data in dataset.groupby(speciesID_col):
         linreg_pdf = PdfPages(species + "_linreg.pdf")
         stats_list = []
         for lag, lag_data in species_data.groupby(lag_col): 
             if len(lag_data) > 15: 
-                print species, lag
+                #print species, lag
                 linreg = smf.ols(formula = "mass ~ july_temps", data = lag_data).fit()
                 plt.figure()
                 plt.plot(lag_data["july_temps"], lag_data["mass"], "bo")
@@ -132,6 +139,8 @@ def linear_regression(dataset, speciesID_col, lag_col):
                 plt.ylabel("Mass(g)")
                 linreg_pdf.savefig()
                 stats_list.append({"genus_species": species, "lag": lag, "r_squared": linreg.rsquared, "slope": linreg.params[1]})
+        print "stats percent completion %f" % (loop_number/number_species * 100) # temporary print
+        loop_number += 1 # temporary print
         stats_df = pd.DataFrame(stats_list)
         plt.figure()
         plt.plot(stats_df["lag"], stats_df["r_squared"], color = "purple", marker = "o", linestyle = "None")
@@ -150,16 +159,8 @@ def linear_regression(dataset, speciesID_col, lag_col):
 # Datasets
 #individual_data = pd.read_csv("CompleteDatasetVN.csv")
 full_individual_data = pd.read_csv("CompleteDatasetVN.csv")
-individual_data = full_individual_data[(full_individual_data["clean_genus_species"] == "Lasiurus borealis") | 
-                                       (full_individual_data["clean_genus_species"] == "Didelphis virginiana") |
-                                       (full_individual_data["clean_genus_species"] == "Ondatra zibethicus") |
-                                       (full_individual_data["clean_genus_species"] == "Peromyscus leucopus") | 
-                                       (full_individual_data["clean_genus_species"] == "Microtus ochrogaster") |
-                                       (full_individual_data["clean_genus_species"] == "Chaetodipus hispidus") |
-                                       (full_individual_data["clean_genus_species"] == "Synaptomys cooperi") |
-                                       (full_individual_data["clean_genus_species"] == "Onychomys leucogaster") |
-                                       (full_individual_data["clean_genus_species"] == "Geomys bursarius") |
-                                       (full_individual_data["clean_genus_species"] == "Eptesicus fuscus")]
+species_list = full_individual_data["clean_genus_species"].unique().tolist()
+individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:10])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -170,6 +171,8 @@ duplication_initial = time.time()
 duplicates_data = duplicate_rows(individual_data, individual_data["year"] - 1899)
 duplication_final = time.time()
 duplication_total = (duplication_final - duplication_initial) / 60 #time in mins
+
+number_individuals = len(individual_data) # temporary print
 
 lag_initial = time.time()
 # Create year lag column for each individual
@@ -186,18 +189,26 @@ month_codes = create_month_codes_dict(22799, 22787, -1)
 si_initial = time.time()
 # Get stackIDs for July and year
 lag_data["stackID_july"] = get_stackID(lag_data["temp_year"], month_codes["July"])
-temp_data = lag_data
 si_final = time.time()
 si_total = (si_final - si_initial) / 60
 
-temp_initial = time.time()
+# Avoiding multiple temp lookups for same location/year combinations
+temp_lookup = lag_data[["longitude", "decimallatitude", "stackID_july"]]
+temp_lookup = temp_lookup.drop_duplicates()
+
+number_lookups = len(temp_lookup) # temporary print
 # Get temperatures for July
-temp_data["july_temps"] = get_temps_list(temp_file, temp_data, temp_data[["longitude", "decimallatitude"]], temp_data["stackID_july"])
+temp_initial = time.time()
+temp_lookup["july_temps"] = get_temps_list(temp_file, temp_lookup, temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID_july"])
 temp_final = time.time()
 temp_total = (temp_final - temp_initial) / 60
 
+temp_data = lag_data.merge(temp_lookup)
+
 # Remove rows with missing data values (i.e., 3276.7)
 temp_data = temp_data[temp_data["july_temps"] < 3276]
+
+number_species = len(temp_data["clean_genus_species"].unique()) # temporary print
 
 stats_initial = time.time()
 # Create linear regression and stats plots for each species, and dataframe with r2 and slope
