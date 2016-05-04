@@ -34,9 +34,10 @@ def create_lag_column(dataset):
         Dataframe with new lag column
     """
     lag_dataset = pd.DataFrame()
-    grouped_by_duplicate = dataset.groupby(level = 0)
+    #grouped_by_duplicate = dataset.groupby(level = 0)
     loop_number = 1 # temporary print
-    for duplicate, duplicate_data in grouped_by_duplicate: 
+    #for duplicate, duplicate_data in grouped_by_duplicate: 
+    for duplicate, duplicate_data in dataset: 
         duplicate_data["lag"] = np.asarray(range(len(duplicate_data)))
         lag_dataset = lag_dataset.append(duplicate_data)
         print "lag percent completion %f" % (loop_number/number_individuals*100) # temporary print
@@ -160,7 +161,7 @@ def linear_regression(dataset, speciesID_col, lag_col):
 #individual_data = pd.read_csv("CompleteDatasetVN.csv")
 full_individual_data = pd.read_csv("CompleteDatasetVN.csv")
 species_list = full_individual_data["clean_genus_species"].unique().tolist()
-individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:10])]
+individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:3])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -174,11 +175,38 @@ duplication_total = (duplication_final - duplication_initial) / 60 #time in mins
 
 number_individuals = len(individual_data) # temporary print
 
+
+
+##############
+import multiprocessing as mp
+
+def f(x): 
+    return x*x
+
+
+
+p = mp.Pool(3)
+results = p.map(f, [1, 2, 3])
+
+p = mp.Pool(3)
+results = [p.map(create_lag_column, duplicates_data, 2)]
+
 lag_initial = time.time()
 # Create year lag column for each individual
-lag_data = create_lag_column(duplicates_data)
+#lag_data = create_lag_column(duplicates_data)
+
+grouped_duplicate = duplicates_data.groupby(level = 0)
+#lag_data = create_lag_column(grouped_duplicate)
+
+import multiprocessing as mp
+p = mp.Pool(3)
+results = [p.map(create_lag_column, grouped_duplicate, 2)]
+
+
 lag_final = time.time()
 lag_total = (lag_final - lag_initial) / 60
+##################
+
 
 # Add year for temperature lookup
 lag_data["temp_year"] = lag_data["year"] - lag_data["lag"]
@@ -216,10 +244,15 @@ linreg_stats = linear_regression(temp_data, "clean_genus_species", "lag")
 stats_final = time.time()
 stats_total = (stats_final - stats_initial) / 60
 
-print "duplication", duplication_total
-print "lag", lag_total
-print "stackID", si_total
-print "temp lookup", temp_total
-print "stats", stats_total
 time_total = duplication_total + lag_total + si_total + temp_total + stats_total
-print time_total
+
+code_run = pd.DataFrame()
+code_run = code_run.append({"category": "number individuals", "output": len(individual_data)}, ignore_index=True)
+code_run = code_run.append({"category": "duplication", "output": duplication_total}, ignore_index=True)
+code_run = code_run.append({"category": "lag", "output": lag_total}, ignore_index=True)
+code_run = code_run.append({"category": "stackID", "output": si_total}, ignore_index=True)
+code_run = code_run.append({"category": "temp lookup", "output": temp_total}, ignore_index=True)
+code_run = code_run.append({"category": "stats", "output": stats_total}, ignore_index=True)
+code_run = code_run.append({"category": "total time", "output": time_total}, ignore_index=True)
+
+#code_run.to_csv("10_nonparallel.csv")
