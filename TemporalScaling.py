@@ -9,6 +9,7 @@ import calendar
 from osgeo import gdal
 import statsmodels.formula.api as smf
 import time
+from joblib import Parallel, delayed
 
 def duplicate_rows(dataset, formula): 
     """Duplicate each row of dataset using number in created column
@@ -34,15 +35,18 @@ def create_lag_column(dataset):
         Dataframe with new lag column
     """
     lag_dataset = pd.DataFrame()
-    #grouped_by_duplicate = dataset.groupby(level = 0)
+    grouped_by_duplicate = dataset.groupby(level = 0)
     loop_number = 1 # temporary print
-    #for duplicate, duplicate_data in grouped_by_duplicate: 
-    for duplicate, duplicate_data in dataset: 
+    for duplicate, duplicate_data in grouped_by_duplicate: 
         duplicate_data["lag"] = np.asarray(range(len(duplicate_data)))
         lag_dataset = lag_dataset.append(duplicate_data)
         print "lag percent completion %f" % (loop_number/number_individuals*100) # temporary print
         loop_number += 1 # temporary print
     return lag_dataset
+
+def applyParallel(dfGrouped, func): 
+    retLst = Parallel(n_jobs = 3) (delayed(func)(group) for name, group in dfGrouped)
+    return pd.concat(retLst)
 
 def create_month_codes_dict(jan_code, dec_code, diff):
     """Create dictionary of month names and corresponding codes
@@ -175,38 +179,11 @@ duplication_total = (duplication_final - duplication_initial) / 60 #time in mins
 
 number_individuals = len(individual_data) # temporary print
 
-
-
-##############
-import multiprocessing as mp
-
-def f(x): 
-    return x*x
-
-
-
-p = mp.Pool(3)
-results = p.map(f, [1, 2, 3])
-
-p = mp.Pool(3)
-results = [p.map(create_lag_column, duplicates_data, 2)]
-
-lag_initial = time.time()
 # Create year lag column for each individual
-#lag_data = create_lag_column(duplicates_data)
-
-grouped_duplicate = duplicates_data.groupby(level = 0)
-#lag_data = create_lag_column(grouped_duplicate)
-
-import multiprocessing as mp
-p = mp.Pool(3)
-results = [p.map(create_lag_column, grouped_duplicate, 2)]
-
-
+lag_initial = time.time()
+lag_data = applyParallel(duplicates_data.groupby(level = 0), create_lag_column)
 lag_final = time.time()
 lag_total = (lag_final - lag_initial) / 60
-##################
-
 
 # Add year for temperature lookup
 lag_data["temp_year"] = lag_data["year"] - lag_data["lag"]
