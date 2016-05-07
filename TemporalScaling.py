@@ -45,7 +45,7 @@ def create_lag_column(dataset):
     return lag_dataset
 
 def applyParallel(dfGrouped, func): 
-    retLst = Parallel(n_jobs = 3) (delayed(func)(group) for name, group in dfGrouped)
+    retLst = Parallel(n_jobs = -2, verbose = 5) (delayed(func)(group) for name, group in dfGrouped)
     return pd.concat(retLst)
 
 def create_month_codes_dict(jan_code, dec_code, diff):
@@ -82,23 +82,22 @@ def get_stackID(year, month_code):
     stackID = year * 12 - month_code
     return stackID
 
-def get_temps_list(raster_file, dataset, coordinates, band): 
+def get_temps_list(coordinates, band): 
     # FIXME: Might have to move raster open inside for loop to decrease lookup time
     """Get temperatures for lists of locations and stackIDs
     
     Args: 
         raster_file: File of temperatures
-        dataset: Dataframe with locations and stackIDs
         coordinates: Dataframe columns with location coordinates
         band: Dataframe column with stackID corresponding to desired month and year
     
     Returns: 
         List of temperatures for coordinates and stackIDs
     """
-    open_file = gdal.Open(raster_file)
+    open_file = gdal.Open(temp_file) #add raster file back in as argument
     all_temps = []
     loop_number = 1 # temporary print
-    for i in range(len(dataset)): 
+    for i in range(len(band)): 
         single_band = open_file.GetRasterBand(band.iloc[i])
         geotrans_raster = open_file.GetGeoTransform()
         x = int((coordinates.iloc[i][0] - geotrans_raster[0])/geotrans_raster[1])
@@ -113,6 +112,15 @@ def get_temps_list(raster_file, dataset, coordinates, band):
         loop_number += 1 # temporary print
     open_file = None
     return all_temps
+
+#############
+temp_initial = time.time()
+coordinates = temp_lookup[["longitude", "decimallatitude"]]
+bands = temp_lookup["stackID_july"]
+Parallel(n_jobs = -2, verbose = 5) (delayed(get_temps_list) (coordinate, band) for coordinate in coordinates for band in bands)
+temp_final = time.time()
+temp_total = (temp_final - temp_initial) / 60
+##############
 
 def linear_regression(dataset, speciesID_col, lag_col):
     # FIXME: Docstring should be more descriptive
@@ -204,7 +212,7 @@ temp_lookup = temp_lookup.drop_duplicates()
 number_lookups = len(temp_lookup) # temporary print
 # Get temperatures for July
 temp_initial = time.time()
-temp_lookup["july_temps"] = get_temps_list(temp_file, temp_lookup, temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID_july"])
+temp_lookup["july_temps"] = get_temps_list(temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID_july"])
 temp_final = time.time()
 temp_total = (temp_final - temp_initial) / 60
 
@@ -232,4 +240,4 @@ code_run = code_run.append({"category": "temp lookup", "output": temp_total}, ig
 code_run = code_run.append({"category": "stats", "output": stats_total}, ignore_index=True)
 code_run = code_run.append({"category": "total time", "output": time_total}, ignore_index=True)
 
-#code_run.to_csv("10_nonparallel.csv")
+#code_run.to_csv("10_semiparallel.csv")
