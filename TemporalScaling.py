@@ -25,28 +25,13 @@ def duplicate_rows(dataset, formula):
     duplicates_dataset = dataset.loc[np.repeat(dataset.index.values, dataset["number_duplicates"])]
     return duplicates_dataset
 
-def create_lag_column(dataset): 
-    """Add column that starts at zero and adds one for each set of duplicates
-    
-    Args: 
-        dataset: Pandas dataframe to add column to
-    
-    Returns: 
-        Dataframe with new lag column
-    """
-    lag_dataset = pd.DataFrame()
-    grouped_by_duplicate = dataset.groupby(level = 0)
-    loop_number = 1 # temporary print
-    for duplicate, duplicate_data in grouped_by_duplicate: 
-        duplicate_data["lag"] = np.asarray(range(len(duplicate_data)))
-        lag_dataset = lag_dataset.append(duplicate_data)
-        print "lag percent completion %f" % (loop_number/number_individuals*100) # temporary print
-        loop_number += 1 # temporary print
-    return lag_dataset
+def create_lag_column(dataset_chunks): 
+    dataset_chunks["lag"] = np.asarray(range(len(dataset_chunks)))
+    return dataset_chunks
 
-def applyParallel(dfGrouped, func): 
-    retLst = Parallel(n_jobs = -2, verbose = 5) (delayed(func)(group) for name, group in dfGrouped)
-    return pd.concat(retLst)
+def applyParallel(dataset_grouped, func): 
+    results = Parallel(n_jobs = -2, verbose = 5) (delayed(func)(group) for name, group in dataset_grouped)
+    return pd.concat(results)
 
 def create_month_codes_dict(jan_code, dec_code, diff):
     """Create dictionary of month names and corresponding codes
@@ -114,12 +99,12 @@ def get_temps_list(coordinates, band):
     return all_temps
 
 #############
-temp_initial = time.time()
-coordinates = temp_lookup[["longitude", "decimallatitude"]]
-bands = temp_lookup["stackID_july"]
-Parallel(n_jobs = -2, verbose = 5) (delayed(get_temps_list) (coordinate, band) for coordinate in coordinates for band in bands)
-temp_final = time.time()
-temp_total = (temp_final - temp_initial) / 60
+#temp_initial = time.time()
+#coordinates = temp_lookup[["longitude", "decimallatitude"]]
+#bands = temp_lookup["stackID_july"]
+#Parallel(n_jobs = -2, verbose = 5) (delayed(get_temps_list) (coordinate, band) for coordinate in coordinates for band in bands)
+#temp_final = time.time()
+#temp_total = (temp_final - temp_initial) / 60
 ##############
 
 def linear_regression(dataset, speciesID_col, lag_col):
@@ -173,7 +158,7 @@ def linear_regression(dataset, speciesID_col, lag_col):
 #individual_data = pd.read_csv("CompleteDatasetVN.csv")
 full_individual_data = pd.read_csv("CompleteDatasetVN.csv")
 species_list = full_individual_data["clean_genus_species"].unique().tolist()
-individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:3])]
+individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:10])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -185,10 +170,9 @@ duplicates_data = duplicate_rows(individual_data, individual_data["year"] - 1899
 duplication_final = time.time()
 duplication_total = (duplication_final - duplication_initial) / 60 #time in mins
 
-number_individuals = len(individual_data) # temporary print
-
 # Create year lag column for each individual
 lag_initial = time.time()
+#grouped_by_duplicate = duplicates_data.groupby(level = 0)
 lag_data = applyParallel(duplicates_data.groupby(level = 0), create_lag_column)
 lag_final = time.time()
 lag_total = (lag_final - lag_initial) / 60
