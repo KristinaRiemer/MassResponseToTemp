@@ -67,7 +67,7 @@ def get_stackID(year, month_code):
     stackID = year * 12 - month_code
     return stackID
 
-def get_temps_list(coordinates, band): 
+def get_temps_list(coordinates, bands): 
     # FIXME: Might have to move raster open inside for loop to decrease lookup time
     """Get temperatures for lists of locations and stackIDs
     
@@ -82,8 +82,8 @@ def get_temps_list(coordinates, band):
     open_file = gdal.Open(temp_file) #add raster file back in as argument
     all_temps = []
     loop_number = 1 # temporary print
-    for i in range(len(band)): 
-        single_band = open_file.GetRasterBand(band.iloc[i])
+    for i in range(len(bands)): 
+        single_band = open_file.GetRasterBand(bands.iloc[i])
         geotrans_raster = open_file.GetGeoTransform()
         x = int((coordinates.iloc[i][0] - geotrans_raster[0])/geotrans_raster[1])
         y = int((coordinates.iloc[i][1] - geotrans_raster[3])/geotrans_raster[5])
@@ -98,14 +98,31 @@ def get_temps_list(coordinates, band):
     open_file = None
     return all_temps
 
+def get_temps_list(longitudes, latitudes, bands): 
+    open_file = gdal.Open(temp_file)
+    single_band = open_file.GetRasterBand(bands)
+    geotrans_raster = open_file.GetGeoTransform()
+    x = int((longitudes - geotrans_raster[0])/geotrans_raster[1])
+    y = int((latitudes - geotrans_raster[3])/geotrans_raster[5])
+    band_array = single_band.ReadAsArray()
+    packed_temp = band_array[y, x]
+    add_offset = single_band.GetOffset()
+    scale_factor = single_band.GetScale()
+    unpacked_temp = add_offset + (packed_temp * scale_factor)
+    open_file = None
+    return unpacked_temp
+
+
 #############
-#temp_initial = time.time()
+temp_initial = time.time()
 #coordinates = temp_lookup[["longitude", "decimallatitude"]]
 #bands = temp_lookup["stackID_july"]
-#Parallel(n_jobs = -2, verbose = 5) (delayed(get_temps_list) (coordinate, band) for coordinate in coordinates for band in bands)
-#temp_final = time.time()
-#temp_total = (temp_final - temp_initial) / 60
+#temp_results = Parallel(n_jobs = -2, verbose = 5) (delayed(get_temps_list) (coordinate, band) for coordinate in coordinates for band in bands)
+temp_results = Parallel(n_jobs = -2, verbose = 5) (delayed(get_temps_list) (longitude, latitude, band) for longitude in temp_lookup["longitude"] for latitude in temp_lookup["decimallatitude"] for band in temp_lookup["stackID_july"])
+temp_final = time.time()
+temp_total = (temp_final - temp_initial) / 60
 ##############
+
 
 def linear_regression(dataset, speciesID_col, lag_col):
     # FIXME: Docstring should be more descriptive
@@ -158,7 +175,7 @@ def linear_regression(dataset, speciesID_col, lag_col):
 #individual_data = pd.read_csv("CompleteDatasetVN.csv")
 full_individual_data = pd.read_csv("CompleteDatasetVN.csv")
 species_list = full_individual_data["clean_genus_species"].unique().tolist()
-individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:10])]
+individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:3])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
