@@ -67,62 +67,8 @@ def get_stackID(year, month_code):
     stackID = year * 12 - month_code
     return stackID
 
-def get_temps_list(coordinates, bands): 
-    # FIXME: Might have to move raster open inside for loop to decrease lookup time
-    """Get temperatures for lists of locations and stackIDs
-    
-    Args: 
-        raster_file: File of temperatures
-        coordinates: Dataframe columns with location coordinates
-        band: Dataframe column with stackID corresponding to desired month and year
-    
-    Returns: 
-        List of temperatures for coordinates and stackIDs
-    """
-    open_file = gdal.Open(temp_file) #add raster file back in as argument
-    all_temps = []
-    loop_number = 1 # temporary print
-    for i in range(len(bands)): 
-        single_band = open_file.GetRasterBand(bands.iloc[i])
-        geotrans_raster = open_file.GetGeoTransform()
-        x = int((coordinates.iloc[i][0] - geotrans_raster[0])/geotrans_raster[1])
-        y = int((coordinates.iloc[i][1] - geotrans_raster[3])/geotrans_raster[5])
-        band_array = single_band.ReadAsArray()
-        packed_temp = band_array[y, x]
-        add_offset = single_band.GetOffset()
-        scale_factor = single_band.GetScale()
-        unpacked_temp = add_offset + (packed_temp * scale_factor)
-        all_temps.append(unpacked_temp) 
-        print "temp percent completion %f" % (loop_number/number_lookups*100) # temporary print
-        loop_number += 1 # temporary print
-    open_file = None
-    return all_temps
 
-def get_temps_list(longitudes, latitudes, bands): 
-    open_file = gdal.Open(temp_file)
-    single_band = open_file.GetRasterBand(bands)
-    geotrans_raster = open_file.GetGeoTransform()
-    x = int((longitudes - geotrans_raster[0])/geotrans_raster[1])
-    y = int((latitudes - geotrans_raster[3])/geotrans_raster[5])
-    band_array = single_band.ReadAsArray()
-    packed_temp = band_array[y, x]
-    add_offset = single_band.GetOffset()
-    scale_factor = single_band.GetScale()
-    unpacked_temp = add_offset + (packed_temp * scale_factor)
-    open_file = None
-    return unpacked_temp
-
-
-#############
-temp_initial = time.time()
-#coordinates = temp_lookup[["longitude", "decimallatitude"]]
-#bands = temp_lookup["stackID_july"]
-#temp_results = Parallel(n_jobs = -2, verbose = 5) (delayed(get_temps_list) (coordinate, band) for coordinate in coordinates for band in bands)
-temp_results = Parallel(n_jobs = -2, verbose = 5) (delayed(get_temps_list) (longitude, latitude, band) for longitude in temp_lookup["longitude"] for latitude in temp_lookup["decimallatitude"] for band in temp_lookup["stackID_july"])
-temp_final = time.time()
-temp_total = (temp_final - temp_initial) / 60
-##############
-
+######where temps fx belongs
 
 def linear_regression(dataset, speciesID_col, lag_col):
     # FIXME: Docstring should be more descriptive
@@ -209,13 +155,68 @@ si_total = (si_final - si_initial) / 60
 # Avoiding multiple temp lookups for same location/year combinations
 temp_lookup = lag_data[["longitude", "decimallatitude", "stackID_july"]]
 temp_lookup = temp_lookup.drop_duplicates()
+temp_lookup = temp_lookup.iloc[0:10]
 
-number_lookups = len(temp_lookup) # temporary print
+
+########### Serial version
+def get_temps_list(coordinates, bands): 
+    # FIXME: Might have to move raster open inside for loop to decrease lookup time
+    """Get temperatures for lists of locations and stackIDs
+    
+    Args: 
+        raster_file: File of temperatures
+        coordinates: Dataframe columns with location coordinates
+        band: Dataframe column with stackID corresponding to desired month and year
+    
+    Returns: 
+        List of temperatures for coordinates and stackIDs
+    """
+    open_file = gdal.Open(temp_file) #add raster file back in as argument
+    all_temps = []
+    for i in range(len(bands)): 
+        single_band = open_file.GetRasterBand(bands.iloc[i])
+        geotrans_raster = open_file.GetGeoTransform()
+        x = int((coordinates.iloc[i][0] - geotrans_raster[0])/geotrans_raster[1])
+        y = int((coordinates.iloc[i][1] - geotrans_raster[3])/geotrans_raster[5])
+        band_array = single_band.ReadAsArray()
+        packed_temp = band_array[y, x]
+        add_offset = single_band.GetOffset()
+        scale_factor = single_band.GetScale()
+        unpacked_temp = add_offset + (packed_temp * scale_factor)
+        all_temps.append(unpacked_temp) 
+    open_file = None
+    return all_temps
+
 # Get temperatures for July
 temp_initial = time.time()
-temp_lookup["july_temps"] = get_temps_list(temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID_july"])
+temp_lookup_serial = get_temps_list(temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID_july"])
 temp_final = time.time()
 temp_total = (temp_final - temp_initial) / 60
+
+##### Parallel version
+# FIXME: keep band from turning into a float in for loop in Parallel
+def get_temps_list(all_args): 
+    open_file = gdal.Open(temp_file)
+    print type(all_args.iloc[2].item())
+    single_band = open_file.GetRasterBand(int(all_args.iloc[2]))
+    geotrans_raster = open_file.GetGeoTransform()
+    x = int((all_args.iloc[0] - geotrans_raster[0])/geotrans_raster[1])
+    y = int((all_args.iloc[1] - geotrans_raster[3])/geotrans_raster[5])
+    band_array = single_band.ReadAsArray()
+    packed_temp = band_array[y, x]
+    add_offset = single_band.GetOffset()
+    scale_factor = single_band.GetScale()
+    unpacked_temp = add_offset + (packed_temp * scale_factor)
+    open_file = None
+    return unpacked_temp    
+
+temp_initial = time.time()
+temp_results_parallel = Parallel(n_jobs = -2, verbose = 5) (delayed(get_temps_list) (row) for index, row in temp_lookup.iterrows())
+temp_final = time.time()
+temp_total = (temp_final - temp_initial) / 60
+
+
+
 
 temp_data = lag_data.merge(temp_lookup)
 
