@@ -92,10 +92,11 @@ def get_temps_list(coordinates, bands):
         add_offset = single_band.GetOffset()
         scale_factor = single_band.GetScale()
         unpacked_temp = add_offset + (packed_temp * scale_factor)
-        all_temps.append(unpacked_temp) 
+        all_temps.append(unpacked_temp)
     open_file = None
     return all_temps
 
+import psutil
 def linear_regression(dataset, speciesID_col, lag_col):
     # FIXME: Docstring should be more descriptive
     """Plot linear regression for all lags of each species, create dataframe of linear regression
@@ -116,7 +117,7 @@ def linear_regression(dataset, speciesID_col, lag_col):
         linreg_pdf = PdfPages(species + "_linreg.pdf")
         stats_list = []
         for lag, lag_data in species_data.groupby(lag_col): 
-            if len(lag_data) > 15: 
+            if len(lag_data) > 1: 
                 linreg = smf.ols(formula = "mass ~ july_temps", data = lag_data).fit()
                 plt.figure()
                 plt.plot(lag_data["july_temps"], lag_data["mass"], "bo")
@@ -125,8 +126,8 @@ def linear_regression(dataset, speciesID_col, lag_col):
                 plt.ylabel("Mass(g)")
                 linreg_pdf.savefig()
                 stats_list.append({"genus_species": species, "past_year": lag, "r_squared": linreg.rsquared, "slope": linreg.params[1]})
-                print stats_list
         print "stats percent completion %f" % (loop_number/number_species * 100) # temporary print
+        print "memory used %f" % (psutil.virtual_memory().percent)
         loop_number += 1 # temporary print
         stats_df = pd.DataFrame(stats_list)
         plt.figure()
@@ -144,10 +145,12 @@ def linear_regression(dataset, speciesID_col, lag_col):
     return all_stats
 
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetVN.csv")
+#individual_data = pd.read_csv("CompleteDatasetVN.csv")
+individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["clean_genus_species", "year", "longitude", "decimallatitude"])
 #full_individual_data = pd.read_csv("CompleteDatasetVN.csv")
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:3])]
+#species_list = sorted(species_list)
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:100])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -196,9 +199,6 @@ temp_data = lag_data.merge(temp_lookup)
 temp_data = temp_data[temp_data["july_temps"] < 3276]
 
 number_species = len(temp_data["clean_genus_species"].unique()) # temporary print
-
-
-#temp_data_minus = temp_data[temp_data["clean_genus_species"] != "Actenoides lindsayi"]
 
 stats_initial = time.time()
 # Create linear regression and stats plots for each species, and dataframe with r2 and slope
