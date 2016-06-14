@@ -96,7 +96,25 @@ def get_temps_list(coordinates, bands):
     open_file = None
     return all_temps
 
-import psutil
+def remove_species(dataframe, species_col): 
+    """Remove species from dataframe that have fewer than 30 individuals due to
+    a lack of temperature data
+    
+    Args: 
+        dataframe: initial dataframe
+        species_col: column that contains species names
+    
+    Returns: 
+        Dataframe that contains species with >30 individuals
+    
+    """
+    insufficient_species = []
+    for species, species_data in dataframe.groupby(species_col): 
+        if len(species_data["row_index"].unique()) < 30: 
+            insufficient_species.append(species)
+    sufficient_species_df = dataframe[dataframe[species_col].isin(insufficient_species) == False]
+    return sufficient_species_df
+
 def linear_regression(dataset, speciesID_col, lag_col):
     # FIXME: Docstring should be more descriptive
     """Plot linear regression for all lags of each species, create dataframe of linear regression
@@ -112,12 +130,11 @@ def linear_regression(dataset, speciesID_col, lag_col):
     """
     stats_pdf = PdfPages("all_stats.pdf")
     all_stats = pd.DataFrame()
-    loop_number = 1 # temporary print
     for species, species_data in dataset.groupby(speciesID_col):
         linreg_pdf = PdfPages(species + "_linreg.pdf")
         stats_list = []
         for lag, lag_data in species_data.groupby(lag_col): 
-            if len(lag_data) > 1: 
+            if len(lag_data) > 15: 
                 linreg = smf.ols(formula = "mass ~ july_temps", data = lag_data).fit()
                 plt.figure()
                 plt.plot(lag_data["july_temps"], lag_data["mass"], "bo")
@@ -128,46 +145,41 @@ def linear_regression(dataset, speciesID_col, lag_col):
                 plt.close()
                 stats_list.append({"genus_species": species, "past_year": lag, "r_squared": linreg.rsquared, "slope": linreg.params[1]})
         linreg_pdf.close()
-        print "stats percent completion %f" % (loop_number/number_species * 100) # temporary print
-        print "memory used %f" % (psutil.virtual_memory().percent)
-        loop_number += 1 # temporary print
         stats_df = pd.DataFrame(stats_list)
-        plt.figure()
+        plt.subplot(2, 1, 1)
         plt.plot(stats_df["past_year"], stats_df["r_squared"], color = "purple", marker = "o", linestyle = "None")
         plt.axhline(y = 1, color = "purple", linestyle = "--", linewidth = 3)
+        plt.ylabel("R^2")
+        plt.subplot(2, 1, 2)
         plt.plot(stats_df["past_year"], stats_df["slope"], color = "yellow", marker = "o", linestyle = "None")
         plt.axhline(y = 0, color = "yellow", linestyle = "--", linewidth = 3)
         plt.suptitle(species)
         plt.xlabel("Lag")
-        plt.ylabel("R^2/Slope")
+        plt.ylabel("Slope")
         stats_pdf.savefig()
         plt.close()
         all_stats = all_stats.append(stats_df)
     stats_pdf.close()
     return all_stats
 
+begin_time = time.time()
+
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
-#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
-#species_list = full_individual_data["clean_genus_species"].unique().tolist()
-#species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[900:999])]
+#individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
+full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
+species_list = full_individual_data["clean_genus_species"].unique().tolist()
+species_list = sorted(species_list)
+individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:10])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
 temp_file = "air.mon.mean.v301.nc"
 
-duplication_initial = time.time()
 # Duplicate individual rows based on number of years between 1900 and collection year
 duplicates_data = duplicate_rows(individual_data, individual_data["year"] - 1899)
-duplication_final = time.time()
-duplication_total = (duplication_final - duplication_initial) / 60 #time in mins
 
 # Create year lag column for each individual
-lag_initial = time.time()
 lag_data = applyParallel(duplicates_data.groupby(level = 0), create_lag_column)
-lag_final = time.time()
-lag_total = (lag_final - lag_initial) / 60
 
 # Add year for temperature lookup
 lag_data["temp_year"] = lag_data["year"] - lag_data["lag"]
@@ -175,60 +187,26 @@ lag_data["temp_year"] = lag_data["year"] - lag_data["lag"]
 # List of months with corresponding stackID codes
 month_codes = create_month_codes_dict(22799, 22787, -1)
 
-si_initial = time.time()
 # Get stackIDs for July and year
 lag_data["stackID_july"] = get_stackID(lag_data["temp_year"], month_codes["July"])
-si_final = time.time()
-si_total = (si_final - si_initial) / 60
 
 # Avoiding multiple temp lookups for same location/year combinations
-lookup_initial = time.time()
 temp_lookup = lag_data[["longitude", "decimallatitude", "stackID_july"]]
 temp_lookup = temp_lookup.drop_duplicates()
-lookup_final = time.time()
-lookup_total = (lookup_final - lookup_initial) / 60
 
 # Get temperatures for July
-temp_initial = time.time()
 temp_lookup["july_temps"] = get_temps_list(temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID_july"])
-temp_final = time.time()
-temp_total = (temp_final - temp_initial) / 60
-
 temp_data = lag_data.merge(temp_lookup)
 
 # Remove rows with missing data values (i.e., 3276.7)
 temp_data = temp_data[temp_data["july_temps"] < 3276]
 
-number_species = len(temp_data["clean_genus_species"].unique()) # temporary print
-
 # Remove species with less than 30 individuals
-remove_initial = time.time()
-scant_individuals = []
-for species, species_data in temp_data.groupby("clean_genus_species"): 
-    #print species, len(species_data["lag"][species_data["lag"] == 0])
-    if len(species_data["lag"][species_data["lag"] == 0]) < 30: 
-        scant_individuals.append(species)
-final_df = temp_data[temp_data["clean_genus_species"].isin(scant_individuals) == False]
-remove_final = time.time()
-remove_total = (remove_final - remove_initial) / 60
+stats_data = remove_species(temp_data, "clean_genus_species")
 
-stats_initial = time.time()
 # Create linear regression and stats plots for each species, and dataframe with r2 and slope
-linreg_stats = linear_regression(final_df, "clean_genus_species", "lag")
-stats_final = time.time()
-stats_total = (stats_final - stats_initial) / 60
-
-time_total = duplication_total + lag_total + si_total + temp_total + stats_total
-
+linreg_stats = linear_regression(stats_data, "clean_genus_species", "lag")
 linreg_stats.to_csv("species_stats.csv")
 
-code_run = pd.DataFrame()
-code_run = code_run.append({"category": "number individuals", "output": len(individual_data)}, ignore_index=True)
-code_run = code_run.append({"category": "duplication", "output": duplication_total}, ignore_index=True)
-code_run = code_run.append({"category": "lag", "output": lag_total}, ignore_index=True)
-code_run = code_run.append({"category": "stackID", "output": si_total}, ignore_index=True)
-code_run = code_run.append({"category": "temp lookup", "output": temp_total}, ignore_index=True)
-code_run = code_run.append({"category": "stats", "output": stats_total}, ignore_index=True)
-code_run = code_run.append({"category": "total time", "output": time_total}, ignore_index=True)
-
-#code_run.to_csv("10_semiparallel2.csv")
+end_time = time.time()
+total_time = (end_time - begin_time) / 60 #in mins
