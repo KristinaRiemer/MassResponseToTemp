@@ -125,7 +125,9 @@ def linear_regression(dataset, speciesID_col, lag_col):
                 plt.xlabel("Temperature from year lag " + str(lag))
                 plt.ylabel("Mass(g)")
                 linreg_pdf.savefig()
+                plt.close()
                 stats_list.append({"genus_species": species, "past_year": lag, "r_squared": linreg.rsquared, "slope": linreg.params[1]})
+        linreg_pdf.close()
         print "stats percent completion %f" % (loop_number/number_species * 100) # temporary print
         print "memory used %f" % (psutil.virtual_memory().percent)
         loop_number += 1 # temporary print
@@ -139,18 +141,17 @@ def linear_regression(dataset, speciesID_col, lag_col):
         plt.xlabel("Lag")
         plt.ylabel("R^2/Slope")
         stats_pdf.savefig()
-        linreg_pdf.close()
+        plt.close()
         all_stats = all_stats.append(stats_df)
     stats_pdf.close()
     return all_stats
 
 # Datasets
-#individual_data = pd.read_csv("CompleteDatasetVN.csv")
-individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["clean_genus_species", "year", "longitude", "decimallatitude"])
-#full_individual_data = pd.read_csv("CompleteDatasetVN.csv")
+individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
+#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:100])]
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[900:999])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -200,13 +201,26 @@ temp_data = temp_data[temp_data["july_temps"] < 3276]
 
 number_species = len(temp_data["clean_genus_species"].unique()) # temporary print
 
+# Remove species with less than 30 individuals
+remove_initial = time.time()
+scant_individuals = []
+for species, species_data in temp_data.groupby("clean_genus_species"): 
+    #print species, len(species_data["lag"][species_data["lag"] == 0])
+    if len(species_data["lag"][species_data["lag"] == 0]) < 30: 
+        scant_individuals.append(species)
+final_df = temp_data[temp_data["clean_genus_species"].isin(scant_individuals) == False]
+remove_final = time.time()
+remove_total = (remove_final - remove_initial) / 60
+
 stats_initial = time.time()
 # Create linear regression and stats plots for each species, and dataframe with r2 and slope
-linreg_stats = linear_regression(temp_data, "clean_genus_species", "lag")
+linreg_stats = linear_regression(final_df, "clean_genus_species", "lag")
 stats_final = time.time()
 stats_total = (stats_final - stats_initial) / 60
 
 time_total = duplication_total + lag_total + si_total + temp_total + stats_total
+
+linreg_stats.to_csv("species_stats.csv")
 
 code_run = pd.DataFrame()
 code_run = code_run.append({"category": "number individuals", "output": len(individual_data)}, ignore_index=True)
