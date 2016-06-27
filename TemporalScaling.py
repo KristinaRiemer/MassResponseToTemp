@@ -115,7 +115,7 @@ def remove_species(dataframe, species_col):
     sufficient_species_df = dataframe[dataframe[species_col].isin(insufficient_species) == False]
     return sufficient_species_df
 
-def linear_regression(dataset, speciesID_col, lag_col):
+def linear_regression_temp(dataset, speciesID_col, lag_col):
     # FIXME: Docstring should be more descriptive
     """Plot linear regression for all lags of each species, create dataframe of linear regression
     r2 and slope for all lags of each species, and plot latter for each species
@@ -128,10 +128,10 @@ def linear_regression(dataset, speciesID_col, lag_col):
     Returns: 
         For each species, many linear regression plots and one stats plot; stats dataframe
     """
-    stats_pdf = PdfPages("all_stats.pdf")
+    stats_pdf = PdfPages("temp_results/aall_LR.pdf")
     all_stats = pd.DataFrame()
     for species, species_data in dataset.groupby(speciesID_col):
-        linreg_pdf = PdfPages(species + "_linreg.pdf")
+        linreg_pdf = PdfPages("temp_results/" + species + "_LR.pdf")
         stats_list = []
         for lag, lag_data in species_data.groupby(lag_col): 
             if len(lag_data) > 15: 
@@ -165,11 +165,11 @@ def linear_regression(dataset, speciesID_col, lag_col):
 begin_time = time.time()
 
 # Datasets
-#individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
+#individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
 full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
 species_list = full_individual_data["clean_genus_species"].unique().tolist()
 species_list = sorted(species_list)
-individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:10])]
+individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:3])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -204,9 +204,18 @@ temp_data = temp_data[temp_data["july_temps"] < 3276]
 # Remove species with less than 30 individuals
 stats_data = remove_species(temp_data, "clean_genus_species")
 
+#stats_data = pd.read_csv("stats_data.csv")
 # Create linear regression and stats plots for each species, and dataframe with r2 and slope
-linreg_stats = linear_regression(stats_data, "clean_genus_species", "lag")
+linreg_stats = linear_regression_temp(stats_data, "clean_genus_species", "lag")
+species_occurrences = []
+for species, species_data in stats_data.groupby("clean_genus_species"): 
+    #print species, len(species_data["row_index"].unique())
+    species_occurrences.append({"genus_species": species, "individuals": len(species_data["row_index"].unique())})
+num_individuals = pd.DataFrame(species_occurrences)
+num_individuals.to_csv("num_individuals.csv")
+
 linreg_stats.to_csv("species_stats.csv")
+#stats_data.to_csv("stats_data.csv")
 
 end_time = time.time()
 total_time = (end_time - begin_time) / 60 #in mins
