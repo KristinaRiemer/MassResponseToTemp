@@ -162,14 +162,38 @@ def linear_regression_temp(dataset, speciesID_col, lag_col):
     stats_pdf.close()
     return all_stats
 
+def linear_regression_lat(dataset, speciesID_col): 
+    stats_pdf = PdfPages("lat_results/all_LR.pdf")
+    stats_list = []
+    for species, species_data in dataset.groupby(speciesID_col): 
+        if species_data["decimallatitude"].mean() < 0: 
+            hemisphere = "south"
+        else: 
+            hemisphere = "north"
+        species_data_lim = species_data[species_data["lag"] == 0]
+        linreg = smf.ols(formula = "mass ~ abs(decimallatitude)", data = species_data_lim).fit()
+        plt.figure()
+        plt.plot(abs(species_data_lim["decimallatitude"]), species_data_lim["mass"], "bo")
+        plt.plot(abs(species_data_lim["decimallatitude"]), linreg.fittedvalues, "r-")
+        plt.xlabel("Latitude")
+        plt.ylabel("Mass(g)")
+        plt.title(species)
+        plt.figtext(0.05, 0.05, hemisphere)
+        stats_pdf.savefig()
+        plt.close()
+        stats_list.append({"genus_species": species, "hemisphere": hemisphere, "r_squared": linreg.rsquared, "slope": linreg.params[1]})
+    stats_pdf.close()
+    stats_df = pd.DataFrame(stats_list)
+    return stats_df
+
 begin_time = time.time()
 
 # Datasets
-#individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
-full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
-species_list = full_individual_data["clean_genus_species"].unique().tolist()
-species_list = sorted(species_list)
-individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:3])]
+individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
+#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "year", "longitude", "decimallatitude", "mass"])
+#species_list = full_individual_data["clean_genus_species"].unique().tolist()
+#species_list = sorted(species_list)
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:10])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -204,18 +228,19 @@ temp_data = temp_data[temp_data["july_temps"] < 3276]
 # Remove species with less than 30 individuals
 stats_data = remove_species(temp_data, "clean_genus_species")
 
-#stats_data = pd.read_csv("stats_data.csv")
 # Create linear regression and stats plots for each species, and dataframe with r2 and slope
-linreg_stats = linear_regression_temp(stats_data, "clean_genus_species", "lag")
+temp_stats = linear_regression_temp(stats_data, "clean_genus_species", "lag")
+lat_stats = linear_regression_lat(stats_data, "clean_genus_species")
+
 species_occurrences = []
 for species, species_data in stats_data.groupby("clean_genus_species"): 
-    #print species, len(species_data["row_index"].unique())
     species_occurrences.append({"genus_species": species, "individuals": len(species_data["row_index"].unique())})
 num_individuals = pd.DataFrame(species_occurrences)
 num_individuals.to_csv("num_individuals.csv")
 
-linreg_stats.to_csv("species_stats.csv")
-#stats_data.to_csv("stats_data.csv")
+temp_stats.to_csv("temp_stats.csv")
+lat_stats.to_csv("lat_stats.csv")
+stats_data.to_csv("stats_data.csv")
 
 end_time = time.time()
 total_time = (end_time - begin_time) / 60 #in mins
