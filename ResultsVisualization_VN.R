@@ -49,6 +49,15 @@ num_individuals = read.csv("num_individuals.csv")
 temp_stats = merge(x = temp_stats, y = num_individuals, by = "genus_species", all.x = TRUE)
 temp_stats$X.x = NULL
 temp_stats$X.y = NULL
+plot(temp_stats$individuals, temp_stats$r_squared)
+plot(temp_stats$individuals, temp_stats$slope, ylim = c(-100, 100))
+
+current_year = merge(x = current_year, y = num_individuals, by = "genus_species", all.x = TRUE)
+current_year$X.x = NULL
+current_year$X.y = NULL
+plot(current_year$individuals, current_year$r_squared)
+plot(current_year$individuals, current_year$slope, ylim = c(-10, 10))
+abline(h = 0)
 
 many_individuals = temp_stats[temp_stats$individuals >= median(temp_stats$individuals),]
 few_individuals = temp_stats[temp_stats$individuals < median(temp_stats$individuals),]
@@ -102,6 +111,55 @@ temp_stats$X = NULL
 
 ggplot(temp_stats, aes(x = r_squared)) + geom_density(aes(group = class, colour = class))
 ggplot(temp_stats, aes(x = slope)) + geom_density(aes(group = class, colour = class)) + scale_x_continuous(limits = c(-10, 10))
+
+# Mass-temp relationships for species with large latitude range
+library(readr)
+stats_data = read_csv("stats_data.csv")
+by_species = group_by(stats_data, clean_genus_species)
+species_summary = summarise(by_species, 
+                            count = n(), 
+                            lat_min = min(decimallatitude), 
+                            lat_max = max(decimallatitude), 
+                            temp_min = min(july_temps), 
+                            temp_max = max(july_temps))
+species_summary$lat_diff = species_summary$lat_max - species_summary$lat_min
+hist(species_summary$lat_diff)
+large_lat = species_summary[species_summary$lat_diff > 41.1,] #top quartile of lat range
+large_lat_temp = temp_stats[temp_stats$genus_species %in% large_lat$clean_genus_species,]
+plot(density(temp_stats$r_squared))
+lines(density(large_lat_temp$r_squared), col = "red")
+plot(density(temp_stats$slope), xlim = c(-100, 100))
+lines(density(large_lat_temp$slope), col = "red")
+abline(v = 0)
+plot(large_lat_temp$r_squared, large_lat_temp$slope)
+
+large_lat_temp_CY = current_year[current_year$genus_species %in% large_lat$clean_genus_species,]
+plot(density(current_year$r_squared))
+lines(density(large_lat_temp_CY$r_squared), col = "red")
+plot(density(current_year$slope), xlim = c(-100, 100))
+lines(density(large_lat_temp_CY$slope), col = "red")
+abline(v = 0)
+plot(large_lat_temp_CY$r_squared, large_lat_temp_CY$slope)
+
+# Mass-temp relationships for species with large temperature range
+species_summary$temp_diff = species_summary$temp_max - species_summary$temp_min
+hist(species_summary$temp_diff)
+large_temp = species_summary[species_summary$temp_diff > 27.68,] #top quartile of lat range
+large_temp_temp = temp_stats[temp_stats$genus_species %in% large_temp$clean_genus_species,]
+plot(density(temp_stats$r_squared))
+lines(density(large_temp_temp$r_squared), col = "red")
+plot(density(temp_stats$slope), xlim = c(-100, 100))
+lines(density(large_temp_temp$slope), col = "red")
+abline(v = 0)
+plot(large_temp_temp$r_squared, large_temp_temp$slope)
+
+large_temp_temp_CY = current_year[current_year$genus_species %in% large_temp$clean_genus_species,]
+plot(density(current_year$r_squared))
+lines(density(large_temp_temp_CY$r_squared), col = "red")
+plot(density(current_year$slope), xlim = c(-100, 100))
+lines(density(large_temp_temp_CY$slope), col = "red")
+abline(v = 0)
+plot(large_temp_temp_CY$r_squared, large_temp_temp_CY$slope)
 
 # TODO: 
 # Removing temporal: species with only 5 years range (like previous Bergmann studies)
