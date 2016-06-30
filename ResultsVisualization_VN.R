@@ -1,31 +1,36 @@
-all_stats = read.csv("species_stats.csv")
+temp_stats = read.csv("temp_stats.csv")
 
 # All lags across all species
-plot(all_stats$r_squared, all_stats$slope, main = "all lags")
-abline(v = mean(all_stats$r_squared), h = mean(all_stats$slope))
-plot(density(all_stats$r_squared), main = "all lags r2")
-plot(density(all_stats$slope), main = "all lags slope")
+plot(temp_stats$r_squared, temp_stats$slope, main = "all lags")
+abline(v = mean(temp_stats$r_squared), h = mean(temp_stats$slope))
+plot(density(temp_stats$r_squared), main = "all lags r2")
+plot(density(temp_stats$slope), main = "all lags slope")
 
 # Current year for all species
-current_year = all_stats[all_stats$past_year == 0,]
+current_year = temp_stats[temp_stats$past_year == 0,]
 plot(current_year$r_squared, current_year$slope, main = "zero lag")
 abline(v = mean(current_year$r_squared), h = mean(current_year$slope))
 plot(density(current_year$r_squared), main = "zero lag r2")
 plot(density(current_year$slope), main = "zero lag slope")
 
 # Comparing current year to all lags
-mean(all_stats$r_squared)
+mean(temp_stats$r_squared)
 mean(current_year$r_squared)
-mean(all_stats$slope)
+mean(temp_stats$slope)
 mean(current_year$slope)
 
 # Looking at stats by lag year
-plot(all_stats$past_year, all_stats$r_squared, pch = '.')
-plot(all_stats$past_year, all_stats$slope, pch = '.')
+boxplot(r_squared ~ past_year, data = temp_stats, outline = FALSE)
+boxplot(slope ~ past_year, data = temp_stats, outline = FALSE)
 
+library(ggplot2)
+p = ggplot(temp_stats, aes(factor(past_year), r_squared))
+p + geom_violin()
+p2 = ggplot(temp_stats, aes(factor(past_year), slope))
+p2 + geom_violin()
 
 library(dplyr)
-by_lag = group_by(all_stats, past_year)
+by_lag = group_by(temp_stats, past_year)
 lags_summary = summarise(by_lag, 
           count = n(), 
           rsquared_mean = mean(r_squared), 
@@ -33,7 +38,7 @@ lags_summary = summarise(by_lag,
           slope_mean = mean(slope), 
           slope_sd = sd(slope))
 
-plot(lags_summary$past_year, lags_summary$rsquared_mean, pch = 19)
+plot(lags_summary$past_year, lags_summary$rsquared_mean, ylim = range(c(lags_summary$rsquared_mean - lags_summary$rsquared_sd,lags_summary$rsquared_mean + lags_summary$rsquared_sd)), pch = 19)
 arrows(lags_summary$past_year, lags_summary$rsquared_mean - lags_summary$rsquared_sd, lags_summary$past_year, lags_summary$rsquared_mean + lags_summary$rsquared_sd, length = 0, angle = 90)
 
 plot(lags_summary$past_year, lags_summary$slope_mean, ylim = range(c(lags_summary$slope_mean - lags_summary$slope_sd,lags_summary$slope_mean + lags_summary$slope_sd)), pch = 19)
@@ -41,12 +46,12 @@ arrows(lags_summary$past_year, lags_summary$slope_mean - lags_summary$slope_sd, 
 
 # Looking at by number of individuals per each species
 num_individuals = read.csv("num_individuals.csv")
-all_stats = merge(x = all_stats, y = num_individuals, by = "genus_species", all.x = TRUE)
-all_stats$X.x = NULL
-all_stats$X.y = NULL
+temp_stats = merge(x = temp_stats, y = num_individuals, by = "genus_species", all.x = TRUE)
+temp_stats$X.x = NULL
+temp_stats$X.y = NULL
 
-many_individuals = all_stats[all_stats$individuals >= median(all_stats$individuals),]
-few_individuals = all_stats[all_stats$individuals < median(all_stats$individuals),]
+many_individuals = temp_stats[temp_stats$individuals >= median(temp_stats$individuals),]
+few_individuals = temp_stats[temp_stats$individuals < median(temp_stats$individuals),]
 
 # Many vs few individuals current year
 current_year_many = many_individuals[many_individuals$past_year == 0,]
@@ -63,9 +68,42 @@ abline(v = mean(current_year_many$r_squared), h = mean(current_year_many$slope))
 points(current_year_few$r_squared, current_year_few$slope, col = rgb(0, 0, 0, alpha = 0.2))
 abline(v = mean(current_year_few$r_squared), h = mean(current_year_few$slope), col = rgb(0, 0, 0, alpha = 0.2))
 
+# Mass-latitude relationships
+lat_stats = read.csv("lat_stats.csv")
+plot(density(lat_stats$r_squared))
+plot(density(lat_stats$slope))
+library(vioplot)
+vioplot(lat_stats$slope, col = "white")
+vioplot(lat_stats$r_squared, col = "white")
+mean(lat_stats$r_squared)
+sd(lat_stats$r_squared)
+mean(lat_stats$slope)
+median(lat_stats$slope)
+sd(lat_stats$slope)
+
+south_lat = lat_stats[lat_stats$hemisphere == "south",]
+north_lat = lat_stats[lat_stats$hemisphere == "north",]
+plot(density(north_lat$r_squared))
+lines(density(south_lat$r_squared))
+plot(density(north_lat$slope))
+lines(density(south_lat$slope))
+
+lat_stats = merge(x = lat_stats, y = num_individuals, by = "genus_species", all.x = TRUE)
+lat_stats$X.x = NULL
+lat_stats$X.y = NULL
+plot(lat_stats$individuals, lat_stats$r_squared)
+plot(lat_stats$individuals, lat_stats$slope)
+
+# Mass-temp relationships by class
+classes_raw = read.csv("class_raw.csv")
+classes_raw = classes_raw[classes_raw$class != "",]
+temp_stats = merge(x = temp_stats, y = classes_raw, by.x = "genus_species", by.y = "clean_genus_species", all.x = TRUE)
+temp_stats$X = NULL
+
+ggplot(temp_stats, aes(x = r_squared)) + geom_density(aes(group = class, colour = class))
+ggplot(temp_stats, aes(x = slope)) + geom_density(aes(group = class, colour = class)) + scale_x_continuous(limits = c(-10, 10))
+
 # TODO: 
-# Look at mass-latitude relationships
-# Split up by taxonomic group
 # Removing temporal: species with only 5 years range (like previous Bergmann studies)
 # Removing spatial: lots of points across time with short spatial range
 # Plot # individuals vs r2/r
