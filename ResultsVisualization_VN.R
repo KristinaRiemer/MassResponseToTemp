@@ -34,9 +34,19 @@ by_lag = group_by(temp_stats, past_year)
 lags_summary = summarise(by_lag, 
           count = n(), 
           rsquared_mean = mean(r_squared), 
-          rsquared_sd = sd(r_squared), 
+          rsquared_sd = sd(r_squared),
+          rsquared_med = median(r_squared), 
           slope_mean = mean(slope), 
-          slope_sd = sd(slope))
+          slope_sd = sd(slope), 
+          slope_med = median(slope))
+
+plot(lags_summary$rsquared_mean, ylim = c(0.01, 0.1))
+points(lags_summary$rsquared_med, col = "red")
+plot(lags_summary$rsquared_sd)
+plot(lags_summary$slope_mean)
+points(lags_summary$slope_med, col = "red")
+abline(h = 0)
+plot(lags_summary$slope_sd)
 
 plot(lags_summary$past_year, lags_summary$rsquared_mean, ylim = range(c(lags_summary$rsquared_mean - lags_summary$rsquared_sd,lags_summary$rsquared_mean + lags_summary$rsquared_sd)), pch = 19)
 arrows(lags_summary$past_year, lags_summary$rsquared_mean - lags_summary$rsquared_sd, lags_summary$past_year, lags_summary$rsquared_mean + lags_summary$rsquared_sd, length = 0, angle = 90)
@@ -59,18 +69,26 @@ plot(current_year$individuals, current_year$r_squared)
 plot(current_year$individuals, current_year$slope, ylim = c(-10, 10))
 abline(h = 0)
 
-many_individuals = temp_stats[temp_stats$individuals >= median(temp_stats$individuals),]
-few_individuals = temp_stats[temp_stats$individuals < median(temp_stats$individuals),]
+many_individuals = temp_stats[temp_stats$individuals > 206,]
+few_individuals = temp_stats[temp_stats$individuals < 48,]
 
 # Many vs few individuals current year
 current_year_many = many_individuals[many_individuals$past_year == 0,]
 current_year_few = few_individuals[few_individuals$past_year == 0,]
 
 plot(density(current_year_many$r_squared))
-lines(density(current_year_few$r_squared))
+lines(density(current_year_few$r_squared), col = "red")
+mean(current_year_many$r_squared)
+sd(current_year_many$r_squared)
+mean(current_year_few$r_squared)
+sd(current_year_few$r_squared)
 
-plot(density(current_year_many$slope))
-lines(density(current_year_few$slope))
+plot(density(current_year_many$slope), xlim = c(-100, 100))
+lines(density(current_year_few$slope), col = "red")
+mean(current_year_many$slope)
+sd(current_year_many$slope)
+mean(current_year_few$slope)
+sd(current_year_few$slope)
 
 plot(current_year_many$r_squared, current_year_many$slope, ylim = c(-100, 100))
 abline(v = mean(current_year_many$r_squared), h = mean(current_year_many$slope))
@@ -109,8 +127,25 @@ classes_raw = classes_raw[classes_raw$class != "",]
 temp_stats = merge(x = temp_stats, y = classes_raw, by.x = "genus_species", by.y = "clean_genus_species", all.x = TRUE)
 temp_stats$X = NULL
 
+by_class = group_by(temp_stats, class)
+class_summary = summarise(by_class, 
+                          count = n(), 
+                          rsquared_mean = mean(r_squared), 
+                          rsquared_sd = sd(r_squared),
+                          rsquared_med = median(r_squared), 
+                          slope_mean = mean(slope), 
+                          slope_sd = sd(slope), 
+                          slope_med = median(slope))
+
 ggplot(temp_stats, aes(x = r_squared)) + geom_density(aes(group = class, colour = class))
+plot(class_summary$class, class_summary$rsquared_mean, ylim = range(c(class_summary$rsquared_mean - class_summary$rsquared_sd,class_summary$rsquared_mean + class_summary$rsquared_sd)), pch = 19)
+points(class_summary$class, class_summary$rsquared_mean + class_summary$rsquared_sd)
+points(class_summary$class, class_summary$rsquared_mean - class_summary$rsquared_sd)
+
 ggplot(temp_stats, aes(x = slope)) + geom_density(aes(group = class, colour = class)) + scale_x_continuous(limits = c(-10, 10))
+plot(class_summary$class, class_summary$slope_mean, ylim = range(c(class_summary$slope_mean - class_summary$slope_sd,class_summary$slope_mean + class_summary$slope_sd)), pch = 19)
+points(class_summary$class, class_summary$slope_mean + class_summary$slope_sd)
+points(class_summary$class, class_summary$slope_mean - class_summary$slope_sd)
 
 # Mass-temp relationships for species with large latitude range
 library(readr)
