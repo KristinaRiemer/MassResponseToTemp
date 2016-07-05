@@ -26,6 +26,7 @@ boxplot(slope ~ past_year, data = temp_stats, outline = FALSE)
 library(ggplot2)
 p = ggplot(temp_stats, aes(factor(past_year), r_squared))
 p + geom_violin()
+#TODO: repeat but remove very high slope species
 p2 = ggplot(temp_stats, aes(factor(past_year), slope))
 p2 + geom_violin()
 
@@ -55,7 +56,7 @@ plot(lags_summary$past_year, lags_summary$slope_mean, ylim = range(c(lags_summar
 arrows(lags_summary$past_year, lags_summary$slope_mean - lags_summary$slope_sd, lags_summary$past_year, lags_summary$slope_mean + lags_summary$slope_sd, length = 0, angle = 90)
 
 # Looking at by number of individuals per each species
-num_individuals = read.csv("num_individuals.csv")
+num_individuals = read.csv("num_individuals.csv") #initial number of individuals only
 temp_stats = merge(x = temp_stats, y = num_individuals, by = "genus_species", all.x = TRUE)
 temp_stats$X.x = NULL
 temp_stats$X.y = NULL
@@ -137,19 +138,57 @@ class_summary = summarise(by_class,
                           slope_sd = sd(slope), 
                           slope_med = median(slope))
 
+current_year = merge(x = current_year, y = classes_raw, by.x = "genus_species", by.y = "clean_genus_species", all.x = TRUE)
+current_year$X = NULL
+
+by_class_CY = group_by(current_year, class)
+class_summary_CY = summarise(by_class_CY, 
+                             count = n(), 
+                             rsquared_mean = mean(r_squared), 
+                             rsquared_sd = sd(r_squared),
+                             rsquared_med = median(r_squared), 
+                             slope_mean = mean(slope), 
+                             slope_sd = sd(slope), 
+                             slope_med = median(slope))
+
 ggplot(temp_stats, aes(x = r_squared)) + geom_density(aes(group = class, colour = class))
 plot(class_summary$class, class_summary$rsquared_mean, ylim = range(c(class_summary$rsquared_mean - class_summary$rsquared_sd,class_summary$rsquared_mean + class_summary$rsquared_sd)), pch = 19)
 points(class_summary$class, class_summary$rsquared_mean + class_summary$rsquared_sd)
 points(class_summary$class, class_summary$rsquared_mean - class_summary$rsquared_sd)
 
+ggplot(current_year, aes(x = r_squared)) + geom_density(aes(group = class, colour = class))
+plot(class_summary_CY$class, class_summary_CY$rsquared_mean, ylim = range(c(class_summary_CY$rsquared_mean - class_summary_CY$rsquared_sd,class_summary_CY$rsquared_mean + class_summary_CY$rsquared_sd)), pch = 19)
+points(class_summary_CY$class, class_summary_CY$rsquared_mean + class_summary_CY$rsquared_sd)
+points(class_summary_CY$class, class_summary_CY$rsquared_mean - class_summary_CY$rsquared_sd)
+
 ggplot(temp_stats, aes(x = slope)) + geom_density(aes(group = class, colour = class)) + scale_x_continuous(limits = c(-10, 10))
+plot(class_summary$class, class_summary$slope_mean)
 plot(class_summary$class, class_summary$slope_mean, ylim = range(c(class_summary$slope_mean - class_summary$slope_sd,class_summary$slope_mean + class_summary$slope_sd)), pch = 19)
 points(class_summary$class, class_summary$slope_mean + class_summary$slope_sd)
 points(class_summary$class, class_summary$slope_mean - class_summary$slope_sd)
 
-# Mass-temp relationships for species with large latitude range
+ggplot(current_year, aes(x = slope)) + geom_density(aes(group = class, colour = class)) + scale_x_continuous(limits = c(-10, 10))
+plot(class_summary_CY$class, class_summary_CY$slope_mean)
+plot(class_summary_CY$class, class_summary_CY$slope_mean, ylim = range(c(class_summary_CY$slope_mean - class_summary_CY$slope_sd,class_summary_CY$slope_mean + class_summary_CY$slope_sd)), pch = 19)
+points(class_summary_CY$class, class_summary_CY$slope_mean + class_summary_CY$slope_sd)
+points(class_summary_CY$class, class_summary_CY$slope_mean - class_summary_CY$slope_sd)
+
+#Weird slope patterns in mammals
+mammals = temp_stats[temp_stats$class == "Mammalia",]
+boxplot(mammals$slope)
+mammals_CY = current_year[current_year$class == "Mammalia",]
+boxplot(mammals_CY$slope)
+mammals_normal_CY = mammals_CY[mammals_CY$slope < 2000,]
+boxplot(mammals_normal_CY$slope)
+
+# Change in number of individuals per species across lag years
 library(readr)
 stats_data = read_csv("stats_data.csv")
+by_species_lag = group_by(stats_data, clean_genus_species, lag)
+species_lag_summary = summarise(by_species_lag, count = n())
+plot(species_lag_summary$lag, species_lag_summary$count, pch = 20, cex = 0.5)
+
+# Mass-temp relationships for species with large latitude range
 by_species = group_by(stats_data, clean_genus_species)
 species_summary = summarise(by_species, 
                             count = n(), 
@@ -179,11 +218,11 @@ plot(large_lat_temp_CY$r_squared, large_lat_temp_CY$slope)
 # Mass-temp relationships for species with large temperature range
 species_summary$temp_diff = species_summary$temp_max - species_summary$temp_min
 hist(species_summary$temp_diff)
-large_temp = species_summary[species_summary$temp_diff > 27.68,] #top quartile of lat range
+large_temp = species_summary[species_summary$temp_diff > 27.68,] #top quartile of temp range
 large_temp_temp = temp_stats[temp_stats$genus_species %in% large_temp$clean_genus_species,]
 plot(density(temp_stats$r_squared))
 lines(density(large_temp_temp$r_squared), col = "red")
-plot(density(temp_stats$slope), xlim = c(-100, 100))
+plot(density(temp_stats$slope), xlim = c(-100, 100), ylim = c(0, 14))
 lines(density(large_temp_temp$slope), col = "red")
 abline(v = 0)
 plot(large_temp_temp$r_squared, large_temp_temp$slope)
@@ -191,7 +230,7 @@ plot(large_temp_temp$r_squared, large_temp_temp$slope)
 large_temp_temp_CY = current_year[current_year$genus_species %in% large_temp$clean_genus_species,]
 plot(density(current_year$r_squared))
 lines(density(large_temp_temp_CY$r_squared), col = "red")
-plot(density(current_year$slope), xlim = c(-100, 100))
+plot(density(current_year$slope), xlim = c(-100, 100), ylim = c(0, 4))
 lines(density(large_temp_temp_CY$slope), col = "red")
 abline(v = 0)
 plot(large_temp_temp_CY$r_squared, large_temp_temp_CY$slope)
