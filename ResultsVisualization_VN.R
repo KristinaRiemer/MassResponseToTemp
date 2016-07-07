@@ -10,8 +10,22 @@ plot(density(temp_stats$slope), main = "all lags slope")
 current_year = temp_stats[temp_stats$past_year == 0,]
 plot(current_year$r_squared, current_year$slope, main = "zero lag")
 abline(v = mean(current_year$r_squared), h = mean(current_year$slope))
-plot(density(current_year$r_squared), main = "zero lag r2")
-plot(density(current_year$slope), main = "zero lag slope")
+
+# Poster Figures 1
+par(mfrow = c(1, 2))
+r = density(current_year$r_squared)
+plot(r, xlim = c(0, 1), xlab = "r^2", ylab = "", main = "Each species' r^2 dist from collection year temp")
+polygon(r, col = "chartreuse3", border = "chartreuse3")
+abline(v = mean(current_year$r_squared), lty = 3)
+abline(v = median(current_year$r_squared), lty = 2)
+legend("top", c("mean", "median"), lty = c(3, 2), bty = "n")
+
+s = density(current_year$slope)
+plot(s, xlim = c(-20, 20), xlab = "slope", ylab = "", main ="Each species' slope dist from collection year temp")
+polygon(s, col = "cornflowerblue", border = "cornflowerblue")
+#abline(v = 0, col = "gray")
+abline(v = mean(current_year$slope), lty = 3)
+abline(v = median(current_year$slope), lty = 2)
 
 # Comparing current year to all lags
 mean(temp_stats$r_squared)
@@ -20,8 +34,28 @@ mean(temp_stats$slope)
 mean(current_year$slope)
 
 # Looking at stats by lag year
+library(dplyr)
+by_lag = group_by(temp_stats, past_year)
+lags_summary = summarise(by_lag, 
+                         num_species = n(), 
+                         rsquared_mean = mean(r_squared), 
+                         rsquared_sd = sd(r_squared),
+                         rsquared_med = median(r_squared), 
+                         slope_mean = mean(slope), 
+                         slope_sd = sd(slope), 
+                         slope_med = median(slope))
+
+par(mfrow = c(1, 1))
 boxplot(r_squared ~ past_year, data = temp_stats, outline = FALSE)
 boxplot(slope ~ past_year, data = temp_stats, outline = FALSE)
+
+# Poster Figures 2
+plot(temp_stats$past_year, temp_stats$r_squared, pch = 20, cex = 0.3, col = "chartreuse3", xlab = "past year", ylab = "r^2")
+points(lags_summary$past_year, lags_summary$rsquared_med, pch = "-")
+legend(x = "topleft", legend = c("species", "mean"), pch = c(20, 20), col = c("chartreuse3", "black"), bty = "n")
+plot(temp_stats$past_year, temp_stats$slope, pch = 20, cex = 0.3, col = "cornflowerblue", ylim = c(-100, 100), xlab = "past year", ylab = "slope")
+points(lags_summary$past_year, lags_summary$slope_med, pch = "-")
+legend(x = "bottomright", legend = c("species", "mean"), pch = c(20, 20), col = c("cornflowerblue", "black"), bty = "n")
 
 library(ggplot2)
 p = ggplot(temp_stats, aes(factor(past_year), r_squared))
@@ -29,17 +63,6 @@ p + geom_violin()
 #TODO: repeat but remove very high slope species
 p2 = ggplot(temp_stats, aes(factor(past_year), slope))
 p2 + geom_violin()
-
-library(dplyr)
-by_lag = group_by(temp_stats, past_year)
-lags_summary = summarise(by_lag, 
-          count = n(), 
-          rsquared_mean = mean(r_squared), 
-          rsquared_sd = sd(r_squared),
-          rsquared_med = median(r_squared), 
-          slope_mean = mean(slope), 
-          slope_sd = sd(slope), 
-          slope_med = median(slope))
 
 plot(lags_summary$rsquared_mean, ylim = c(0.01, 0.1))
 points(lags_summary$rsquared_med, col = "red")
@@ -108,6 +131,21 @@ sd(lat_stats$r_squared)
 mean(lat_stats$slope)
 median(lat_stats$slope)
 sd(lat_stats$slope)
+
+# Poster Figures 3
+par(mfrow = c(1, 2))
+lr = density(lat_stats$r_squared)
+plot(lr, xlim = c(0, 1), xlab = "r^2", ylab = "", main = "Each species' r^2 dist from lat")
+polygon(lr, col = "chartreuse3", border = "chartreuse3")
+abline(v = mean(lat_stats$r_squared), lty = 3)
+abline(v = median(lat_stats$r_squared), lty = 2)
+
+ls = density(lat_stats$slope)
+plot(ls, xlim = c(-20, 20), xlab = "slope", ylab = "", main ="Each species' slope dist from lat")
+polygon(ls, col = "cornflowerblue", border = "cornflowerblue")
+#abline(v = 0, col = "gray")
+abline(v = mean(lat_stats$slope), lty = 3)
+abline(v = median(lat_stats$slope), lty = 2)
 
 south_lat = lat_stats[lat_stats$hemisphere == "south",]
 north_lat = lat_stats[lat_stats$hemisphere == "north",]
@@ -188,6 +226,12 @@ by_species_lag = group_by(stats_data, clean_genus_species, lag)
 species_lag_summary = summarise(by_species_lag, count = n())
 plot(species_lag_summary$lag, species_lag_summary$count, pch = 20, cex = 0.5)
 
+by_lag = group_by(species_lag_summary, lag)
+lags_summary_2 = summarise(by_lag, avg_inds = mean(count))
+lags_summary = merge(x = lags_summary, y = lags_summary_2, by.x = "past_year", by.y = "lag", all.x = TRUE)
+plot(lags_summary$avg_inds, lags_summary$rsquared_mean, xlim = c(max(lags_summary$avg_inds), min(lags_summary$avg_inds)))
+plot(lags_summary$avg_inds, lags_summary$rsquared_sd, xlim = c(max(lags_summary$avg_inds), min(lags_summary$avg_inds)))
+
 # Mass-temp relationships for species with large latitude range
 by_species = group_by(stats_data, clean_genus_species)
 species_summary = summarise(by_species, 
@@ -234,6 +278,14 @@ plot(density(current_year$slope), xlim = c(-100, 100), ylim = c(0, 4))
 lines(density(large_temp_temp_CY$slope), col = "red")
 abline(v = 0)
 plot(large_temp_temp_CY$r_squared, large_temp_temp_CY$slope)
+
+# Spatial distribution of individuals
+stats_data$map_long = ifelse(stats_data$longitude > 180, stats_data$longitude - 360, stats_data$longitude)
+unique_coords = unique(stats_data[c("map_long", "decimallatitude")])
+library(rworldmap)
+map = getMap(resolution = "low")
+plot(map)
+points(unique_coords$map_long, unique_coords$decimallatitude, pch = 20, cex = 0.1, col = "red")
 
 # TODO: 
 # Removing temporal: species with only 5 years range (like previous Bergmann studies)
