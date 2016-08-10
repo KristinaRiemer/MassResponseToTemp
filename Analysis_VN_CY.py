@@ -95,6 +95,7 @@ def lin_reg(dataset, speciesID_col):
     stats_list = []
     for species, species_data in dataset.groupby(speciesID_col): 
         sp_class = species_data["class"].unique()
+        sp_class = sp_class[0]
         #TODO: remove nan from class
         #sp_class = sp_class[~np.isnan(sp_class)]
         temp_linreg = smf.ols(formula = "mass ~ july_temps", data = species_data).fit()
@@ -131,7 +132,7 @@ individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "
 #full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "year", "longitude", "decimallatitude", "mass"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:10])]
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[1303:1310])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -160,3 +161,4 @@ stats_data = remove_species(temp_data, "clean_genus_species")
 # Linear regression for temp and latitude for all species, both plots and df
 species_stats = lin_reg(stats_data, "clean_genus_species")
 species_stats.to_csv("results/species_stats.csv")
+stats_data.to_csv("results/stats_data.csv")
