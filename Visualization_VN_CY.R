@@ -14,7 +14,7 @@ abline(v = mean(current_year$temp_r_squared), lty = 3)
 abline(v = median(current_year$temp_r_squared), lty = 2)
 legend("top", c("mean", "median"), lty = c(3, 2), bty = "n")
 
-s = density(current_year$temp_slope, from = -2, to = 2)
+s = density(current_year$temp_slope, from = -10, to = 10)
 plot(s, xlab = "slope", ylab = "", main ="Each species' slope dist from collection year temp")
 polygon(s, col = "cornflowerblue", border = "cornflowerblue")
 #abline(v = 0, col = "gray")
@@ -41,60 +41,53 @@ class_summary = summarise(by_class,
                              slope_sd = sd(temp_slope),
                              slope_med = median(temp_slope))
 
-#### STOPPED HERE
+# Mass-temp relationships for species with large latitude range
+by_species = group_by(all_individuals, clean_genus_species)
+species_summary = summarise(by_species, 
+                            lat_min = min(decimallatitude), 
+                            lat_max = max(decimallatitude), 
+                            temp_min = min(july_temps), 
+                            temp_max = max(july_temps))
 
-large_lat_temp_CY = current_year[current_year$genus_species %in% large_lat$clean_genus_species,]
-plot(density(current_year$r_squared))
-lines(density(large_lat_temp_CY$r_squared), col = "red")
-plot(density(current_year$slope), xlim = c(-100, 100))
-lines(density(large_lat_temp_CY$slope), col = "red")
-abline(v = 0)
-plot(large_lat_temp_CY$r_squared, large_lat_temp_CY$slope)
+current_year = merge(current_year, species_summary, by.x = "genus_species", by.y = "clean_genus_species")
+current_year$lat_diff = current_year$lat_max - current_year$lat_min
+current_year$temp_diff = current_year$temp_max - current_year$temp_min
+large_lat_CY = current_year[current_year$lat_diff > 41.1,] #top quartile of lat range
+large_temp_CY = current_year[current_year$temp_diff > 23.60,]
 
-large_temp_temp_CY = current_year[current_year$genus_species %in% large_temp$clean_genus_species,]
-plot(density(current_year$r_squared))
-lines(density(large_temp_temp_CY$r_squared), col = "red")
-plot(density(current_year$slope), xlim = c(-100, 100), ylim = c(0, 4))
-lines(density(large_temp_temp_CY$slope), col = "red")
+plot(density(current_year$temp_r_squared))
+lines(density(large_lat_CY$temp_r_squared), col = "red")
+plot(density(current_year$temp_slope, from = -100, to = 100))
+lines(density(large_lat_CY$temp_slope, from = -100, to = 100), col = "red")
 abline(v = 0)
-plot(large_temp_temp_CY$r_squared, large_temp_temp_CY$slope)
+plot(large_lat_CY$temp_r_squared, large_lat_CY$temp_slope)
+
+plot(density(current_year$temp_r_squared))
+lines(density(large_temp_CY$temp_r_squared), col = "red")
+plot(density(current_year$temp_slope, from = -100, to = 100))
+lines(density(large_temp_CY$temp_slope, from = -100, to = 100), col = "red")
+abline(v = 0)
+plot(large_temp_CY$temp_r_squared, large_temp_CY$temp_slope)
 
 # Mass-latitude relationships
-lat_stats = read.csv("lat_stats.csv")
-plot(density(lat_stats$r_squared))
-plot(density(lat_stats$slope))
-
-# Poster Figures 3
 par(mfrow = c(1, 2))
-lr = density(lat_stats$r_squared)
-plot(lr, xlim = c(0, 1), xlab = "r^2", ylab = "", main = "Each species' r^2 dist from lat")
+lr = density(current_year$lat_r_squared)
+plot(lr, xlim = c(0, 1), xlab = "r^2", ylab = "", main = "Each species' r^2 dist from collection year temp")
 polygon(lr, col = "chartreuse3", border = "chartreuse3")
-abline(v = mean(lat_stats$r_squared), lty = 3)
-abline(v = median(lat_stats$r_squared), lty = 2)
+abline(v = mean(current_year$lat_r_squared), lty = 3)
+abline(v = median(current_year$lat_r_squared), lty = 2)
+legend("top", c("mean", "median"), lty = c(3, 2), bty = "n")
 
-ls = density(lat_stats$slope)
-plot(ls, xlim = c(-20, 20), xlab = "slope", ylab = "", main ="Each species' slope dist from lat")
+ls = density(current_year$lat_slope, from = -10, to = 10)
+plot(ls, xlab = "slope", ylab = "", main ="Each species' slope dist from collection year temp")
 polygon(ls, col = "cornflowerblue", border = "cornflowerblue")
 #abline(v = 0, col = "gray")
-abline(v = mean(lat_stats$slope), lty = 3)
-abline(v = median(lat_stats$slope), lty = 2)
-
-south_lat = lat_stats[lat_stats$hemisphere == "south",]
-north_lat = lat_stats[lat_stats$hemisphere == "north",]
-plot(density(north_lat$r_squared))
-lines(density(south_lat$r_squared))
-plot(density(north_lat$slope))
-lines(density(south_lat$slope))
-
-lat_stats = merge(x = lat_stats, y = num_individuals, by = "genus_species", all.x = TRUE)
-lat_stats$X.x = NULL
-lat_stats$X.y = NULL
-plot(lat_stats$individuals, lat_stats$r_squared)
-plot(lat_stats$individuals, lat_stats$slope)
+abline(v = mean(current_year$lat_slope), lty = 3)
+abline(v = median(current_year$lat_slope), lty = 2)
 
 # Spatial distribution of individuals
-stats_data$map_long = ifelse(stats_data$longitude > 180, stats_data$longitude - 360, stats_data$longitude)
-unique_coords = unique(stats_data[c("map_long", "decimallatitude")])
+all_individuals$map_long = ifelse(all_individuals$longitude > 180, all_individuals$longitude - 360, all_individuals$longitude)
+unique_coords = unique(all_individuals[c("map_long", "decimallatitude")])
 library(rworldmap)
 map = getMap(resolution = "low")
 plot(map)
