@@ -160,5 +160,11 @@ stats_data = remove_species(temp_data, "clean_genus_species")
 
 # Linear regression for temp and latitude for all species, both plots and df
 species_stats = lin_reg(stats_data, "clean_genus_species")
+
+# Calculate correlation coefficient for both linear regressions
+species_stats["temp_r"] = np.where(species_stats["temp_slope"] < 0, -np.sqrt(species_stats["temp_r_squared"]), np.sqrt(species_stats["temp_r_squared"]))
+species_stats["lat_r"] = np.where(species_stats["lat_slope"] < 0, -np.sqrt(species_stats["lat_r_squared"]), np.sqrt(species_stats["lat_r_squared"]))
+
+# Save dataframes with final data and species statistics
 species_stats.to_csv("results/species_stats.csv")
 stats_data.to_csv("results/stats_data.csv")
