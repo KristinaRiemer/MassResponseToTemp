@@ -94,16 +94,15 @@ def lin_reg(dataset, speciesID_col):
     lat_pdf = PdfPages("results/lat.pdf")
     stats_list = []
     for species, species_data in dataset.groupby(speciesID_col): 
+        species_data["relmass"] = species_data["mass"] / np.mean(species_data["mass"])
         sp_class = species_data["class"].unique()
         sp_class = sp_class[0]
-        #TODO: remove nan from class
-        #sp_class = sp_class[~np.isnan(sp_class)]
-        temp_linreg = smf.ols(formula = "mass ~ july_temps", data = species_data).fit()
+        temp_linreg = smf.ols(formula = "relmass ~ july_temps", data = species_data).fit()
         plt.figure()
-        plt.plot(species_data["july_temps"], species_data["mass"], "bo")
+        plt.plot(species_data["july_temps"], species_data["relmass"], "bo")
         plt.plot(species_data["july_temps"], temp_linreg.fittedvalues, "r-")
         plt.xlabel("Current year temperature")
-        plt.ylabel("Mass(g)")
+        plt.ylabel("Relative mass")
         plt.suptitle(species)
         temp_pdf.savefig()
         plt.close()
@@ -111,12 +110,12 @@ def lin_reg(dataset, speciesID_col):
             hemisphere = "south"
         else: 
             hemisphere = "north"
-        lat_linreg = smf.ols(formula = "mass ~ abs(decimallatitude)", data = species_data).fit()
+        lat_linreg = smf.ols(formula = "relmass ~ abs(decimallatitude)", data = species_data).fit()
         plt.figure()
-        plt.plot(abs(species_data["decimallatitude"]), species_data["mass"], "bo")
+        plt.plot(abs(species_data["decimallatitude"]), species_data["relmass"], "bo")
         plt.plot(abs(species_data["decimallatitude"]), lat_linreg.fittedvalues, "r-")
         plt.xlabel("Latitude")
-        plt.ylabel("Mass(g)")
+        plt.ylabel("Relative mass")
         plt.title(species)
         plt.figtext(0.05, 0.05, hemisphere)
         lat_pdf.savefig()
@@ -132,7 +131,7 @@ individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "
 #full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "year", "longitude", "decimallatitude", "mass"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[1303:1310])]
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[586:589])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -158,7 +157,7 @@ temp_data = temp_data[temp_data["july_temps"] < 3276]
 # Remove species with less than 30 individuals
 stats_data = remove_species(temp_data, "clean_genus_species")
 
-# Linear regression for temp and latitude for all species, both plots and df
+# Linear regression for relative mass with temp and latitude for all species, both plots and df
 species_stats = lin_reg(stats_data, "clean_genus_species")
 
 # Calculate correlation coefficient for both linear regressions
