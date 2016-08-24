@@ -1,27 +1,31 @@
-# Using trait extraction data provided by Rob Guralnick
-
-#-------DATASETS----------
+#-------LIBRARIES----------
 library(readr)
-individual_data = read_csv("VertnetTraitExtraction.csv")
+library(stringr)
+library(taxize)
+library(spatstat)
 
 #-------FUNCTIONS---------
-
-library(stringr)
-extract_component = function(dataset_column, regex){
-  # Pull out numerical component of strings
+clean_taxonomy = function(tax_file_path, raw_file_path){ 
+  # Clean up species names from raw data
   #
   # Args: 
-  #   dataset_column: Column that contains strings
-  #   regex: Regular expression to specify string surrounding numerical component
+  #   tax_file_path: file path to check if taxonomy file exists or create it
+  #   raw_file_path: file path to raw data
   #
   # Returns: 
-  #   Vector that contains extracted numerical components
-  components_list = vector()
-  for (current_row in dataset_column){
-    component = str_match(dataset_column, regex)
-    component = as.numeric(component[,2])
-    components_list = append(components_list, component)
-    return(components_list)
+  #   If it doesn't already exist, new csv containing raw data plus clean names
+  #   column
+  if(!file.exists(tax_file_path)){
+    individual_data = read_csv(raw_file_path)
+    individual_data$genus_species = extract_genus_species(individual_data$scientificname)
+    subset_names = data.frame(unique(individual_data$genus_species))
+    colnames(subset_names) = "original"
+    chunks = chunk_df(subset_names)
+    subset_names$checked = check_chunks(chunks, subset_names)
+    subset_names[subset_names == "Environmental Halophage"] = NA
+    subset_names$checked = gsub("sp\\.", NA, subset_names$checked)
+    individual_data$clean_genus_species = subset_names$checked[match(individual_data$genus_species, subset_names$original)]
+    write.csv(individual_data, file = tax_file_path)
   }
 }
 
@@ -48,6 +52,24 @@ extract_genus_species = function(dataset_column){
     list_IDs = append(list_IDs, ID)
   }
   return(list_IDs)
+}
+
+extract_component = function(dataset_column, regex){
+  # Pull out numerical component of strings
+  #
+  # Args: 
+  #   dataset_column: Column that contains strings
+  #   regex: Regular expression to specify string surrounding numerical component
+  #
+  # Returns: 
+  #   Vector that contains extracted numerical components
+  components_list = vector()
+  for (current_row in dataset_column){
+    component = str_match(dataset_column, regex)
+    component = as.numeric(component[,2])
+    components_list = append(components_list, component)
+    return(components_list)
+  }
 }
 
 count_words = function(string){
@@ -88,8 +110,6 @@ chunk_df = function(df){
   return(chunks)
 }
 
-library(taxize)
-library(spatstat)
 resolve_names = function(names_list){
   # Check and clean up taxonomic names
   #
@@ -156,35 +176,17 @@ species_crit = function(dataset, for_col, by_col, fx, col_name){
 
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
+# Create or read in cleaned taxonomy file
 ptm = proc.time()
-# Create column containing only mass value for each individual
+clean_taxonomy("data/clean_taxonomy.csv", "data/raw.csv")
+proc.time() - ptm
+individual_data = read_csv("data/clean_taxonomy.csv")
+
+ptm = proc.time()
+# Create columns for mass and length for each individual
 individual_data$mass = extract_component(individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
+individual_data$length = extract_component(individual_data$normalized_total_length, "total length\", ([0-9.]*)" )
 proc.time() - ptm
-
-ptm = proc.time()
-# Create column containing only genus and species
-individual_data$genus_species = extract_genus_species(individual_data$scientificname)
-proc.time() - ptm
-
-ptm = proc.time()
-# Fix taxonomic names using EOL Global Names Resolver, chunk dataset to not overload API
-subset_names = data.frame(unique(individual_data$genus_species))
-colnames(subset_names) = "original"
-chunks = chunk_df(subset_names)
-checked_names = check_chunks(chunks, subset_names)
-proc.time() - ptm
-
-subset_names$checked = checked_names
-
-#######################
-write.csv(subset_names, file = "temporary_names.csv")
-write.csv(individual_data, file = "temporary_all_data.csv")
-individual_data = read_csv("temporary_all_data.csv")
-subset_names = read_csv("temporary_names.csv")
-
-subset_names[subset_names == "Environmental Halophage"] = NA
-subset_names$checked = gsub("sp\\.", NA, subset_names$checked)
-individual_data$clean_genus_species = subset_names$checked[match(individual_data$genus_species, subset_names$original)]
 
 # Remove coordinates outside of range and transform longitudes
 individual_data$decimallatitude[individual_data$decimallatitude > 90 | individual_data$decimallatitude < -90] = NA
