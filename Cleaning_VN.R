@@ -156,24 +156,6 @@ check_chunks = function(chunks_list, names_list){
   return(checked_chunks)
 }
 
-species_crit = function(dataset, for_col, by_col, fx, col_name){
-  # Get all minimum or maximum values of one variable for each species
-  #
-  # Args:
-  #   dataset: Dataset that contains individuals' information
-  #   for_col: Column that contains desired variable
-  #   by_col: Column that contains species ID
-  #   fx: Either min or max function
-  #   col_name: Desired name for minimum or maximum values
-  #
-  # Return:
-  #   Column containing minimum or maximum variables for each species
-  list = aggregate(for_col ~ by_col, dataset, fx)
-  colnames(list)[1] = "genus_species"
-  colnames(list)[2] = col_name
-  return(list)
-}
-
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
 # Create or read in cleaned taxonomy file
@@ -182,11 +164,9 @@ clean_taxonomy("data/clean_taxonomy.csv", "data/raw.csv")
 proc.time() - ptm
 individual_data = read_csv("data/clean_taxonomy.csv")
 
-ptm = proc.time()
 # Create columns for mass and length for each individual
 individual_data$mass = extract_component(individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
 individual_data$length = extract_component(individual_data$normalized_total_length, "total length\", ([0-9.]*)" )
-proc.time() - ptm
 
 # Remove coordinates outside of range and transform longitudes
 individual_data$decimallatitude[individual_data$decimallatitude > 90 | individual_data$decimallatitude < -90] = NA
@@ -195,56 +175,50 @@ individual_data$longitude = ifelse(individual_data$decimallongitude < 0, individ
 
 #----SUBSETTING DATASET----
 
-# Subset dataset to retain only individuals with mass, species ID, 
-# coordinates (in US), collected 1900-2010, ...
+# Subset dataset to retain only individuals collected 1900-2010, with species ID, 
+# and coordinates
 individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
-individual_data = individual_data[complete.cases(individual_data$mass),]
 individual_data = individual_data[complete.cases(individual_data$clean_genus_species),]
 individual_data = individual_data[(complete.cases(individual_data$decimallatitude) & complete.cases(individual_data$longitude)),]
 
+individual_data = individual_data[(complete.cases(individual_data$mass) | complete.cases(individual_data$length)),]
+
 colnames(individual_data)[1] = "row_index"
 
-# Create list of species info (number individuals, year range, lat range) needed 
-# to later subset based on species ID
-species_data = data.frame(table(individual_data$clean_genus_species))
-colnames(species_data) = c("genus_species", "individuals")
+# Size counts
+library(dplyr)
+new_species_df = individual_data %>%
+  group_by(clean_genus_species) %>%
+  summarise(
+    num_inds = n(),
+    class = str_c(unique(class), collapse = ","),
+    num_mass = sum(complete.cases(mass)),
+    num_length = sum(complete.cases(length)), 
+    year_range = max(year) - min(year), 
+    lat_range = max(decimallatitude) - min(decimallatitude)
+  ) %>% 
+  filter(
+    num_mass > 30 | num_length > 30, 
+    year_range >= 20, 
+    lat_range >= 5
+  ) 
 
-max_year = species_crit(individual_data, individual_data$year, individual_data$clean_genus_species, max, "max_year")
-min_year = species_crit(individual_data, individual_data$year, individual_data$clean_genus_species, min, "min_year")
-max_lat = species_crit(individual_data, individual_data$decimallatitude, individual_data$clean_genus_species, max, "max_lat")
-min_lat = species_crit(individual_data, individual_data$decimallatitude, individual_data$clean_genus_species, min, "min_lat")
+# TODO: Add in choosing mass if num_mass = num_length
+new_species_df$choose_mass = new_species_df$num_mass > new_species_df$num_length
+new_species_df$choose_length = new_species_df$num_mass < new_species_df$num_length
 
-species_data = merge(species_data, max_year)
-species_data = merge(species_data, min_year)
-species_data = merge(species_data, max_lat)
-species_data = merge(species_data, min_lat)
+unique_coords = unique(all_individuals[c("map_long", "decimallatitude")])
 
-species_data$year_range = species_data$max_year - species_data$min_year
-species_data$lat_range = species_data$max_lat - species_data$min_lat
+fish_coords = unique(fishes[c("decimallongitude", "decimallatitude")])
+library(rworldmap)
+map = getMap(resolution = "high")
+plot(map)
+points(fish_coords$decimallongitude, fish_coords$decimallatitude, pch = 20, cex = 0.1, col = "red")
 
-# Subset dataset to retain individuals whose species has at least 30 individuals, 
-# 20 years of data, and 5 latitudinal degrees of data
-# TODO: refactor?
-individual_data = individual_data[individual_data$clean_genus_species %in% species_data$genus_species[species_data$individuals >= 30],]
-individual_data = individual_data[individual_data$clean_genus_species %in% species_data$genus_species[species_data$year_range >= 20],]
-individual_data = individual_data[individual_data$clean_genus_species %in% species_data$genus_species[species_data$lat_range >= 5],]
+points(unique_coords$map_long, unique_coords$decimallatitude, pch = 20, cex = 0.1, col = "red")
 
-#Redo species list
-new_species_data = data.frame(table(individual_data$clean_genus_species))
-colnames(new_species_data) = c("genus_species", "individuals")
 
-max_year = species_crit(individual_data, individual_data$year, individual_data$clean_genus_species, max, "max_year")
-min_year = species_crit(individual_data, individual_data$year, individual_data$clean_genus_species, min, "min_year")
-max_lat = species_crit(individual_data, individual_data$decimallatitude, individual_data$clean_genus_species, max, "max_lat")
-min_lat = species_crit(individual_data, individual_data$decimallatitude, individual_data$clean_genus_species, min, "min_lat")
-
-new_species_data = merge(new_species_data, max_year)
-new_species_data = merge(new_species_data, min_year)
-new_species_data = merge(new_species_data, max_lat)
-new_species_data = merge(new_species_data, min_lat)
-
-new_species_data$year_range = new_species_data$max_year - new_species_data$min_year
-new_species_data$lat_range = new_species_data$max_lat - new_species_data$min_lat
+# TODO: Subset dataset to retain individuals whose species are in list
 
 # Save dataset as CSV to be used as input for Python code
 write.csv(individual_data, "CompleteDatasetVN.csv")
