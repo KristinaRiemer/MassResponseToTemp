@@ -3,6 +3,7 @@ library(readr)
 library(stringr)
 library(taxize)
 library(spatstat)
+library(dplyr)
 
 #-------FUNCTIONS---------
 clean_taxonomy = function(tax_file_path, raw_file_path){ 
@@ -159,14 +160,11 @@ check_chunks = function(chunks_list, names_list){
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
 # Create or read in cleaned taxonomy file
-ptm = proc.time()
 clean_taxonomy("data/clean_taxonomy.csv", "data/raw.csv")
-proc.time() - ptm
 individual_data = read_csv("data/clean_taxonomy.csv")
 
 # Create columns for mass and length for each individual
 individual_data$mass = extract_component(individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
-individual_data$length = extract_component(individual_data$normalized_total_length, "total length\", ([0-9.]*)" )
 
 # Remove coordinates outside of range and transform longitudes
 individual_data$decimallatitude[individual_data$decimallatitude > 90 | individual_data$decimallatitude < -90] = NA
@@ -175,50 +173,28 @@ individual_data$longitude = ifelse(individual_data$decimallongitude < 0, individ
 
 #----SUBSETTING DATASET----
 
-# Subset dataset to retain only individuals collected 1900-2010, with species ID, 
-# and coordinates
+# Subset dataset to retain only individuals with collected 1900-2010, has mass, 
+# species ID, and coordinates
 individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
+individual_data = individual_data[complete.cases(individual_data$mass),]
 individual_data = individual_data[complete.cases(individual_data$clean_genus_species),]
 individual_data = individual_data[(complete.cases(individual_data$decimallatitude) & complete.cases(individual_data$longitude)),]
-
-individual_data = individual_data[(complete.cases(individual_data$mass) | complete.cases(individual_data$length)),]
-
 colnames(individual_data)[1] = "row_index"
 
-# Size counts
-library(dplyr)
-new_species_df = individual_data %>%
+# Subset dataset to retain only individuals from species with more than 30 individuals, 
+# at least 20 years, and at least 5 latitudinal degrees
+species_list = individual_data %>%
   group_by(clean_genus_species) %>%
   summarise(
-    num_inds = n(),
-    class = str_c(unique(class), collapse = ","),
-    num_mass = sum(complete.cases(mass)),
-    num_length = sum(complete.cases(length)), 
+    individuals = n(), 
     year_range = max(year) - min(year), 
     lat_range = max(decimallatitude) - min(decimallatitude)
-  ) %>% 
+  ) %>%
   filter(
-    num_mass > 30 | num_length > 30, 
+    individuals >= 30, 
     year_range >= 20, 
     lat_range >= 5
-  ) 
+  )
 
-# TODO: Add in choosing mass if num_mass = num_length
-new_species_df$choose_mass = new_species_df$num_mass > new_species_df$num_length
-new_species_df$choose_length = new_species_df$num_mass < new_species_df$num_length
-
-unique_coords = unique(all_individuals[c("map_long", "decimallatitude")])
-
-fish_coords = unique(fishes[c("decimallongitude", "decimallatitude")])
-library(rworldmap)
-map = getMap(resolution = "high")
-plot(map)
-points(fish_coords$decimallongitude, fish_coords$decimallatitude, pch = 20, cex = 0.1, col = "red")
-
-points(unique_coords$map_long, unique_coords$decimallatitude, pch = 20, cex = 0.1, col = "red")
-
-
-# TODO: Subset dataset to retain individuals whose species are in list
-
-# Save dataset as CSV to be used as input for Python code
+individual_data = individual_data[individual_data$clean_genus_species %in% species_list$clean_genus_species,]
 write.csv(individual_data, "CompleteDatasetVN.csv")
