@@ -1,118 +1,83 @@
 library(dplyr)
 library(ggplot2)
 
-# Current year for all species
-current_year = read.csv("results/species_stats.csv")
-all_individuals = read.csv("results/stats_data.csv")
+species_stats = read.csv("results/species_stats.csv")
+individuals_data = read.csv("results/stats_data.csv")
 
-# R2 and slope distributions
-par(mfrow = c(1, 3))
-r = density(current_year$temp_r_squared)
-plot(r, xlim = c(0, 1), xlab = "r^2", ylab = "", main = "Each species' r^2 dist from collection year temp")
-polygon(r, col = "chartreuse3", border = "chartreuse3")
-abline(v = mean(current_year$temp_r_squared), lty = 3)
-abline(v = median(current_year$temp_r_squared))
-legend("top", c("mean", "median"), lty = c(3, 1), bty = "n")
+species_summary = individuals_data %>%
+  group_by(clean_genus_species) %>%
+  summarise(
+    lat_range = max(decimallatitude) - min(decimallatitude), 
+    temp_range = max(decimallatitude) - min(decimallatitude), 
+    mass_range = max(mass) - min(mass), 
+    mass_mean = mean(mass)
+  )
+species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
 
-s = density(current_year$temp_slope, from = -0.1, to = 0.1)
-plot(s, xlab = "slope", ylab = "", main ="Each species' slope dist from collection year temp")
-polygon(s, col = "cornflowerblue", border = "cornflowerblue")
-abline(v = 0, col = "gray")
-abline(v = mean(current_year$temp_slope), lty = 3)
-abline(v = median(current_year$temp_slope))
+# 1: density plot of r values for all species' temp-mass relationships
+ggplot(species_stats, aes(temp_r)) + 
+  geom_density(fill = "blue", alpha = 0.3) + 
+  geom_vline(xintercept = 0) +
+  xlim(-1, 1)
 
-c = density(current_year$temp_r)
-plot(c, xlim = c(-1, 1), xlab = "r", ylab = "", main = "Each species' r dist from collection year temp")
-polygon(c, col = "red", border = "red")
-abline(v = c(0, -1, 1), col = "gray")
-abline(v = mean(current_year$temp_r), lty = 3)
-abline(v = median(current_year$temp_r))
+# 2: overlaid density plots for each class of r values for all species' temp-mass relationships
+ggplot(species_stats, aes(temp_r, colour = class)) +
+  geom_density() + 
+  xlim(-1, 1)
 
-# Effect of number individuals per species on r2 and slope
-par(mfrow = c(1, 1))
-plot(current_year$individuals, current_year$temp_r_squared)
-plot(current_year$individuals, current_year$temp_slope, ylim = c(-1, 1))
-abline(h = 0)
-plot(current_year$individuals, current_year$temp_r)
-abline(h = 0)
+class_summary = species_stats %>%
+  group_by(class) %>%
+  summarise(
+    number_species = n(), 
+    r_mean = mean(temp_r), 
+    r_sd = sd(temp_r), 
+    r_med = median(temp_r)
+  )
 
-# Class-level r2 and slope
-ggplot(current_year, aes(x = temp_r_squared)) + geom_density(aes(group = class, colour = class))
-ggplot(current_year, aes(x = temp_slope)) + geom_density(aes(group = class, colour = class)) + scale_x_continuous(limits = c(-1, 1))
-ggplot(current_year, aes(x = temp_r)) + geom_density(aes(group = class, colour = class))
+# 3: overlaid density plots for select past year temps of r values for all species' temp-mass relationships
 
-by_class = group_by(current_year, class)
-class_summary = summarise(by_class,
-                          count = n(),
-                          rsquared_mean = mean(temp_r_squared),
-                          rsquared_sd = sd(temp_r_squared),
-                          rsquared_med = median(temp_r_squared),
-                          slope_mean = mean(temp_slope),
-                          slope_sd = sd(temp_slope),
-                          slope_med = median(temp_slope), 
-                          r_mean = mean(temp_r), 
-                          r_sd = sd(temp_r), 
-                          r_med = median(temp_r))
+# 4: scatterplot of each species' temp range and r
+ggplot(species_stats, aes(x = temp_range, y = temp_r)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  ylim(-1, 1)
 
-# Mass-temp relationships for species with large latitude or temp range
-by_species = group_by(all_individuals, clean_genus_species)
-species_summary = summarise(by_species, 
-                            lat_min = min(decimallatitude), 
-                            lat_max = max(decimallatitude), 
-                            temp_min = min(july_temps), 
-                            temp_max = max(july_temps))
+# 5: scatterplot of each species' log-transformed number of individual and r
+ggplot(species_stats, aes(x = log(individuals), y = temp_r)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  ylim(-1, 1)
 
-current_year = merge(current_year, species_summary, by.x = "genus_species", by.y = "clean_genus_species")
-current_year$lat_diff = current_year$lat_max - current_year$lat_min
-current_year$temp_diff = current_year$temp_max - current_year$temp_min
-large_lat_CY = current_year[current_year$lat_diff > 41.1,] #top quartile of lat range
-large_temp_CY = current_year[current_year$temp_diff > 23.60,]
+# 6: scatterplot of each species' log-transformed mass range and r
+ggplot(species_stats, aes(x = log(mass_range), y = temp_r)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  ylim(-1, 1)
 
-plot(density(current_year$temp_r_squared))
-lines(density(large_lat_CY$temp_r_squared), col = "red")
-plot(density(current_year$temp_slope, from = -0.5, to = 0.5))
-lines(density(large_lat_CY$temp_slope, from = -0.5, to = 0.5), col = "red")
-abline(v = 0)
-plot(large_lat_CY$temp_r_squared, large_lat_CY$temp_slope)
-plot(density(current_year$temp_r))
-lines(density(large_lat_CY$temp_r), col = "red")
+# 7: scatterplot of each species' latitude range and r
+ggplot(species_stats, aes(x = lat_range, y = temp_r)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  ylim(-1, 1)
 
-plot(density(current_year$temp_r_squared))
-lines(density(large_temp_CY$temp_r_squared), col = "red")
-plot(density(current_year$temp_slope, from = -0.5, to = 0.5))
-lines(density(large_temp_CY$temp_slope, from = -0.5, to = 0.5), col = "red")
-abline(v = 0)
-plot(large_temp_CY$temp_r_squared, large_temp_CY$temp_slope)
-plot(density(current_year$temp_r))
-lines(density(large_temp_CY$temp_r), col = "red")
+# 8: plot comparing species' log-transformed average mass to r
+ggplot(species_stats, aes(x = log(mass_mean), y = temp_r)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  ylim(-1, 1)
 
-# Mass-latitude relationships
-par(mfrow = c(1, 3))
-lr = density(current_year$lat_r_squared)
-plot(lr, xlim = c(0, 1), xlab = "r^2", ylab = "", main = "Each species' r^2 dist from lat")
-polygon(lr, col = "chartreuse3", border = "chartreuse3")
-abline(v = mean(current_year$lat_r_squared), lty = 3)
-abline(v = median(current_year$lat_r_squared), lty = 2)
-legend("top", c("mean", "median"), lty = c(3, 2), bty = "n")
+# 9: examples of 3 species' temp-mass relationship plots
 
-ls = density(current_year$lat_slope, from = -0.1, to = 0.1)
-plot(ls, xlab = "slope", ylab = "", main ="Each species' slope dist from lat")
-polygon(ls, col = "cornflowerblue", border = "cornflowerblue")
-#abline(v = 0, col = "gray")
-abline(v = mean(current_year$lat_slope), lty = 3)
-abline(v = median(current_year$lat_slope), lty = 2)
+# 10: stats plot (bar chart or multiple comparison plot)
 
-cs = density(current_year$lat_r)
-plot(cs, xlim = c(-1, 1), xlab = "r", ylab = "", main = "Each species' r dist from lat")
-polygon(cs, col = "red", border = "red")
-abline(v = c(0, -1, 1), col = "gray")
-abline(v = mean(current_year$lat_r), lty = 3)
-abline(v = median(current_year$lat_r))
+# 11: density plot of r values for all species' lat-mass relationships
+ggplot(species_stats, aes(lat_r)) + 
+  geom_density(fill = "blue", alpha = 0.3) + 
+  geom_vline(xintercept = 0) +
+  xlim(-1, 1)
 
-# Spatial distribution of individuals
-all_individuals$map_long = ifelse(all_individuals$longitude > 180, all_individuals$longitude - 360, all_individuals$longitude)
-unique_coords = unique(all_individuals[c("map_long", "decimallatitude")])
-library(rworldmap)
-map = getMap(resolution = "low")
-plot(map)
-points(unique_coords$map_long, unique_coords$decimallatitude, pch = 20, cex = 0.1, col = "red")
+# 12: overlaid density plots for each class of r values for all species' lat-mass relationships
+ggplot(species_stats, aes(lat_r, colour = class)) +
+  geom_density() + 
+  xlim(-1, 1)
+
