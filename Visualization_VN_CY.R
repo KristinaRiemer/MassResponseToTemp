@@ -14,6 +14,10 @@ species_summary = individuals_data %>%
   )
 species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
 
+species_stats_TL = read.csv("temp_stats.csv")
+species_stats_TL$r = ifelse(species_stats_TL$slope < 0, -sqrt(species_stats_TL$r_squared), sqrt(species_stats_TL$r_squared))
+species_stats_TL$past_year = as.factor(species_stats_TL$past_year)
+
 # 1: density plot of r values for all species' temp-mass relationships
 ggplot(species_stats, aes(temp_r)) + 
   geom_density(fill = "blue", alpha = 0.3) + 
@@ -35,6 +39,10 @@ class_summary = species_stats %>%
   )
 
 # 3: overlaid density plots for select past year temps of r values for all species' temp-mass relationships
+ggplot(subset(species_stats_TL, past_year %in% c("0", "10", "25", "50", "80"))) +
+  geom_density(aes(r, group = past_year, colour = past_year)) +
+  geom_vline(xintercept = 0) +
+  xlim(-1, 1)
 
 # 4: scatterplot of each species' temp range and r
 ggplot(species_stats, aes(x = temp_range, y = temp_r)) +
