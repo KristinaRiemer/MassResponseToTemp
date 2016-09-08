@@ -75,6 +75,24 @@ ggplot(species_stats, aes(x = log(mass_mean), y = temp_r)) +
   ylim(-1, 1)
 
 # 9: examples of 3 species' temp-mass relationship plots
+species_list = c("Dryocopus lineatus", "Sitta canadensis", "Corvus brachyrhynchos")
+for(species in species_list){
+  species_data = individuals_data[individuals_data$clean_genus_species == species,]
+  species_data$rel_mass = species_data$mass / mean(species_data$mass)
+  lr_mass = lm(mass ~ july_temps, data = species_data)
+  lr_summary = summary(lr_mass)
+  r2 = round(lr_summary$r.squared, 3)
+  pval = round(lr_summary$coefficients[2,4], 4)
+  coefficients_string = paste("r2 =", r2, ";", "p =", pval)
+  print(ggplot(species_data, aes(july_temps, mass)) +
+          geom_point() +
+          geom_smooth(method = "lm", se = FALSE) +
+          annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 1.5, label = coefficients_string) +
+          labs(title = species)
+  )
+  lr_relmass = lm(rel_mass ~ july_temps, data = species_data)
+  print(summary(lr_relmass))
+}
 
 # 10: stats plot (bar chart or multiple comparison plot)
 
