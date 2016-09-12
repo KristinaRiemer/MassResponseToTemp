@@ -29,6 +29,10 @@ ggplot(species_stats, aes(temp_r, colour = class)) +
   geom_density() + 
   xlim(-1, 1)
 
+ggplot(species_stats, aes(temp_r, colour = class)) +
+  geom_freqpoly(bins = 20) + 
+  xlim(-1, 1)
+
 class_summary = species_stats %>%
   group_by(class) %>%
   summarise(
@@ -95,15 +99,52 @@ for(species in species_list){
 }
 
 # 10: stats plot (bar chart or multiple comparison plot)
+#terrible, hacky bar chart
+species_not_SS = species_stats %>%
+  filter(temp_pvalue > 0.05)
+
+species_SS_pos = species_stats %>%
+  filter(temp_pvalue < 0.05 & temp_slope > 0)
+
+species_SS_neg = species_stats %>%
+  filter(temp_pvalue < 0.05 & temp_slope < 0)
+
+pvalue_freqs = data.frame(rbind(nrow(species_SS_neg), nrow(species_not_SS), nrow(species_SS_pos)))
+colnames(pvalue_freqs) = "number_species"
+rownames(pvalue_freqs) = c("neg SS", "not SS", "pos SS")
+pvalue_freqs$proportions = pvalue_freqs$number_species / 1174 * 100
+barplot(pvalue_freqs$proportions, names.arg = rownames(pvalue_freqs))
+
+#interpretation of this? 
+hist(species_not_SS$temp_r, xlim = c(-1, 1), breaks = 20)
+hist(species_SS_neg$temp_r, add = TRUE, breaks = 20, col = rgb(0, 0, 1, 0.3))
+hist(species_SS_pos$temp_r, add = TRUE, breaks = 20, col = rgb(0, 1, 0, 0.3))
+
+#start of multiple comparisons method, plot bar chart using same method
+species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
+
+species_not_SS = species_stats %>%
+  filter(temp_pvalue_adjust > 0.05)
+
+species_SS_pos = species_stats %>%
+  filter(temp_pvalue_adjust < 0.05 & temp_slope > 0)
+
+species_SS_neg = species_stats %>%
+  filter(temp_pvalue_adjust < 0.05 & temp_slope < 0)
+
+pvalue_freqs = data.frame(rbind(nrow(species_SS_neg), nrow(species_not_SS), nrow(species_SS_pos)))
+colnames(pvalue_freqs) = "number_species"
+rownames(pvalue_freqs) = c("neg SS", "not SS", "pos SS")
+pvalue_freqs$proportions = pvalue_freqs$number_species / 1174 * 100
+barplot(pvalue_freqs$proportions, names.arg = rownames(pvalue_freqs))
+
+#interpretation of this? 
+hist(species_not_SS$temp_r, xlim = c(-1, 1), breaks = 20)
+hist(species_SS_neg$temp_r, add = TRUE, breaks = 20, col = rgb(0, 0, 1, 0.3))
+hist(species_SS_pos$temp_r, add = TRUE, breaks = 20, col = rgb(0, 1, 0, 0.3))
 
 # 11: density plot of r values for all species' lat-mass relationships
 ggplot(species_stats, aes(lat_r)) + 
   geom_density(fill = "blue", alpha = 0.3) + 
   geom_vline(xintercept = 0) +
   xlim(-1, 1)
-
-# 12: overlaid density plots for each class of r values for all species' lat-mass relationships
-ggplot(species_stats, aes(lat_r, colour = class)) +
-  geom_density() + 
-  xlim(-1, 1)
-
