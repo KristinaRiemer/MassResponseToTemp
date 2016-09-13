@@ -16,7 +16,6 @@ species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genu
 
 species_stats_TL = read.csv("temp_stats.csv")
 species_stats_TL$r = ifelse(species_stats_TL$slope < 0, -sqrt(species_stats_TL$r_squared), sqrt(species_stats_TL$r_squared))
-species_stats_TL$past_year = as.factor(species_stats_TL$past_year)
 
 # 1: density plot of r values for all species' temp-mass relationships
 ggplot(species_stats, aes(temp_r)) + 
@@ -42,7 +41,13 @@ class_summary = species_stats %>%
     r_med = median(temp_r)
   )
 
+# 3.5: scatterplot for all past year temps against r value for all species
+ggplot(species_stats_TL, aes(x = past_year, y = r)) +
+  geom_point(size = 0.2, color = "chartreuse3") + 
+  stat_summary(aes(y = r, group = 1), fun.y = mean, geom = "point", group = 1, size = 0.5)
+
 # 3: overlaid density plots for select past year temps of r values for all species' temp-mass relationships
+species_stats_TL$past_year = as.factor(species_stats_TL$past_year)
 ggplot(subset(species_stats_TL, past_year %in% c("0", "10", "25", "50", "80"))) +
   geom_density(aes(r, group = past_year, colour = past_year)) +
   geom_vline(xintercept = 0) +
@@ -77,6 +82,23 @@ ggplot(species_stats, aes(x = log(mass_mean), y = temp_r)) +
   geom_point() +
   geom_hline(yintercept = 0) +
   ylim(-1, 1)
+
+# 8.5: density plot for each size class of r values for all species' temp-mass relationships
+library(plyr)
+species_stats$size_class = revalue(species_stats$mass_mean, c(""))
+  10, 100, 1000, 10000
+
+for(species in species_list){
+  if(species_stats$mass_mean < 10){
+    class = smallest
+  } else if(species_stats$mass_mean >= 10 & species_stats$mass_mean < 100){
+    class = small
+  } else if(species_stats$mass_mean >= 100 & species_stats$mass_mean < 1000){
+    class = medium
+  } else {
+    class = others
+  }
+}
 
 # 9: examples of 3 species' temp-mass relationship plots
 species_list = c("Dryocopus lineatus", "Sitta canadensis", "Corvus brachyrhynchos")
