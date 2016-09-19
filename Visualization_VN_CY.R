@@ -1,3 +1,4 @@
+library(plyr)
 library(dplyr)
 library(ggplot2)
 
@@ -8,7 +9,7 @@ species_summary = individuals_data %>%
   group_by(clean_genus_species) %>%
   summarise(
     lat_range = max(decimallatitude) - min(decimallatitude), 
-    temp_range = max(decimallatitude) - min(decimallatitude), 
+    temp_range = max(july_temps) - min(july_temps), 
     mass_range = max(mass) - min(mass), 
     mass_mean = mean(mass)
   )
@@ -19,17 +20,18 @@ species_stats_TL$r = ifelse(species_stats_TL$slope < 0, -sqrt(species_stats_TL$r
 
 # 1: density plot of r values for all species' temp-mass relationships
 ggplot(species_stats, aes(temp_r)) + 
-  geom_density(fill = "blue", alpha = 0.3) + 
+  geom_density(color = "blue") + 
   geom_vline(xintercept = 0) +
   xlim(-1, 1)
 
 # 2: overlaid density plots for each class of r values for all species' temp-mass relationships
-ggplot(species_stats, aes(temp_r, colour = class)) +
-  geom_density() + 
-  xlim(-1, 1)
+# ggplot(species_stats, aes(temp_r, colour = class)) +
+#   geom_density() + 
+#   xlim(-1, 1)
 
 ggplot(species_stats, aes(temp_r, colour = class)) +
-  geom_freqpoly(bins = 20) + 
+  geom_freqpoly(bins = 23) + 
+  geom_vline(xintercept = 0) +
   xlim(-1, 1)
 
 class_summary = species_stats %>%
@@ -60,14 +62,16 @@ ggplot(species_stats, aes(x = temp_range, y = temp_r)) +
   ylim(-1, 1)
 
 # 5: scatterplot of each species' log-transformed number of individual and r
-ggplot(species_stats, aes(x = log(individuals), y = temp_r)) +
+ggplot(species_stats, aes(x = individuals, y = temp_r)) +
   geom_point() +
+  scale_x_continuous(trans = "log10") +
   geom_hline(yintercept = 0) +
   ylim(-1, 1)
 
 # 6: scatterplot of each species' log-transformed mass range and r
-ggplot(species_stats, aes(x = log(mass_range), y = temp_r)) +
+ggplot(species_stats, aes(x = mass_range, y = temp_r)) +
   geom_point() +
+  scale_x_continuous(trans = "log10") +
   geom_hline(yintercept = 0) +
   ylim(-1, 1)
 
@@ -78,27 +82,19 @@ ggplot(species_stats, aes(x = lat_range, y = temp_r)) +
   ylim(-1, 1)
 
 # 8: plot comparing species' log-transformed average mass to r
-ggplot(species_stats, aes(x = log(mass_mean), y = temp_r)) +
+ggplot(species_stats, aes(x = mass_mean, y = temp_r)) +
   geom_point() +
+  scale_x_continuous(trans = "log10") +
   geom_hline(yintercept = 0) +
   ylim(-1, 1)
 
-# 8.5: density plot for each size class of r values for all species' temp-mass relationships
-library(plyr)
-species_stats$size_class = revalue(species_stats$mass_mean, c(""))
-  10, 100, 1000, 10000
-
-for(species in species_list){
-  if(species_stats$mass_mean < 10){
-    class = smallest
-  } else if(species_stats$mass_mean >= 10 & species_stats$mass_mean < 100){
-    class = small
-  } else if(species_stats$mass_mean >= 100 & species_stats$mass_mean < 1000){
-    class = medium
-  } else {
-    class = others
-  }
-}
+# 8.5: overlaid density plots for each size class of r values for all species' temp-mass relationships
+species_stats$size_class = as.factor(as.numeric(cut_number(species_stats$mass_mean, 5)))
+species_stats$size_class = revalue(species_stats$size_class, c("1" = "smallest", "2" = "smaller", "3" = "medium", "4" = "larger", "5" = "largest"))
+size_class_colors <- scales::seq_gradient_pal("light blue", "dark blue", "Lab")(seq(0,1,length.out=5))
+ggplot(species_stats, aes(temp_r, colour = size_class)) +
+  geom_density() +
+  scale_colour_manual(values = size_class_colors)
 
 # 9: examples of 3 species' temp-mass relationship plots
 species_list = c("Dryocopus lineatus", "Sitta canadensis", "Corvus brachyrhynchos")
@@ -120,29 +116,7 @@ for(species in species_list){
   print(summary(lr_relmass))
 }
 
-# 10: stats plot (bar chart or multiple comparison plot)
-#terrible, hacky bar chart
-species_not_SS = species_stats %>%
-  filter(temp_pvalue > 0.05)
-
-species_SS_pos = species_stats %>%
-  filter(temp_pvalue < 0.05 & temp_slope > 0)
-
-species_SS_neg = species_stats %>%
-  filter(temp_pvalue < 0.05 & temp_slope < 0)
-
-pvalue_freqs = data.frame(rbind(nrow(species_SS_neg), nrow(species_not_SS), nrow(species_SS_pos)))
-colnames(pvalue_freqs) = "number_species"
-rownames(pvalue_freqs) = c("neg SS", "not SS", "pos SS")
-pvalue_freqs$proportions = pvalue_freqs$number_species / 1174 * 100
-barplot(pvalue_freqs$proportions, names.arg = rownames(pvalue_freqs))
-
-#interpretation of this? 
-hist(species_not_SS$temp_r, xlim = c(-1, 1), breaks = 20)
-hist(species_SS_neg$temp_r, add = TRUE, breaks = 20, col = rgb(0, 0, 1, 0.3))
-hist(species_SS_pos$temp_r, add = TRUE, breaks = 20, col = rgb(0, 1, 0, 0.3))
-
-#start of multiple comparisons method, plot bar chart using same method
+# 10: barplot of types of statistical significance for species
 species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
 
 species_not_SS = species_stats %>%
@@ -160,7 +134,7 @@ rownames(pvalue_freqs) = c("neg SS", "not SS", "pos SS")
 pvalue_freqs$proportions = pvalue_freqs$number_species / 1174 * 100
 barplot(pvalue_freqs$proportions, names.arg = rownames(pvalue_freqs))
 
-#interpretation of this? 
+# 10.5: overlaid histograms for each type of statistical significance of r values
 hist(species_not_SS$temp_r, xlim = c(-1, 1), breaks = 20)
 hist(species_SS_neg$temp_r, add = TRUE, breaks = 20, col = rgb(0, 0, 1, 0.3))
 hist(species_SS_pos$temp_r, add = TRUE, breaks = 20, col = rgb(0, 1, 0, 0.3))
