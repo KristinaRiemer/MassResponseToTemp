@@ -1,6 +1,7 @@
 library(plyr)
 library(dplyr)
 library(ggplot2)
+library(cowplot)
 
 species_stats = read.csv("results/species_stats.csv")
 individuals_data = read.csv("results/stats_data.csv")
@@ -8,7 +9,7 @@ individuals_data = read.csv("results/stats_data.csv")
 species_summary = individuals_data %>%
   group_by(clean_genus_species) %>%
   summarise(
-    lat_range = max(decimallatitude) - min(decimallatitude), 
+    #lat_range = max(decimallatitude) - min(decimallatitude), 
     temp_range = max(july_temps) - min(july_temps), 
     mass_range = max(mass) - min(mass), 
     mass_mean = mean(mass)
@@ -40,27 +41,38 @@ for(species in species_list){
 }
 
 # SECOND FIGURE
-# 10.5: overlaid histograms for each type of statistical significance of r values
 species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
+species_stats = species_stats %>%
+  mutate(stat_sig = ifelse(temp_pvalue_adjust < 0.05 & temp_slope < 0, "neg", 
+                          ifelse(temp_pvalue_adjust < 0.05 & temp_slope > 0, "pos", "not")))
 
-species_not_SS = species_stats %>%
-  filter(temp_pvalue_adjust > 0.05)
+species_stats$stat_sig = factor(species_stats$stat_sig, levels = c("neg", "pos", "not"))
+plot_stats = ggplot(species_stats, aes(temp_r, fill = stat_sig)) +
+  geom_histogram(bins = 31, col = "black", size = 0.2) +
+  scale_fill_manual(values = c(rgb(0, 0, 1, 0.5), rgb(0, 1, 0, 0.5), "white"), 
+                    labels = c("Negative", "Positive", "Not")) +
+  coord_cartesian(xlim = c(-1, 1)) +
+  labs(x = "r", y = "Number of species", fill = "Statistical significance: ") +
+  geom_vline(xintercept = 0, size = 1) +
+  theme_bw() +
+  theme(legend.position = "top", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 129, 9), label = c("14%", "79%", "7%"))
 
-species_SS_pos = species_stats %>%
-  filter(temp_pvalue_adjust < 0.05 & temp_slope > 0)
+species_stats$class = factor(species_stats$class, levels = c("Aves", "Mammalia", "Reptilia", "Amphibia"))
+plot_class = ggplot(species_stats, aes(temp_r, fill = class)) +
+  geom_histogram(bins = 31, col = "black", size = 0.2) +
+  scale_fill_manual(values = c("#C6DBEF", "white", "#6BAED6", "#084594")) +
+  coord_cartesian(xlim = c(-1, 1)) +
+  labs(x = "r", y = "Number of species", fill = "Class: ") +
+  geom_vline(xintercept = 0, size = 1) +
+  theme_bw() +
+  theme(legend.position = "top", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
 
-species_SS_neg = species_stats %>%
-  filter(temp_pvalue_adjust < 0.05 & temp_slope < 0)
-
-hist(species_not_SS$temp_r, xlim = c(-1, 1), breaks = 20)
-hist(species_SS_neg$temp_r, add = TRUE, breaks = 20, col = rgb(0, 0, 1, 0.3))
-hist(species_SS_pos$temp_r, add = TRUE, breaks = 20, col = rgb(0, 1, 0, 0.3))
-
-# 2.5: frequency polygons for each class of r values for all species' temp-mass relationships
-ggplot(species_stats, aes(temp_r, colour = class)) +
-  geom_freqpoly(bins = 23) + 
-  geom_vline(xintercept = 0) +
-  xlim(-1, 1)
+plot_grid(plot_stats, plot_class, nrow = 2, labels = c("A", "B"))
 
 # THIRD FIGURE
 # 3: overlaid density plots for select past year temps of r values for all species' temp-mass relationships
