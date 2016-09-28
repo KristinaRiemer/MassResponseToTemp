@@ -120,7 +120,7 @@ def lin_reg(dataset, speciesID_col):
         plt.figtext(0.05, 0.05, hemisphere)
         lat_pdf.savefig()
         plt.close()     
-        stats_list.append({"genus_species": species, "class": sp_class, "individuals": len(species_data["row_index"].unique()),  "hemisphere": hemisphere, "temp_r_squared": temp_linreg.rsquared, "temp_slope": temp_linreg.params[1], "temp_pvalue": temp_linreg.f_pvalue, "lat_r_squared": lat_linreg.rsquared, "lat_slope": lat_linreg.params[1]})    
+        stats_list.append({"genus_species": species, "class": sp_class, "individuals": len(species_data["row_index"].unique()),  "hemisphere": hemisphere, "temp_r_squared": temp_linreg.rsquared, "temp_slope": temp_linreg.params[1], "temp_pvalue": temp_linreg.f_pvalue, "lat_r_squared": lat_linreg.rsquared, "lat_slope": lat_linreg.params[1], "lat_pvalue": lat_linreg.f_pvalue})    
     temp_pdf.close()
     lat_pdf.close()
     stats_df = pd.DataFrame(stats_list)
