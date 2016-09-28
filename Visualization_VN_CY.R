@@ -63,10 +63,11 @@ plot_stats = ggplot(species_stats, aes(temp_r, fill = temp_stat_sig)) +
         panel.grid.minor = element_blank()) +
   annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 129, 9), label = c("14%", "79%", "7%"))
 
-species_stats$class = factor(species_stats$class, levels = c("Aves", "Mammalia", "Reptilia", "Amphibia"))
-plot_class = ggplot(species_stats, aes(temp_r, fill = class)) +
+species_stats$class_combine = as.character(species_stats$class)
+species_stats$class_combine[species_stats$class_combine == "Amphibia" | species_stats$class_combine == "Reptilia"] <- "Reptilia & Amphibia"
+plot_class = ggplot(species_stats, aes(temp_r, fill = class_combine)) +
   geom_histogram(bins = 31, col = "black", size = 0.2) +
-  scale_fill_manual(values = c("#C6DBEF", "white", "#6BAED6", "#084594")) +
+  scale_fill_manual(values = c("blue", "white", "red")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 150)) +
   labs(x = "r", y = "Number of species", fill = "Class: ") +
   geom_vline(xintercept = 0, size = 1) +

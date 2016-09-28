@@ -23,19 +23,20 @@ species_stats_TL$r = ifelse(species_stats_TL$slope < 0, -sqrt(species_stats_TL$r
 # FIRST FIGURE
 species_scatterplot = function(species){
   species_data = individuals_data[individuals_data$clean_genus_species == species,]
+  print(species_stats[species_stats$genus_species == species,])
   species_data$rel_mass = species_data$mass / mean(species_data$mass)
-  lr_mass = lm(mass ~ decimallatitude, data = species_data)
+  lr_mass = lm(mass ~ abs(decimallatitude), data = species_data)
   lr_summary = summary(lr_mass)
   r2 = round(lr_summary$r.squared, 3)
   pval = format(round(lr_summary$coefficients[2, 4], 4), scientific = FALSE)
   r_string = paste("R^{2} == ", r2)
   p_string = paste("p =", pval)
-  lr_relmass = lm(rel_mass ~ decimallatitude, data = species_data)
+  lr_relmass = lm(rel_mass ~ abs(decimallatitude), data = species_data)
   print(summary(lr_relmass))
-  ggplot(species_data, aes(decimallatitude, mass)) +
+  ggplot(species_data, aes(abs(decimallatitude), mass)) +
     geom_point() +
     geom_smooth(method = "lm", se = FALSE) +
-    labs(x = "Latitude", y = "Mass (g)") +
+    labs(x = "Absolute latitude", y = "Mass (g)") +
     annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 1.5, label = r_string, parse = TRUE) +
     annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 4, label = p_string, parse = FALSE)
 }
@@ -63,10 +64,11 @@ plot_stats = ggplot(species_stats, aes(lat_r, fill = lat_stat_sig)) +
         panel.grid.minor = element_blank()) +
   annotate("text", x = c(-0.75, -0.11, 0.6), y = c(15, 105, 28), label = c("12%", "69%", "19%"))
 
-species_stats$class = factor(species_stats$class, levels = c("Aves", "Mammalia", "Reptilia", "Amphibia"))
-plot_class = ggplot(species_stats, aes(lat_r, fill = class)) +
+species_stats$class_combine = as.character(species_stats$class)
+species_stats$class_combine[species_stats$class_combine == "Amphibia" | species_stats$class_combine == "Reptilia"] <- "Reptilia & Amphibia"
+plot_class = ggplot(species_stats, aes(lat_r, fill = class_combine)) +
   geom_histogram(bins = 31, col = "black", size = 0.2) +
-  scale_fill_manual(values = c("#C6DBEF", "white", "#6BAED6", "#084594")) +
+  scale_fill_manual(values = c("blue", "white", "red")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species", fill = "Class: ") +
   geom_vline(xintercept = 0, size = 1) +
