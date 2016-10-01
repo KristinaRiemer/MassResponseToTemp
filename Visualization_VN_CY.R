@@ -36,11 +36,13 @@ species_scatterplot = function(species){
           geom_point() +
           geom_smooth(method = "lm", se = FALSE) +
           labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
+          theme(panel.grid.major = element_blank(), 
+                panel.grid.minor = element_blank()) +
           annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 1.5, label = r_string, parse = TRUE) +
           annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 4, label = p_string, parse = FALSE)
 }
 
-species_list = c("Dryocopus lineatus", "Sitta canadensis", "Corvus brachyrhynchos")
+species_list = c("Setophaga palmarum", "Tangara vassorii", "Quelea quelea")
 all_species = lapply(species_list, species_scatterplot)
 plot_grid(plotlist = all_species, nrow = 1, labels = c("A", "B", "C"))
 
