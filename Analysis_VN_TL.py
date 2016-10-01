@@ -68,8 +68,7 @@ def get_stackID(year, month_code):
     return stackID
 
 
-def get_temps_list(coordinates, bands): 
-    # FIXME: Might have to move raster open inside for loop to decrease lookup time
+def get_temps_list(raster_file, coordinates, bands): 
     """Get temperatures for lists of locations and stackIDs
     
     Args: 
@@ -80,19 +79,24 @@ def get_temps_list(coordinates, bands):
     Returns: 
         List of temperatures for coordinates and stackIDs
     """
-    open_file = gdal.Open(temp_file) #add raster file back in as argument
+    open_file = gdal.Open(raster_file)
     all_temps = []
     for i in range(len(bands)): 
-        single_band = open_file.GetRasterBand(bands.iloc[i])
-        geotrans_raster = open_file.GetGeoTransform()
-        x = int((coordinates.iloc[i][0] - geotrans_raster[0])/geotrans_raster[1])
-        y = int((coordinates.iloc[i][1] - geotrans_raster[3])/geotrans_raster[5])
-        band_array = single_band.ReadAsArray()
-        packed_temp = band_array[y, x]
-        add_offset = single_band.GetOffset()
-        scale_factor = single_band.GetScale()
-        unpacked_temp = add_offset + (packed_temp * scale_factor)
-        all_temps.append(unpacked_temp)
+        ID_value = bands.iloc[i]
+        each_ind_temps = []
+        for j in range(bands.iloc[i], bands.iloc[i] + 12): 
+            single_band = open_file.GetRasterBand(j)
+            geotrans_raster = open_file.GetGeoTransform()
+            x = int((coordinates.iloc[i][0] - geotrans_raster[0])/geotrans_raster[1])
+            y = int((coordinates.iloc[i][1] - geotrans_raster[3])/geotrans_raster[5])
+            band_array = single_band.ReadAsArray()
+            packed_temp = band_array[y, x]
+            add_offset = single_band.GetOffset()
+            scale_factor = single_band.GetScale()
+            unpacked_temp = add_offset + (packed_temp * scale_factor)                    
+            each_ind_temps.append(unpacked_temp)
+        year_avg = np.mean(each_ind_temps)
+        all_temps.append(year_avg)
     open_file = None
     return all_temps
 
@@ -135,11 +139,11 @@ def linear_regression_temp(dataset, speciesID_col, lag_col):
         stats_list = []
         for lag, lag_data in species_data.groupby(lag_col): 
             if len(lag_data) > 15: 
-                linreg = smf.ols(formula = "mass ~ july_temps", data = lag_data).fit()
+                linreg = smf.ols(formula = "mass ~ temperature", data = lag_data).fit()
                 plt.figure()
-                plt.plot(lag_data["july_temps"], lag_data["mass"], "bo")
-                plt.plot(lag_data["july_temps"], linreg.fittedvalues, "r-")
-                plt.xlabel("Temperature from year lag " + str(lag))
+                plt.plot(lag_data["temperature"], lag_data["mass"], "bo")
+                plt.plot(lag_data["temperature"], linreg.fittedvalues, "r-")
+                plt.xlabel("Mean annual temperature from year lag " + str(lag))
                 plt.ylabel("Mass(g)")
                 linreg_pdf.savefig()
                 plt.close()
@@ -193,7 +197,7 @@ individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "
 #full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "year", "longitude", "decimallatitude", "mass"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:10])]
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[2:3])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -212,18 +216,20 @@ lag_data["temp_year"] = lag_data["year"] - lag_data["lag"]
 month_codes = create_month_codes_dict(22799, 22787, -1)
 
 # Get stackIDs for July and year
-lag_data["stackID_july"] = get_stackID(lag_data["temp_year"], month_codes["July"])
+######lag_data["stackID_july"] = get_stackID(lag_data["temp_year"], month_codes["July"])
+# Get stackIDs for January of collection year for each individual
+lag_data["stackID"] = get_stackID(lag_data["temp_year"], month_codes["January"])
 
 # Avoiding multiple temp lookups for same location/year combinations
-temp_lookup = lag_data[["longitude", "decimallatitude", "stackID_july"]]
+temp_lookup = lag_data[["longitude", "decimallatitude", "stackID"]]
 temp_lookup = temp_lookup.drop_duplicates()
 
 # Get temperatures for July
-temp_lookup["july_temps"] = get_temps_list(temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID_july"])
+temp_lookup["temperature"] = get_temps_list(temp_file, temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID"])
 temp_data = lag_data.merge(temp_lookup)
 
 # Remove rows with missing data values (i.e., 3276.7)
-temp_data = temp_data[temp_data["july_temps"] < 3276]
+temp_data = temp_data[temp_data["temperature"] < 3276]
 
 # Remove species with less than 30 individuals
 stats_data = remove_species(temp_data, "clean_genus_species")
