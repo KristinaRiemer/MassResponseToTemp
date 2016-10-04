@@ -45,6 +45,7 @@ species_scatterplot = function(species){
 species_list = c("Setophaga palmarum", "Tangara vassorii", "Quelea quelea")
 all_species = lapply(species_list, species_scatterplot)
 plot_grid(plotlist = all_species, nrow = 1, labels = c("A", "B", "C"))
+ggsave("figures/figure1.jpg", width = 12, height = 4)
 
 # SECOND FIGURE
 species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
@@ -78,6 +79,7 @@ plot_class = ggplot(species_stats, aes(temp_r, fill = class_combine)) +
         panel.grid.minor = element_blank())
 
 plot_grid(plot_stats, plot_class, nrow = 2, labels = c("A", "B"))
+ggsave("figures/figure2.jpg", width = 4.5, height = 9)
 
 # THIRD FIGURE
 past_year_hist = function(year){
@@ -94,6 +96,7 @@ past_year_hist = function(year){
 past_year_values = c("0", "25", "50")
 all_hists = lapply(past_year_values, past_year_hist)
 plot_grid(plotlist = all_hists, ncol = 1, labels = c("A", "B", "C"))
+ggsave("figures/figure3.jpg", width = 4, height = 12)
 
 # FOURTH FIGURE
 plot_individuals = ggplot(species_stats, aes(x = individuals, y = temp_r)) +
@@ -132,3 +135,4 @@ plot_mass2 = ggplot(species_stats, aes(x = mass_range, y = temp_r)) +
         panel.grid.minor = element_blank())
 
 plot_grid(plot_individuals, plot_temp, plot_mass, plot_mass2, labels = c("A", "B", "C", "D"))
+ggsave("figures/figure4.jpg", width = 6, height = 5.5)
