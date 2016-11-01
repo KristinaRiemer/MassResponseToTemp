@@ -55,49 +55,6 @@ extract_genus_species = function(dataset_column){
   return(list_IDs)
 }
 
-extract_component = function(dataset_column, regex){
-  # Pull out numerical component of strings
-  #
-  # Args: 
-  #   dataset_column: Column that contains strings
-  #   regex: Regular expression to specify string surrounding numerical component
-  #
-  # Returns: 
-  #   Vector that contains extracted numerical components
-  components_list = vector()
-  for (current_row in dataset_column){
-    component = str_match(dataset_column, regex)
-    component = as.numeric(component[,2])
-    components_list = append(components_list, component)
-    return(components_list)
-  }
-}
-
-count_words = function(string){
-  # Count the number of words in a string
-  #
-  # Args: 
-  #   string: The string for which the number of words is desired
-  #
-  # Returns: 
-  #   Number of words in the string
-  number_words = sapply(gregexpr("\\S+", string), length)
-  return(number_words)
-}
-
-all_names_match = function(strings){
-  # Determine if multiple strings are identical after extracting first two words
-  # of each
-  # 
-  # Args: 
-  #   strings: The strings that are cleaned and matched
-  #
-  # Returns: 
-  #   TRUE if all strings match, FALSE if any of them do not
-  clean_names = lapply(strings, function(x) try(word(x, 1, 2), silent = TRUE))
-  length(unique(clean_names)) == 1
-}
-
 chunk_df = function(df){
   # Split dataframe up into chunks of 100 rows
   # 
@@ -109,6 +66,23 @@ chunk_df = function(df){
   chunk_nums = seq(100, round(nrow(df), digits = -2), 100)
   chunks = lapply(seq_along(chunk_nums), function(x) df[(chunk_nums - 99)[x]:chunk_nums[x],])
   return(chunks)
+}
+
+check_chunks = function(chunks_list, names_list){
+  # Run taxonomy resolution fx on all chunks and clean up output
+  # 
+  # Args: 
+  #   chunks_list: Chunks of dataframe
+  # 
+  # Returns: 
+  #   List of all clean names that can be combined with original names
+  checked_chunks = lapply(chunks_list, function(x) {y = resolve_names(x) 
+  Sys.sleep(3)
+  print(y)
+  return(y)})
+  checked_chunks = unlist(checked_chunks)
+  checked_chunks = checked_chunks[1:nrow(names_list)]
+  return(checked_chunks)
 }
 
 resolve_names = function(names_list){
@@ -140,21 +114,29 @@ resolve_names = function(names_list){
   return(resolved_names)
 }
 
-check_chunks = function(chunks_list, names_list){
-  # Run taxonomy resolution fx on all chunks and clean up output
+count_words = function(string){
+  # Count the number of words in a string
+  #
+  # Args: 
+  #   string: The string for which the number of words is desired
+  #
+  # Returns: 
+  #   Number of words in the string
+  number_words = sapply(gregexpr("\\S+", string), length)
+  return(number_words)
+}
+
+all_names_match = function(strings){
+  # Determine if multiple strings are identical after extracting first two words
+  # of each
   # 
   # Args: 
-  #   chunks_list: Chunks of dataframe
-  # 
+  #   strings: The strings that are cleaned and matched
+  #
   # Returns: 
-  #   List of all clean names that can be combined with original names
-  checked_chunks = lapply(chunks_list, function(x) {y = resolve_names(x) 
-                                                    Sys.sleep(3)
-                                                    print(y)
-                                                    return(y)})
-  checked_chunks = unlist(checked_chunks)
-  checked_chunks = checked_chunks[1:nrow(names_list)]
-  return(checked_chunks)
+  #   TRUE if all strings match, FALSE if any of them do not
+  clean_names = lapply(strings, function(x) try(word(x, 1, 2), silent = TRUE))
+  length(unique(clean_names)) == 1
 }
 
 #-----FUNCTIONS ON ENTIRE DATASET----------
@@ -162,9 +144,6 @@ check_chunks = function(chunks_list, names_list){
 # Create or read in cleaned taxonomy file
 clean_taxonomy("data/clean_taxonomy.csv", "data/raw.csv")
 individual_data = read_csv("data/clean_taxonomy.csv")
-
-# Create columns for mass and length for each individual
-individual_data$mass = extract_component(individual_data$normalized_body_mass, "total weight\", ([0-9.]*)" )
 
 # Remove coordinates outside of range and transform longitudes
 individual_data$decimallatitude[individual_data$decimallatitude > 90 | individual_data$decimallatitude < -90] = NA
@@ -176,10 +155,11 @@ individual_data$longitude = ifelse(individual_data$decimallongitude < 0, individ
 # Subset dataset to retain only individuals with collected 1900-2010, has mass, 
 # species ID, and coordinates
 individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
-individual_data = individual_data[complete.cases(individual_data$mass),]
+individual_data = individual_data[complete.cases(individual_data$massing),]
 individual_data = individual_data[complete.cases(individual_data$clean_genus_species),]
 individual_data = individual_data[(complete.cases(individual_data$decimallatitude) & complete.cases(individual_data$longitude)),]
 colnames(individual_data)[1] = "row_index"
+individual_data$X1_1 = NULL
 
 # Subset dataset to retain only individuals from species with more than 30 individuals, 
 # at least 20 years, and at least 5 latitudinal degrees
