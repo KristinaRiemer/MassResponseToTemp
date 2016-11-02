@@ -177,4 +177,49 @@ species_list = individual_data %>%
   )
 
 individual_data = individual_data[individual_data$clean_genus_species %in% species_list$clean_genus_species,]
+
+# Removing juveniles
+
+# Adult categories
+# skull ossification? 
+
+"adult"
+"ad"
+"U-Ad."
+"U-Ad"
+"Adult"
+"Ad."
+"Ad"
+"Aged Adult"
+"young adult"
+"adult adult"
+"suspected adult"
+"Aged adult"
+"old adult"
+"adult; over-winter"
+"ADULT"
+"adult; young of year"
+"Ad. Summer"
+"Adult."
+"U-AD"
+
+# TODO: if species doesn't have "adult" as an underivedlifestage, there is still one individual left in final
+# TODO: include rest of adult classifications as possible threshold
+individual_data_sub3 = individual_data %>%
+  #filter(clean_genus_species == "Odobenus rosmarus" | clean_genus_species == "Blarina carolinensis") %>%
+  group_by(clean_genus_species) %>%
+  arrange(massing) %>%
+  mutate(firstad = min(which(underivedlifestage == "adult" | row_number() == n())), 
+         total_inds = n()) %>%
+  filter(row_number() >= firstad) %>%
+  summarise(original_inds = mean(total_inds), 
+            row_with_adult = mean(firstad), 
+            rows_deleted = mean(firstad) - 1)
+
+individual_data_sub3$percent_deleted = individual_data_sub3$rows_deleted / individual_data_sub3$original_inds * 100
+individual_data_sub3$diff = individual_data_sub3$original_inds - individual_data_sub3$rows_deleted
+individual_data_sub3a = individual_data_sub3[individual_data_sub3$diff != 1,]
+plot(individual_data_sub3a$percent_deleted)
+hist(individual_data_sub3a$percent_deleted)
+
 write.csv(individual_data, "CompleteDatasetVN.csv")
