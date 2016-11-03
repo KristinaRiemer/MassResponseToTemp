@@ -139,6 +139,45 @@ all_names_match = function(strings){
   length(unique(clean_names)) == 1
 }
 
+subset_species = function(dataset){
+  # Remove all individuals from dataset for species that do not have sufficient ranges
+  #
+  # Args: 
+  #   dataset: df with individuals data
+  #
+  # Returns: 
+  #   Subset of dataset with only sufficient species
+  species_list = dataset %>%
+    group_by(clean_genus_species) %>%
+    summarise(
+      individuals = n(), 
+      year_range = max(year) - min(year), 
+      lat_range = max(decimallatitude) - min(decimallatitude)
+    ) %>%
+    filter(individuals >= 30, year_range >= 20, lat_range >= 5)
+  dataset = dataset[dataset$clean_genus_species %in% species_list$clean_genus_species,]
+  return(dataset)
+}
+
+filter_first_adult = function(dataset){
+  # For each species ordered by mass, remove all individuals before the first 
+  # individual with an adult lifestage designation
+  #
+  # Args: 
+  #   dataset: df with individuals data
+  #
+  # Returns: 
+  #   Subset of dataset with only individuals for each species above adult threshold
+  dataset_filtered = dataset %>%
+    group_by(clean_genus_species) %>%
+    arrange(massing) %>%
+    mutate(first_adult = min(which(underivedlifestage == "adult" | underivedlifestage == "ad" | underivedlifestage == "U-Ad." | underivedlifestage == "U-Ad" | underivedlifestage == "Adult" | underivedlifestage == "Ad." | row_number() == n())), 
+           number_individuals = n()) %>%
+    filter(row_number() >= first_adult) %>%
+    filter(first_adult != number_individuals)
+  return(dataset_filtered)
+}
+
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
 # Create or read in cleaned taxonomy file
@@ -152,8 +191,7 @@ individual_data$longitude = ifelse(individual_data$decimallongitude < 0, individ
 
 #----SUBSETTING DATASET----
 
-# Subset dataset to retain only individuals with collected 1900-2010, has mass, 
-# species ID, and coordinates
+# Subset by individuals criteria
 individual_data = individual_data[(individual_data$year >= 1900 & individual_data$year <= 2010),]
 individual_data = individual_data[complete.cases(individual_data$massing),]
 individual_data = individual_data[complete.cases(individual_data$clean_genus_species),]
@@ -161,65 +199,13 @@ individual_data = individual_data[(complete.cases(individual_data$decimallatitud
 colnames(individual_data)[1] = "row_index"
 individual_data$X1_1 = NULL
 
-# Subset dataset to retain only individuals from species with more than 30 individuals, 
-# at least 20 years, and at least 5 latitudinal degrees
-species_list = individual_data %>%
-  group_by(clean_genus_species) %>%
-  summarise(
-    individuals = n(), 
-    year_range = max(year) - min(year), 
-    lat_range = max(decimallatitude) - min(decimallatitude)
-  ) %>%
-  filter(
-    individuals >= 30, 
-    year_range >= 20, 
-    lat_range >= 5
-  )
+# Subset by species criteria
+individual_data = subset_species(individual_data)
 
-individual_data = individual_data[individual_data$clean_genus_species %in% species_list$clean_genus_species,]
+# Remove individuals below known adult threshold
+individual_data = filter_first_adult(individual_data)
 
-# Removing juveniles
-
-# Adult categories
-# skull ossification? 
-
-"adult"
-"ad"
-"U-Ad."
-"U-Ad"
-"Adult"
-"Ad."
-"Ad"
-"Aged Adult"
-"young adult"
-"adult adult"
-"suspected adult"
-"Aged adult"
-"old adult"
-"adult; over-winter"
-"ADULT"
-"adult; young of year"
-"Ad. Summer"
-"Adult."
-"U-AD"
-
-# TODO: if species doesn't have "adult" as an underivedlifestage, there is still one individual left in final
-# TODO: include rest of adult classifications as possible threshold
-individual_data_sub3 = individual_data %>%
-  #filter(clean_genus_species == "Odobenus rosmarus" | clean_genus_species == "Blarina carolinensis") %>%
-  group_by(clean_genus_species) %>%
-  arrange(massing) %>%
-  mutate(firstad = min(which(underivedlifestage == "adult" | row_number() == n())), 
-         total_inds = n()) %>%
-  filter(row_number() >= firstad) %>%
-  summarise(original_inds = mean(total_inds), 
-            row_with_adult = mean(firstad), 
-            rows_deleted = mean(firstad) - 1)
-
-individual_data_sub3$percent_deleted = individual_data_sub3$rows_deleted / individual_data_sub3$original_inds * 100
-individual_data_sub3$diff = individual_data_sub3$original_inds - individual_data_sub3$rows_deleted
-individual_data_sub3a = individual_data_sub3[individual_data_sub3$diff != 1,]
-plot(individual_data_sub3a$percent_deleted)
-hist(individual_data_sub3a$percent_deleted)
+# Subset again by species criteria
+individual_data = subset_species(individual_data)
 
 write.csv(individual_data, "CompleteDatasetVN.csv")
