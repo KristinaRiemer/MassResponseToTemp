@@ -12,19 +12,20 @@ species_summary = individuals_data %>%
   group_by(clean_genus_species) %>%
   summarise(
     temp_range = max(temperature) - min(temperature), 
-    mass_range = max(mass) - min(mass), 
-    mass_mean = mean(mass)
+    mass_range = max(massing) - min(massing), 
+    mass_mean = mean(massing)
   )
 species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
 
 species_stats_TL = read.csv("temp_stats.csv")
+species_stats_TL$r_squared = ifelse(species_stats_TL$r_squared < 0, 0, species_stats_TL$r_squared)
 species_stats_TL$r = ifelse(species_stats_TL$slope < 0, -sqrt(species_stats_TL$r_squared), sqrt(species_stats_TL$r_squared))
 
 # FIRST FIGURE
 species_scatterplot = function(species){
   species_data = individuals_data[individuals_data$clean_genus_species == species,]
-  species_data$rel_mass = species_data$mass / mean(species_data$mass)
-  lr_mass = lm(mass ~ temperature, data = species_data)
+  species_data$rel_mass = species_data$massing / mean(species_data$massing)
+  lr_mass = lm(massing ~ temperature, data = species_data)
   lr_summary = summary(lr_mass)
   r2 = format(round(lr_summary$r.squared, 4), scientific = FALSE)
   pval = ifelse(lr_summary$coefficients[2, 4] > 0.000005, round(lr_summary$coefficients[2,4], 3), format(lr_summary$coefficients[2, 4], digits = 3))
@@ -32,7 +33,7 @@ species_scatterplot = function(species){
   p_string = paste("p =", pval)
   lr_relmass = lm(rel_mass ~ temperature, data = species_data)
   print(summary(lr_relmass))
-  ggplot(species_data, aes(temperature, mass)) +
+  ggplot(species_data, aes(temperature, massing)) +
           geom_point() +
           geom_smooth(method = "lm", se = FALSE) +
           labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
@@ -42,7 +43,7 @@ species_scatterplot = function(species){
           annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 4, label = p_string, parse = FALSE)
 }
 
-species_list = c("Setophaga palmarum", "Tangara vassorii", "Quelea quelea")
+species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
 all_species = lapply(species_list, species_scatterplot)
 plot_grid(plotlist = all_species, nrow = 1, labels = c("A", "B", "C"))
 ggsave("figures/figure1.jpg", width = 12, height = 4)
