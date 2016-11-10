@@ -82,6 +82,23 @@ plot_class = ggplot(species_stats, aes(temp_r, fill = class_combine)) +
 plot_grid(plot_stats, plot_class, nrow = 2, labels = c("A", "B"))
 ggsave("figures/figure2.jpg", width = 4.5, height = 9)
 
+order_plot_df = species_stats %>%
+  group_by(order) %>%
+  mutate(number_species = n())
+order_plot_df$order = factor(order_plot_df$order, levels = unique(order_plot_df$order[order(order_plot_df$number_species, decreasing = TRUE)]))
+order_plot_df$order = mapvalues(order_plot_df$order, from = "", to = "Unknown")
+
+order_colors = rainbow(35, s = 1, v = 0.9)[sample(1:35, 35)]
+plot_order = ggplot(order_plot_df, aes(temp_r, fill = order)) +
+  geom_histogram(bins = 31, col = "black", size = 0.2) +
+  scale_fill_manual(values = order_colors) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 150)) +
+  labs(x = "r", y = "Number of species", fill = "Order: ") +
+  geom_vline(xintercept = 0, size = 1) +
+  theme(legend.position = "top", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
 # THIRD FIGURE
 past_year_hist = function(year){
   ggplot(subset(species_stats_TL, past_year %in% year)) +
