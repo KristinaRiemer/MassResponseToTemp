@@ -13,7 +13,8 @@ species_summary = individuals_data %>%
   summarise(
     temp_range = max(temperature) - min(temperature), 
     mass_range = max(massing) - min(massing), 
-    mass_mean = mean(massing)
+    mass_mean = mean(massing),
+    lat_mean = mean(decimallatitude)
   )
 species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
 
@@ -134,16 +135,7 @@ plot_temp = ggplot(species_stats, aes(x = temp_range, y = temp_r)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-plot_mass = ggplot(species_stats, aes(x = mass_mean, y = temp_r)) +
-  geom_point() +
-  scale_x_continuous(trans = "log10") +
-  geom_hline(yintercept = 0) +
-  ylim(-1, 1) +
-  labs(x = "Mean mass (g)", y = "r") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
-
-plot_mass2 = ggplot(species_stats, aes(x = mass_range, y = temp_r)) +
+plot_mass = ggplot(species_stats, aes(x = mass_range, y = temp_r)) +
   geom_point() +
   scale_x_continuous(trans = "log10") +
   geom_hline(yintercept = 0) +
@@ -152,5 +144,22 @@ plot_mass2 = ggplot(species_stats, aes(x = mass_range, y = temp_r)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-plot_grid(plot_individuals, plot_temp, plot_mass, plot_mass2, labels = c("A", "B", "C", "D"))
-ggsave("figures/figure4.jpg", width = 6, height = 5.5)
+plot_size = ggplot(species_stats, aes(x = mass_mean, y = temp_r)) +
+  geom_point() +
+  scale_x_continuous(trans = "log10") +
+  geom_hline(yintercept = 0) +
+  ylim(-1, 1) +
+  labs(x = "Mean mass (g)", y = "r") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+plot_lat = ggplot(species_stats, aes(x = abs(lat_mean), y = temp_r)) + 
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  ylim(-1, 1) +
+  labs(x = expression("Absolute mean latitude " (degree)), y = "r") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+plot_grid(plot_individuals, plot_temp, plot_mass, plot_size, plot_lat, labels = c("A", "B", "C", "D", "E"))
+ggsave("figures/figure4.jpg", width = 9.5, height = 6)
