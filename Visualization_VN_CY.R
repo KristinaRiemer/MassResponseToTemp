@@ -23,6 +23,34 @@ species_stats_TL$r_squared = ifelse(species_stats_TL$r_squared < 0, 0, species_s
 species_stats_TL$r = ifelse(species_stats_TL$slope < 0, -sqrt(species_stats_TL$r_squared), sqrt(species_stats_TL$r_squared))
 
 # FIRST FIGURE
+species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
+individuals_data$map_long = ifelse(individuals_data$longitude > 180, individuals_data$longitude - 360, individuals_data$longitude)
+locations = unique(individuals_data[c("map_long", "decimallatitude", "clean_genus_species")])
+locations$Species = ifelse(locations$clean_genus_species == species_list[1], species_list[1], 
+                           ifelse(locations$clean_genus_species == species_list[2], species_list[2], 
+                                  ifelse(locations$clean_genus_species == species_list[3], species_list[3], "All")))
+locations$Species = factor(locations$Species, levels = c("All", species_list[1], species_list[2], species_list[3]))
+locations = locations[order(locations$Species),]
+
+plot_locations = ggplot(data = locations, aes(x = map_long, y = decimallatitude)) +
+  borders("world") +
+  geom_point(aes(color = Species, shape = Species, size = Species)) +
+  scale_shape_manual(values = c(20, 0, 2, 4)) +
+  scale_color_manual(values = c("red", "black", "black", "black")) +
+  scale_size_manual(values = c(0.2, 1, 1, 1)) +
+  theme(legend.position = c(0.1, 0.2), 
+        legend.key = element_rect(colour = NA),
+        axis.line = element_blank(), 
+        axis.text.x = element_blank(), 
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(), 
+        axis.title.x = element_blank(), 
+        axis.title.y = element_blank(),  
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank()) +
+  guides(colour = guide_legend(override.aes = list(size = 3)))
+
 species_scatterplot = function(species){
   species_data = individuals_data[individuals_data$clean_genus_species == species,]
   species_data$rel_mass = species_data$massing / mean(species_data$massing)
@@ -44,10 +72,13 @@ species_scatterplot = function(species){
           annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 4, label = p_string, parse = FALSE)
 }
 
-species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
 all_species = lapply(species_list, species_scatterplot)
-plot_grid(plotlist = all_species, nrow = 1, labels = c("A", "B", "C"))
-ggsave("figures/figure1.jpg", width = 12, height = 4)
+plot_examples = plot_grid(plotlist = all_species, nrow = 1, labels = c("B", "C", "D"))
+ggdraw() +
+  draw_plot(plot_locations, 0, 0.25, 1, 0.75) +
+  draw_plot(plot_examples, 0, 0, 1, 0.3) +
+  draw_plot_label("A", 0, 1)
+ggsave("figures/figure1.jpg", width = 10, height = 8)
 
 # SECOND FIGURE
 species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
