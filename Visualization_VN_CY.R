@@ -53,27 +53,28 @@ plot_locations = ggplot(data = locations, aes(x = map_long, y = decimallatitude)
 
 species_scatterplot = function(species){
   species_data = individuals_data[individuals_data$clean_genus_species == species,]
-  species_data$rel_mass = species_data$massing / mean(species_data$massing)
   lr_mass = lm(massing ~ temperature, data = species_data)
   lr_summary = summary(lr_mass)
+  r = round(ifelse(lr_summary$coefficients[2] < 0, -sqrt(lr_summary$r.squared), sqrt(lr_summary$r.squared)), 3)
   r2 = format(round(lr_summary$r.squared, 4), scientific = FALSE)
-  pval = ifelse(lr_summary$coefficients[2, 4] > 0.000005, round(lr_summary$coefficients[2,4], 3), format(lr_summary$coefficients[2, 4], digits = 3))
-  r_string = paste("R^{2} == ", r2)
+  print(lr_summary$coefficients[2, 4])
+  pval = format(lr_summary$coefficients[2, 4], digits = 3)
+  #pval = ifelse(lr_summary$coefficients[2, 4] > 0.000005, round(lr_summary$coefficients[2,4], 3), format(lr_summary$coefficients[2, 4], digits = 3))
+  r_string = paste("r =", r)
   p_string = paste("p =", pval)
-  lr_relmass = lm(rel_mass ~ temperature, data = species_data)
-  print(summary(lr_relmass))
   ggplot(species_data, aes(temperature, massing)) +
           geom_point() +
           geom_smooth(method = "lm", se = FALSE) +
           labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
           theme(panel.grid.major = element_blank(), 
                 panel.grid.minor = element_blank()) +
-          annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 1.5, label = r_string, parse = TRUE) +
-          annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 4, label = p_string, parse = FALSE)
+          annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 1.5, label = r_string) +
+          annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.2, vjust = 3.25, label = p_string)
 }
 
 all_species = lapply(species_list, species_scatterplot)
 plot_examples = plot_grid(plotlist = all_species, nrow = 1, labels = c("B", "C", "D"))
+
 ggdraw() +
   draw_plot(plot_locations, 0, 0.25, 1, 0.75) +
   draw_plot(plot_examples, 0, 0, 1, 0.3) +
