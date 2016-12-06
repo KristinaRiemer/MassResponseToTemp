@@ -92,7 +92,7 @@ plot_stats = ggplot(species_stats, aes(temp_r, fill = temp_stat_sig)) +
   geom_histogram(bins = 31, col = "black", size = 0.2) +
   scale_fill_manual(values = c(rgb(0, 0, 1, 0.5), rgb(0, 1, 0, 0.5), "white"), 
                     labels = c("Negative", "Positive", "Not")) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 150)) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species", fill = "Statistical significance: ") +
   geom_vline(xintercept = 0, size = 1) +
   theme(legend.position = "top", 
@@ -105,32 +105,36 @@ species_stats$class_combine[species_stats$class_combine == "Amphibia" | species_
 plot_class = ggplot(species_stats, aes(temp_r, fill = class_combine)) +
   geom_histogram(bins = 31, col = "black", size = 0.2) +
   scale_fill_manual(values = c("blue", "white", "red")) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 150)) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species", fill = "Class: ") +
   geom_vline(xintercept = 0, size = 1) +
   theme(legend.position = "top", 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-plot_grid(plot_stats, plot_class, nrow = 2, labels = c("A", "B"))
-ggsave("figures/figure2.jpg", width = 4.5, height = 9)
-
 order_plot_df = species_stats %>%
   group_by(order) %>%
   mutate(number_species = n())
 order_plot_df$order = factor(order_plot_df$order, levels = unique(order_plot_df$order[order(order_plot_df$number_species, decreasing = TRUE)]))
 order_plot_df$order = mapvalues(order_plot_df$order, from = "", to = "Unknown")
-
 order_colors = rainbow(35, s = 1, v = 0.9)[sample(1:35, 35)]
 plot_order = ggplot(order_plot_df, aes(temp_r, fill = order)) +
   geom_histogram(bins = 31, col = "black", size = 0.2) +
   scale_fill_manual(values = order_colors) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 150)) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species", fill = "Order: ") +
   geom_vline(xintercept = 0, size = 1) +
   theme(legend.position = "top", 
+        legend.key.size = unit(0.2, "cm"),
+        legend.text = element_text(size = 6.5),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
+
+ggdraw() +
+  draw_plot(plot_stats, 0, 0, 0.5, 1) +
+  draw_plot(plot_class, 0.5, 0.5, 0.5, 0.5) +
+  draw_plot(plot_order, 0.5, 0, 0.5, 0.5)
+ggsave("figures/figure2.jpg", width = 10, height = 10)
 
 # THIRD FIGURE
 past_year_hist = function(year){
