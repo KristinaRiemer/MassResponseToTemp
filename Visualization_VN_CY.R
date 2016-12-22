@@ -18,9 +18,9 @@ species_summary = individuals_data %>%
   )
 species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
 
-species_stats_TL = read.csv("temp_stats.csv")
-species_stats_TL$r_squared = ifelse(species_stats_TL$r_squared < 0, 0, species_stats_TL$r_squared)
-species_stats_TL$r = ifelse(species_stats_TL$slope < 0, -sqrt(species_stats_TL$r_squared), sqrt(species_stats_TL$r_squared))
+species_stats_TL = read.csv("results_TL/species_stats.csv")
+#might need to add below back in
+#species_stats_TL$r_squared = ifelse(species_stats_TL$r_squared < 0, 0, species_stats_TL$r_squared)
 
 # FIRST FIGURE
 species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
@@ -56,10 +56,7 @@ species_scatterplot = function(species){
   lr_mass = lm(massing ~ temperature, data = species_data)
   lr_summary = summary(lr_mass)
   r = round(ifelse(lr_summary$coefficients[2] < 0, -sqrt(lr_summary$r.squared), sqrt(lr_summary$r.squared)), 3)
-  r2 = format(round(lr_summary$r.squared, 4), scientific = FALSE)
-  print(lr_summary$coefficients[2, 4])
   pval = format(lr_summary$coefficients[2, 4], digits = 3)
-  #pval = ifelse(lr_summary$coefficients[2, 4] > 0.000005, round(lr_summary$coefficients[2,4], 3), format(lr_summary$coefficients[2, 4], digits = 3))
   r_string = paste("r =", r)
   p_string = paste("p =", pval)
   ggplot(species_data, aes(temperature, massing)) +
@@ -133,14 +130,15 @@ plot_order = ggplot(order_plot_df, aes(temp_r, fill = order)) +
 ggdraw() +
   draw_plot(plot_stats, 0, 0, 0.5, 1) +
   draw_plot(plot_class, 0.5, 0.5, 0.5, 0.5) +
-  draw_plot(plot_order, 0.5, 0, 0.5, 0.5)
+  draw_plot(plot_order, 0.5, 0, 0.5, 0.5) +
+  draw_plot_label(c("A", "B", "C"), c(0, 0.5, 0.5), c(1, 1, 0.5))
 ggsave("figures/figure2.jpg", width = 10, height = 10)
 
 # THIRD FIGURE
 past_year_hist = function(year){
   ggplot(subset(species_stats_TL, past_year %in% year)) +
   geom_histogram(aes(r), bins = 31, fill = "white", col = "black", size = 0.2) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 150)) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species") +
   geom_vline(xintercept = 0, size = 1) +
   theme(panel.grid.major = element_blank(), 

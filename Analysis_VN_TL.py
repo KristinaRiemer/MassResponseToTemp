@@ -8,7 +8,6 @@ import numpy as np
 import calendar
 from osgeo import gdal
 import statsmodels.formula.api as smf
-import time
 from joblib import Parallel, delayed
 
 def duplicate_rows(dataset, formula): 
@@ -119,7 +118,7 @@ def remove_species(dataframe, species_col):
     sufficient_species_df = dataframe[dataframe[species_col].isin(insufficient_species) == False]
     return sufficient_species_df
 
-def linear_regression_temp(dataset, speciesID_col, lag_col):
+def lin_reg(dataset, speciesID_col, lag_col):
     # FIXME: Docstring should be more descriptive
     """Plot linear regression for all lags of each species, create dataframe of linear regression
     r2 and slope for all lags of each species, and plot latter for each species
@@ -132,22 +131,26 @@ def linear_regression_temp(dataset, speciesID_col, lag_col):
     Returns: 
         For each species, many linear regression plots and one stats plot; stats dataframe
     """
-    stats_pdf = PdfPages("temp_results/aall_LR.pdf")
+    stats_pdf = PdfPages("results_TL/temp_results/aall_LR.pdf")
     all_stats = pd.DataFrame()
     for species, species_data in dataset.groupby(speciesID_col):
-        linreg_pdf = PdfPages("temp_results/" + species + "_LR.pdf")
+        linreg_pdf = PdfPages("results_TL/temp_results/" + species + "_LR.pdf")
+        species_data["relmass"] = species_data["massing"] / np.mean(species_data["massing"])
         stats_list = []
         for lag, lag_data in species_data.groupby(lag_col): 
             if len(lag_data) > 15: 
-                linreg = smf.ols(formula = "mass ~ temperature", data = lag_data).fit()
+                linreg = smf.ols(formula = "relmass ~ temperature", data = lag_data).fit()
                 plt.figure()
-                plt.plot(lag_data["temperature"], lag_data["mass"], "bo")
+                plt.plot(lag_data["temperature"], lag_data["relmass"], "bo")
                 plt.plot(lag_data["temperature"], linreg.fittedvalues, "r-")
                 plt.xlabel("Mean annual temperature from year lag " + str(lag))
-                plt.ylabel("Mass(g)")
+                plt.ylabel("Relative mass")
                 linreg_pdf.savefig()
                 plt.close()
-                stats_list.append({"genus_species": species, "past_year": lag, "r_squared": linreg.rsquared, "slope": linreg.params[1]})
+                sp_class = lag_data["class"].unique()[0]
+                sp_order = lag_data["ordered"].unique()[0]
+                sp_family = lag_data["family"].unique()[0]
+                stats_list.append({"genus_species": species, "past_year": lag, "class": sp_class, "order": sp_order, "family": sp_family, "individuals": len(lag_data["row_index"].unique()), "r_squared": linreg.rsquared, "slope": linreg.params[1], "pvalue": linreg.f_pvalue})
         linreg_pdf.close()
         stats_df = pd.DataFrame(stats_list)
         plt.subplot(2, 1, 1)
@@ -166,38 +169,19 @@ def linear_regression_temp(dataset, speciesID_col, lag_col):
     stats_pdf.close()
     return all_stats
 
-def linear_regression_lat(dataset, speciesID_col): 
-    stats_pdf = PdfPages("lat_results/all_LR.pdf")
-    stats_list = []
-    for species, species_data in dataset.groupby(speciesID_col): 
-        if species_data["decimallatitude"].mean() < 0: 
-            hemisphere = "south"
-        else: 
-            hemisphere = "north"
-        species_data_lim = species_data[species_data["lag"] == 0]
-        linreg = smf.ols(formula = "mass ~ abs(decimallatitude)", data = species_data_lim).fit()
-        plt.figure()
-        plt.plot(abs(species_data_lim["decimallatitude"]), species_data_lim["mass"], "bo")
-        plt.plot(abs(species_data_lim["decimallatitude"]), linreg.fittedvalues, "r-")
-        plt.xlabel("Latitude")
-        plt.ylabel("Mass(g)")
-        plt.title(species)
-        plt.figtext(0.05, 0.05, hemisphere)
-        stats_pdf.savefig()
-        plt.close()
-        stats_list.append({"genus_species": species, "hemisphere": hemisphere, "r_squared": linreg.rsquared, "slope": linreg.params[1]})
-    stats_pdf.close()
-    stats_df = pd.DataFrame(stats_list)
-    return stats_df
-
+import time
 begin_time = time.time()
 
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
-#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+#individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[2:3])]
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[18:20])]
+
+species_list = ["Martes pennanti", "Spizella arborea", "Synaptomys cooperi", "Aimophila carpalis", "Aimophila cassinii", "Ensatina eschscholtzii", "Martes americana"]
+individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list)]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -215,8 +199,6 @@ lag_data["temp_year"] = lag_data["year"] - lag_data["lag"]
 # List of months with corresponding stackID codes
 month_codes = create_month_codes_dict(22799, 22787, -1)
 
-# Get stackIDs for July and year
-######lag_data["stackID_july"] = get_stackID(lag_data["temp_year"], month_codes["July"])
 # Get stackIDs for January of collection year for each individual
 lag_data["stackID"] = get_stackID(lag_data["temp_year"], month_codes["January"])
 
@@ -224,7 +206,7 @@ lag_data["stackID"] = get_stackID(lag_data["temp_year"], month_codes["January"])
 temp_lookup = lag_data[["longitude", "decimallatitude", "stackID"]]
 temp_lookup = temp_lookup.drop_duplicates()
 
-# Get temperatures for July
+# Get mean temperature for collection year
 temp_lookup["temperature"] = get_temps_list(temp_file, temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID"])
 temp_data = lag_data.merge(temp_lookup)
 
@@ -234,19 +216,15 @@ temp_data = temp_data[temp_data["temperature"] < 3276]
 # Remove species with less than 30 individuals
 stats_data = remove_species(temp_data, "clean_genus_species")
 
-# Create linear regression and stats plots for each species, and dataframe with r2 and slope
-temp_stats = linear_regression_temp(stats_data, "clean_genus_species", "lag")
-lat_stats = linear_regression_lat(stats_data, "clean_genus_species")
+# Linear regression for relative mass with temp for all species across all lags, both plots and df
+species_stats = lin_reg(stats_data, "clean_genus_species", "lag")
 
-species_occurrences = []
-for species, species_data in stats_data.groupby("clean_genus_species"): 
-    species_occurrences.append({"genus_species": species, "individuals": len(species_data["row_index"].unique())})
-num_individuals = pd.DataFrame(species_occurrences)
-num_individuals.to_csv("num_individuals.csv")
-
-temp_stats.to_csv("temp_stats.csv")
-lat_stats.to_csv("lat_stats.csv")
-stats_data.to_csv("stats_data.csv")
+# Calculate correlation coefficient for linear regression
+species_stats["r"] = np.where(species_stats["slope"] < 0, -np.sqrt(species_stats["r_squared"]), np.sqrt(species_stats["r_squared"]))
 
 end_time = time.time()
 total_time = (end_time - begin_time) / 60 #in mins
+
+# Save dataframes with final data and species statistics
+species_stats.to_csv("results_TL/species_stats.csv")
+stats_data.to_csv("results_TL/stats_data.csv")

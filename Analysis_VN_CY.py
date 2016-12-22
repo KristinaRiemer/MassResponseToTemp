@@ -95,23 +95,20 @@ def remove_species(dataframe, species_col):
     return sufficient_species_df
 
 def lin_reg(dataset, speciesID_col): 
+    # TODO: Add docstring to match TL py script
     temp_pdf = PdfPages("results/temp_currentyear.pdf")
     lat_pdf = PdfPages("results/lat.pdf")
     stats_list = []
     for species, species_data in dataset.groupby(speciesID_col): 
-        species_data["relmass"] = species_data["massing"] / np.mean(species_data["massing"])
-        sp_class = species_data["class"].unique()
-        sp_class = sp_class[0]
-        sp_order = species_data["ordered"].unique()
-        sp_order = sp_order[0]
-        sp_family = species_data["family"].unique()
-        sp_family = sp_family[0]
-        temp_linreg = smf.ols(formula = "relmass ~ temperature", data = species_data).fit()
+        sp_class = species_data["class"].unique()[0]
+        sp_order = species_data["ordered"].unique()[0]
+        sp_family = species_data["family"].unique()[0]
+        temp_linreg = smf.ols(formula = "massing ~ temperature", data = species_data).fit()
         plt.figure()
-        plt.plot(species_data["temperature"], species_data["relmass"], "bo")
+        plt.plot(species_data["temperature"], species_data["massing"], "bo")
         plt.plot(species_data["temperature"], temp_linreg.fittedvalues, "r-")
         plt.xlabel("Mean current year temperature")
-        plt.ylabel("Relative mass")
+        plt.ylabel("Mass (g)")
         plt.suptitle(species)
         temp_pdf.savefig()
         plt.close()
@@ -119,12 +116,12 @@ def lin_reg(dataset, speciesID_col):
             hemisphere = "south"
         else: 
             hemisphere = "north"
-        lat_linreg = smf.ols(formula = "relmass ~ abs(decimallatitude)", data = species_data).fit()
+        lat_linreg = smf.ols(formula = "massing ~ abs(decimallatitude)", data = species_data).fit()
         plt.figure()
-        plt.plot(abs(species_data["decimallatitude"]), species_data["relmass"], "bo")
+        plt.plot(abs(species_data["decimallatitude"]), species_data["massing"], "bo")
         plt.plot(abs(species_data["decimallatitude"]), lat_linreg.fittedvalues, "r-")
         plt.xlabel("Latitude")
-        plt.ylabel("Relative mass")
+        plt.ylabel("Mass (g)")
         plt.title(species)
         plt.figtext(0.05, 0.05, hemisphere)
         lat_pdf.savefig()
@@ -139,11 +136,15 @@ import time
 begin_time = time.time()
 
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
-#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+#individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:50])]
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[18:20])]
+
+species_list = ["Martes pennanti", "Spizella arborea", "Synaptomys cooperi", "Aimophila carpalis", "Aimophila cassinii", "Ensatina eschscholtzii", "Martes americana"]
+individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list)]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -159,7 +160,7 @@ individual_data["stackID"] = get_stackID(individual_data["year"], month_codes["J
 temp_lookup = individual_data[["longitude", "decimallatitude", "stackID"]]
 temp_lookup = temp_lookup.drop_duplicates()
 
-# Get temperatures for July
+# Get mean temperature for collection year
 temp_lookup["temperature"] = get_temps_list(temp_file, temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID"])
 temp_data = individual_data.merge(temp_lookup)
 
@@ -169,7 +170,7 @@ temp_data = temp_data[temp_data["temperature"] < 3276]
 # Remove species with less than 30 individuals
 stats_data = remove_species(temp_data, "clean_genus_species")
 
-# Linear regression for relative mass with temp and latitude for all species, both plots and df
+# Linear regression for mass with temp and latitude for all species, both plots and df
 species_stats = lin_reg(stats_data, "clean_genus_species")
 
 # Calculate correlation coefficient for both linear regressions
