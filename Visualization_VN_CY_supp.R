@@ -19,8 +19,6 @@ species_summary = individuals_data %>%
 species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
 
 species_stats_TL = read.csv("results_TL/species_stats.csv")
-#might need to add below back in
-#species_stats_TL$r = ifelse(species_stats_TL$slope < 0, -sqrt(species_stats_TL$r_squared), sqrt(species_stats_TL$r_squared))
 
 # FIRST FIGURE
 species_scatterplot = function(species){
@@ -54,7 +52,7 @@ species_stats = species_stats %>%
 
 species_stats$lat_stat_sig = factor(species_stats$lat_stat_sig, levels = c("neg", "pos", "not"))
 plot_stats = ggplot(species_stats, aes(lat_r, fill = lat_stat_sig)) +
-  geom_histogram(bins = 31, col = "black", size = 0.2) +
+  geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
   scale_fill_manual(values = c(rgb(0, 0, 1, 0.5), rgb(0, 1, 0, 0.5), "white"), 
                     labels = c("Negative", "Positive", "Not")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
@@ -63,12 +61,12 @@ plot_stats = ggplot(species_stats, aes(lat_r, fill = lat_stat_sig)) +
   theme(legend.position = "top", 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  annotate("text", x = c(-0.75, -0.11, 0.6), y = c(15, 105, 28), label = c("12%", "69%", "19%"))
+  annotate("text", x = c(-0.75, -0.11, 0.6), y = c(15, 105, 28), label = c("10%", "70%", "20%"))
 
 species_stats$class_combine = as.character(species_stats$class)
 species_stats$class_combine[species_stats$class_combine == "Amphibia" | species_stats$class_combine == "Reptilia"] <- "Reptilia & Amphibia"
 plot_class = ggplot(species_stats, aes(lat_r, fill = class_combine)) +
-  geom_histogram(bins = 31, col = "black", size = 0.2) +
+  geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
   scale_fill_manual(values = c("blue", "white", "red")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species", fill = "Class: ") +
@@ -84,7 +82,7 @@ order_plot_df$order = factor(order_plot_df$order, levels = unique(order_plot_df$
 order_plot_df$order = mapvalues(order_plot_df$order, from = "", to = "Unknown")
 order_colors = rainbow(35, s = 1, v = 0.9)[sample(1:35, 35)]
 plot_order = ggplot(order_plot_df, aes(lat_r, fill = order)) +
-  geom_histogram(bins = 31, col = "black", size = 0.2) +
+  geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
   scale_fill_manual(values = order_colors) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species", fill = "Order: ") +

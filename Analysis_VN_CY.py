@@ -136,15 +136,11 @@ import time
 begin_time = time.time()
 
 # Datasets
-#individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
-full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
-
+individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
 #individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[18:20])]
-
-species_list = ["Martes pennanti", "Spizella arborea", "Synaptomys cooperi", "Aimophila carpalis", "Aimophila cassinii", "Ensatina eschscholtzii", "Martes americana"]
-individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list)]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
