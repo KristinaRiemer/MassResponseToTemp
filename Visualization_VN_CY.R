@@ -5,8 +5,8 @@ library(cowplot)
 
 theme_set(theme_bw())
 
-species_stats = read.csv("results/species_stats.csv")
-individuals_data = read.csv("results/stats_data.csv")
+species_stats = read.csv("results_lifestagefilter/species_stats.csv")
+individuals_data = read.csv("results_lifestagefilter/stats_data.csv")
 
 species_summary = individuals_data %>%
   group_by(clean_genus_species) %>%
@@ -74,7 +74,7 @@ ggdraw() +
   draw_plot(plot_locations, 0, 0.25, 1, 0.75) +
   draw_plot(plot_examples, 0, 0, 1, 0.3) +
   draw_plot_label("A", 0, 1)
-ggsave("figures/figure1.jpg", width = 10, height = 8)
+ggsave("results_lifestagefilter/figure1.jpg", width = 10, height = 8)
 
 # SECOND FIGURE
 species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
@@ -130,7 +130,7 @@ ggdraw() +
   draw_plot(plot_class, 0.5, 0.5, 0.5, 0.5) +
   draw_plot(plot_order, 0.5, 0, 0.5, 0.5) +
   draw_plot_label(c("A", "B", "C"), c(0, 0.5, 0.5), c(1, 1, 0.5))
-ggsave("figures/figure2.jpg", width = 10, height = 10)
+ggsave("results_lifestagefilter/figure2.jpg", width = 10, height = 10)
 
 # THIRD FIGURE
 past_year_hist = function(year){
@@ -147,7 +147,7 @@ past_year_hist = function(year){
 past_year_values = c("0", "25", "50")
 all_hists = lapply(past_year_values, past_year_hist)
 plot_grid(plotlist = all_hists, ncol = 1, labels = c("A", "B", "C"))
-ggsave("figures/figure3.jpg", width = 4, height = 12)
+ggsave("results_lifestagefilter/figure3.jpg", width = 4, height = 12)
 
 # FOURTH FIGURE
 plot_individuals = ggplot(species_stats, aes(x = individuals, y = temp_r)) +
@@ -194,4 +194,4 @@ plot_lat = ggplot(species_stats, aes(x = abs(lat_mean), y = temp_r)) +
         panel.grid.minor = element_blank())
 
 plot_grid(plot_individuals, plot_temp, plot_mass, plot_size, plot_lat, labels = c("A", "B", "C", "D", "E"))
-ggsave("figures/figure4.jpg", width = 9.5, height = 6)
+ggsave("results_lifestagefilter/figure4.jpg", width = 9.5, height = 6)

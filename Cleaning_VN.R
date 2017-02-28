@@ -202,10 +202,11 @@ individual_data$X1_1 = NULL
 # Subset by species criteria
 individual_data = subset_species(individual_data)
 
-# Remove individuals below known adult threshold
+# Remove individuals below known adult threshold, and then remove individuals unless their lifestage is either adult or NA
 individual_data = filter_first_adult(individual_data)
+individual_data = filter(individual_data, underivedlifestage == "adult" | underivedlifestage == "ad" | underivedlifestage == "U-Ad." | underivedlifestage == "U-Ad" | underivedlifestage == "Adult" | underivedlifestage == "Ad." | is.na(underivedlifestage))
 
 # Subset again by species criteria
 individual_data = subset_species(individual_data)
 
-write.csv(individual_data, "CompleteDatasetVN.csv")
+write.csv(individual_data, "results_lifestagefilter/CompleteDatasetVN.csv")

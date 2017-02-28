@@ -96,8 +96,8 @@ def remove_species(dataframe, species_col):
 
 def lin_reg(dataset, speciesID_col): 
     # TODO: Add docstring to match TL py script
-    temp_pdf = PdfPages("results/temp_currentyear.pdf")
-    lat_pdf = PdfPages("results/lat.pdf")
+    temp_pdf = PdfPages("results_lifestagefilter/temp_currentyear.pdf")
+    lat_pdf = PdfPages("results_lifestagefilter/lat.pdf")
     stats_list = []
     for species, species_data in dataset.groupby(speciesID_col): 
         sp_class = species_data["class"].unique()[0]
@@ -136,11 +136,11 @@ import time
 begin_time = time.time()
 
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
-#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+individual_data = pd.read_csv("results_lifestagefilter/CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+#full_individual_data = pd.read_csv("results_lifestagefilter/CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[18:20])]
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[1:5])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -177,5 +177,5 @@ end_time = time.time()
 total_time = (end_time - begin_time) / 60
 
 # Save dataframes with final data and species statistics
-species_stats.to_csv("results/species_stats.csv")
-stats_data.to_csv("results/stats_data.csv")
+species_stats.to_csv("results_lifestagefilter/species_stats.csv")
+stats_data.to_csv("results_lifestagefilter/stats_data.csv")
