@@ -178,6 +178,21 @@ filter_first_adult = function(dataset){
   return(dataset_filtered)
 }
 
+
+sd_col = function(dataset){
+  # Add column with 3x the standard deviation for each species
+  # 
+  # Args: 
+  #   dataset: df with individuals data
+  # 
+  # Returns: 
+  #   Dataset with new standard deviations column
+  df_with_sd = dataset %>%
+    group_by(clean_genus_species) %>%
+    mutate(standard_devs = sd(massing) * 3)
+  return(df_with_sd)
+}
+
 #-----FUNCTIONS ON ENTIRE DATASET----------
 
 # Create or read in cleaned taxonomy file
@@ -207,5 +222,8 @@ individual_data = filter_first_adult(individual_data)
 
 # Subset again by species criteria
 individual_data = subset_species(individual_data)
+
+# Add standard deviations
+individual_data = sd_col(individual_data)
 
 write.csv(individual_data, "CompleteDatasetVN.csv")

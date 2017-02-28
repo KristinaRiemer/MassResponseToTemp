@@ -87,20 +87,20 @@ plot_stats = ggplot(species_stats, aes(temp_r, fill = temp_stat_sig)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
   scale_fill_manual(values = c(rgb(0, 0, 1, 0.5), rgb(0, 1, 0, 0.5), "white"), 
                     labels = c("Negative", "Positive", "Not")) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 110)) +
   labs(x = "r", y = "Number of species", fill = "Statistical significance: ") +
   geom_vline(xintercept = 0, size = 1) +
   theme(legend.position = "top", 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 129, 9), label = c("15%", "78%", "7%"))
+  annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 129, 9), label = c("20%", "71%", "9%"))
 
 species_stats$class_combine = as.character(species_stats$class)
 species_stats$class_combine[species_stats$class_combine == "Amphibia" | species_stats$class_combine == "Reptilia"] <- "Reptilia & Amphibia"
 plot_class = ggplot(species_stats, aes(temp_r, fill = class_combine)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
   scale_fill_manual(values = c("blue", "white", "red")) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 110)) +
   labs(x = "r", y = "Number of species", fill = "Class: ") +
   geom_vline(xintercept = 0, size = 1) +
   theme(legend.position = "top", 
@@ -116,7 +116,7 @@ order_colors = rainbow(35, s = 1, v = 0.9)[sample(1:35, 35)]
 plot_order = ggplot(order_plot_df, aes(temp_r, fill = order)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
   scale_fill_manual(values = order_colors) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 110)) +
   labs(x = "r", y = "Number of species", fill = "Order: ") +
   geom_vline(xintercept = 0, size = 1) +
   theme(legend.position = "top", 
@@ -136,7 +136,7 @@ ggsave("figures/figure2.jpg", width = 10, height = 10)
 past_year_hist = function(year){
   ggplot(subset(species_stats_TL, past_year %in% year)) +
   geom_histogram(aes(r), breaks = seq(-1, 1, by = 0.05), fill = "white", col = "black", size = 0.2) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 110)) +
   labs(x = "r", y = "Number of species") +
   geom_vline(xintercept = 0, size = 1) +
   theme(panel.grid.major = element_blank(), 

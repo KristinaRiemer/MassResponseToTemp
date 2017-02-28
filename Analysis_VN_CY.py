@@ -126,21 +126,32 @@ def lin_reg(dataset, speciesID_col):
         plt.figtext(0.05, 0.05, hemisphere)
         lat_pdf.savefig()
         plt.close()
-        stats_list.append({"genus_species": species, "class": sp_class, "order": sp_order, "family": sp_family, "individuals": len(species_data["row_index"].unique()),  "hemisphere": hemisphere, "temp_r_squared": temp_linreg.rsquared, "temp_slope": temp_linreg.params[1], "temp_slope_SE": temp_linreg.bse[1], "temp_pvalue": temp_linreg.f_pvalue, "lat_r_squared": lat_linreg.rsquared, "lat_slope": lat_linreg.params[1], "lat_pvalue": lat_linreg.f_pvalue})    
+        stats_list.append({"genus_species": species, "class": sp_class, "order": sp_order, "family": sp_family, "individuals": len(species_data["row_index"].unique()),  "hemisphere": hemisphere, "temp_r_squared": temp_linreg.rsquared, "temp_intercept": temp_linreg.params[0], "temp_slope": temp_linreg.params[1], "temp_slope_SE": temp_linreg.bse[1], "temp_pvalue": temp_linreg.f_pvalue, "lat_r_squared": lat_linreg.rsquared, "lat_slope": lat_linreg.params[1], "lat_pvalue": lat_linreg.f_pvalue})    
+        #dataset.append({"predicted": temp_linreg.fittedvalues})
+        #dataset["predicted"] = temp_linreg.fittedvalues
     temp_pdf.close()
     lat_pdf.close()
     stats_df = pd.DataFrame(stats_list)
     return stats_df
 
+def remove_outliers(dataframe_inds, dataframe_sp):
+    outliers_df = pd.merge(dataframe_inds, dataframe_sp, left_on = "clean_genus_species", right_on = "genus_species", how = "left")
+    outliers_df["predicted_mass"] = outliers_df["temp_slope"] * outliers_df["temperature"] + outliers_df["temp_intercept"]
+    outliers_df["max_mass"] = outliers_df["predicted_mass"] + outliers_df["standard_devs"]
+    outliers_df["outlier"] = outliers_df["max_mass"] - outliers_df["massing"]
+    print len(outliers_df[outliers_df["outlier"] < 0])
+    outliers_df = outliers_df[outliers_df["outlier"] > 0]
+    return outliers_df
+
 import time
 begin_time = time.time()
 
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
-#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "standard_devs"])
+#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "standard_devs"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[18:20])]
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[25:75])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -169,12 +180,17 @@ stats_data = remove_species(temp_data, "clean_genus_species")
 # Linear regression for mass with temp and latitude for all species, both plots and df
 species_stats = lin_reg(stats_data, "clean_genus_species")
 
-# Calculate correlation coefficient for both linear regressions
-species_stats["temp_r"] = np.where(species_stats["temp_slope"] < 0, -np.sqrt(species_stats["temp_r_squared"]), np.sqrt(species_stats["temp_r_squared"]))
-species_stats["lat_r"] = np.where(species_stats["lat_slope"] < 0, -np.sqrt(species_stats["lat_r_squared"]), np.sqrt(species_stats["lat_r_squared"]))
+# Remove outliers, recreate linear regressions
+outliers_data = remove_outliers(stats_data, species_stats.loc[:, ["genus_species", "temp_intercept", "temp_slope"]])
+stats_data = remove_species(outliers_data, "clean_genus_species")
+species_stats = lin_reg(stats_data, "clean_genus_species")
 
 end_time = time.time()
 total_time = (end_time - begin_time) / 60
+
+# Calculate correlation coefficient for both linear regressions
+species_stats["temp_r"] = np.where(species_stats["temp_slope"] < 0, -np.sqrt(species_stats["temp_r_squared"]), np.sqrt(species_stats["temp_r_squared"]))
+species_stats["lat_r"] = np.where(species_stats["lat_slope"] < 0, -np.sqrt(species_stats["lat_r_squared"]), np.sqrt(species_stats["lat_r_squared"]))
 
 # Save dataframes with final data and species statistics
 species_stats.to_csv("results/species_stats.csv")
