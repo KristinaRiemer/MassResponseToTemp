@@ -2,6 +2,7 @@ library(plyr)
 library(dplyr)
 library(ggplot2)
 library(cowplot)
+library(stringr)
 
 theme_set(theme_bw())
 
@@ -195,3 +196,18 @@ plot_lat = ggplot(species_stats, aes(x = abs(lat_mean), y = temp_r)) +
 
 plot_grid(plot_individuals, plot_temp, plot_mass, plot_size, plot_lat, labels = c("A", "B", "C", "D", "E"))
 ggsave("figures/figure4.jpg", width = 9.5, height = 6)
+
+# DATA SOURCE CITATIONS
+
+citations = as.character(unique(individuals_data$citation))
+for(citation in citations){
+  cite = strsplit(citation, "[.]")
+  cite[[1]][1] = paste("", cite[[1]][1])
+  cite = cite[[1]][c(2, 1, 3, 4, 5, 6, 7, 8)]
+  cite = cite[!is.na(cite)]
+  cite = paste(cite, collapse = ".")
+  cite = str_trim(cite, side = "left")
+  cite = str_sub(cite, 1, str_length(cite) - 1)
+  cite = paste(cite, ", accessed on 2017-10-19)", sep = "")
+  print(cite)
+}
