@@ -158,3 +158,14 @@ plot_lat = ggplot(species_stats, aes(x = abs(lat_mean), y = lat_r)) +
 
 plot_grid(plot_individuals, plot_temp, plot_mass, plot_size, plot_lat, labels = c("A", "B", "C", "D", "E"))
 ggsave("figures/figure4_supp.jpg", width = 9.5, height = 6)
+
+# FIFTH FIGURE
+ectos_df = species_stats[species_stats$class_combine == "Reptilia & Amphibia",]
+plot_ectos = ggplot(ectos_df, aes(temp_r)) +
+  geom_histogram(breaks = seq(-1, 1, by = 0.1), col = "black", size = 0.2) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 5)) +
+  labs(x = "r", y = "Number of species") +
+  geom_vline(xintercept = 0, size = 1) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+ggsave("figures/figure5_supp.jpg", plot = plot_ectos, width = 5, height = 8)

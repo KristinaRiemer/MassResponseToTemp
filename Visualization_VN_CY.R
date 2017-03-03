@@ -9,6 +9,9 @@ theme_set(theme_bw())
 species_stats = read.csv("results/species_stats.csv")
 individuals_data = read.csv("results/stats_data.csv")
 
+species_stats = species_stats[species_stats$class == "Mammalia" | species_stats$class == "Aves",]
+individuals_data = individuals_data[individuals_data$class == "Mammalia" | individuals_data$class == "Aves",]
+
 species_summary = individuals_data %>%
   group_by(clean_genus_species) %>%
   summarise(
@@ -97,8 +100,8 @@ plot_stats = ggplot(species_stats, aes(temp_r, fill = temp_stat_sig)) +
   annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 129, 9), label = c("15%", "78%", "7%"))
 
 species_stats$class_combine = as.character(species_stats$class)
-species_stats$class_combine[species_stats$class_combine == "Amphibia" | species_stats$class_combine == "Reptilia"] <- "Reptilia & Amphibia"
-plot_class = ggplot(species_stats, aes(temp_r, fill = class_combine)) +
+classes_df = species_stats[species_stats$class == "Mammalia" | species_stats$class == "Aves",]
+plot_class = ggplot(classes_df, aes(temp_r, fill = class_combine)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
   scale_fill_manual(values = c("blue", "white", "red")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
@@ -108,32 +111,31 @@ plot_class = ggplot(species_stats, aes(temp_r, fill = class_combine)) +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-order_plot_df = species_stats %>%
-  group_by(order) %>%
-  mutate(number_species = n())
-order_plot_df$order = factor(order_plot_df$order, levels = unique(order_plot_df$order[order(order_plot_df$number_species, decreasing = TRUE)]))
-order_plot_df$order = mapvalues(order_plot_df$order, from = "", to = "Unknown")
-order_colors = rainbow(35, s = 1, v = 0.9)[sample(1:35, 35)]
-plot_order = ggplot(order_plot_df, aes(temp_r, fill = order)) +
-  geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
-  scale_fill_manual(values = order_colors) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
-  labs(x = "r", y = "Number of species", fill = "Order: ") +
-  geom_vline(xintercept = 0, size = 1) +
-  theme(legend.position = "top", 
-        legend.key.size = unit(0.2, "cm"),
-        legend.text = element_text(size = 6.5),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
-
 ggdraw() +
   draw_plot(plot_stats, 0, 0, 0.5, 1) +
-  draw_plot(plot_class, 0.5, 0.5, 0.5, 0.5) +
-  draw_plot(plot_order, 0.5, 0, 0.5, 0.5) +
-  draw_plot_label(c("A", "B", "C"), c(0, 0.5, 0.5), c(1, 1, 0.5))
-ggsave("figures/figure2.jpg", width = 10, height = 10)
+  draw_plot(plot_class, 0.5, 0, 0.5, 1) +
+  draw_plot_label(c("A", "B"), c(0, 0.5), c(1, 1))
+ggsave("figures/figure2.jpg", width = 10, height = 8)
 
 # THIRD FIGURE
+orders_table = table(species_stats$order)
+orders_df = species_stats[species_stats$order %in% names(orders_table[orders_table > 10]),]
+
+orders_df$order = factor(orders_df$order, levels = c("Carnivora", "Chiroptera", "Rodentia", "Soricomorpha", "Anseriformes", "Apodiformes", "Charadriiformes", "Columbiformes", "Galliformes", "Passeriformes", "Piciformes", "Strigiformes"))
+plot_order = ggplot(orders_df, aes(temp_r, fill = class)) +
+  geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
+  coord_cartesian(xlim = c(-1, 1)) +
+  scale_fill_manual(values = c("gray40", "white")) +
+  labs(x = "r", y = "Number of species", fill = "Class: ") +
+  geom_vline(xintercept = 0, size = 1) +
+  theme(legend.position = "top", 
+        strip.background = element_rect(fill = "white"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  facet_wrap(~ order, scales = "free_y")
+ggsave("figures/figure3.jpg", plot = plot_order, width = 10, height = 7)
+
+# FOURTH FIGURE
 past_year_hist = function(year){
   ggplot(subset(species_stats_TL, past_year %in% year)) +
   geom_histogram(aes(r), breaks = seq(-1, 1, by = 0.05), fill = "white", col = "black", size = 0.2) +
@@ -148,9 +150,9 @@ past_year_hist = function(year){
 past_year_values = c("0", "25", "50")
 all_hists = lapply(past_year_values, past_year_hist)
 plot_grid(plotlist = all_hists, ncol = 1, labels = c("A", "B", "C"))
-ggsave("figures/figure3.jpg", width = 4, height = 12)
+ggsave("figures/figure4.jpg", width = 4, height = 12)
 
-# FOURTH FIGURE
+# FIFTH FIGURE
 plot_individuals = ggplot(species_stats, aes(x = individuals, y = temp_r)) +
   geom_point() +
   scale_x_continuous(trans = "log10") +
@@ -195,7 +197,7 @@ plot_lat = ggplot(species_stats, aes(x = abs(lat_mean), y = temp_r)) +
         panel.grid.minor = element_blank())
 
 plot_grid(plot_individuals, plot_temp, plot_mass, plot_size, plot_lat, labels = c("A", "B", "C", "D", "E"))
-ggsave("figures/figure4.jpg", width = 9.5, height = 6)
+ggsave("figures/figure5.jpg", width = 9.5, height = 6)
 
 # DATA SOURCE CITATIONS
 
