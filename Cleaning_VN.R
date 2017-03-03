@@ -4,8 +4,25 @@ library(stringr)
 library(taxize)
 library(spatstat)
 library(dplyr)
+library(rdataretriever)
 
 #-------FUNCTIONS---------
+dowload_VN = function(raw_file_path){
+  if(!file.exists(raw_file_path)){
+    rdataretriever::install("vertnet", "csv", data_dir = "data/")
+    VN_files = list("data/vernet_amphibians.csv", "data/vertnet_birds.csv", "data/vertnet_mammals.csv", "data/vertnet_reptiles.csv")
+    VN_full = do.call(rbind, lapply(VN_files, read_csv))
+    write.csv(VN_full, file = raw_file_path)
+  }
+}
+
+download_temp = function(temp_file_path){
+  if(!file.exists(temp_file_path)){
+    temp_url = "ftp://ftp.cdc.noaa.gov/Datasets/udel.airt.precip/air.mon.mean.v301.nc"
+    temp = download.file(url = temp_url)
+  }
+}
+
 clean_taxonomy = function(tax_file_path, raw_file_path){ 
   # Clean up species names from raw data
   #
@@ -179,6 +196,10 @@ filter_first_adult = function(dataset){
 }
 
 #-----FUNCTIONS ON ENTIRE DATASET----------
+
+# Download and compile data
+download_VN("data/raw.csv")
+download_temp("air.mon.mean.v301.nc")
 
 # Create or read in cleaned taxonomy file
 clean_taxonomy("data/clean_taxonomy.csv", "data/raw.csv")
