@@ -8,6 +8,13 @@ library(rdataretriever)
 
 #-------FUNCTIONS---------
 dowload_VN = function(raw_file_path){
+  # Download organismal data (Vertnet)
+  #
+  # Args: 
+  #   raw_file_path: file path to raw data
+  #
+  # Returns: 
+  #   Single csv of four desired class-level datasets
   if(!file.exists(raw_file_path)){
     rdataretriever::install("vertnet", "csv", data_dir = "data/")
     VN_files = list("data/vernet_amphibians.csv", "data/vertnet_birds.csv", "data/vertnet_mammals.csv", "data/vertnet_reptiles.csv")
@@ -17,9 +24,16 @@ dowload_VN = function(raw_file_path){
 }
 
 download_temp = function(temp_file_path){
+  # Download temperature data (NOAA)
+  # 
+  # Args: 
+  #   temp_file_path: file path to temperature data
+  # 
+  # Returns: 
+  #   Temperature dataset
   if(!file.exists(temp_file_path)){
     temp_url = "ftp://ftp.cdc.noaa.gov/Datasets/udel.airt.precip/air.mon.mean.v301.nc"
-    temp = download.file(url = temp_url)
+    temp = download.file(url = temp_url, destfile = "air.mon.mean.v301.nc")
   }
 }
 
