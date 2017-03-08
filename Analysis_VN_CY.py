@@ -136,7 +136,8 @@ import time
 begin_time = time.time()
 
 # Datasets
-individual_data = pd.read_csv("results_lifestagefilter/CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+individual_data = pd.read_csv("results_lifestagefilter/CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "isfossil"])
+individual_data = individual_data[individual_data["isfossil"] == 0]
 #full_individual_data = pd.read_csv("results_lifestagefilter/CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
