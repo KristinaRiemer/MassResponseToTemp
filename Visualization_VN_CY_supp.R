@@ -169,3 +169,41 @@ plot_ectos = ggplot(ectos_df, aes(temp_r)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 ggsave("figures/figure5_supp.jpg", plot = plot_ectos, width = 5, height = 8)
+
+# SIXTH FIGURE
+first = 1
+last = 96
+full_sp_list = c()
+for(i in 1:10){
+  sp_list = unique(species_stats$genus_species)[first:last]
+  inds_df = individuals_data[individuals_data$clean_genus_species %in% sp_list,]
+  inds_plot = ggplot(inds_df, aes(x = temperature, y = massing)) +
+    geom_point(color = "gray48", size = 0.3) +
+    facet_wrap(~clean_genus_species, scales = "free", ncol = 8) +
+    geom_smooth(method = "lm", se = FALSE, color = "black") +
+    labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.text = element_blank(),
+          strip.background = element_blank(),
+          axis.text = element_text(size = 5))
+  ggsave(filename = paste("figures/", first, ".jpg", sep = ""), plot = inds_plot, width = 7, height = 9.25)
+  sp_list = noquote(paste(sp_list, collapse = ", "))
+  full_sp_list = append(full_sp_list, sp_list)
+  first = first + 96
+  last = last + 96
+}
+
+last_sp_list = unique(species_stats$genus_species)[961:978]
+last_inds = individuals_data[individuals_data$clean_genus_species %in% last_sp_list,]
+ggplot(last_inds, aes(x = temperature, y = massing)) +
+  geom_point(color = "gray48", size = 0.3) +
+  facet_wrap(~clean_genus_species, scales = "free", ncol = 8) +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank(),
+        strip.background = element_blank(),
+        axis.text = element_text(size = 5))
+ggsave("figures/961.jpg", width = 7, height = 2.32)
