@@ -96,8 +96,8 @@ def remove_species(dataframe, species_col):
 
 def lin_reg(dataset, speciesID_col): 
     # TODO: Add docstring to match TL py script
-    temp_pdf = PdfPages("results/temp_currentyear.pdf")
-    lat_pdf = PdfPages("results/lat.pdf")
+    temp_pdf = PdfPages("results_outliers/temp_currentyear.pdf")
+    lat_pdf = PdfPages("results_outliers/lat.pdf")
     stats_list = []
     for species, species_data in dataset.groupby(speciesID_col): 
         sp_class = species_data["class"].unique()[0]
@@ -139,7 +139,6 @@ def remove_outliers(dataframe_inds, dataframe_sp):
     outliers_df["predicted_mass"] = outliers_df["temp_slope"] * outliers_df["temperature"] + outliers_df["temp_intercept"]
     outliers_df["max_mass"] = outliers_df["predicted_mass"] + outliers_df["standard_devs"]
     outliers_df["outlier"] = outliers_df["max_mass"] - outliers_df["massing"]
-    print len(outliers_df[outliers_df["outlier"] < 0])
     outliers_df = outliers_df[outliers_df["outlier"] > 0]
     return outliers_df
 
@@ -147,8 +146,9 @@ import time
 begin_time = time.time()
 
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "standard_devs"])
-#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "standard_devs"])
+individual_data = pd.read_csv("results_outliers/CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "standard_devs", "isfossil"])
+individual_data = individual_data[individual_data["isfossil"] == 0]
+#full_individual_data = pd.read_csv("results_outliers/CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "standard_devs"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
 #individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[25:75])]
@@ -193,5 +193,5 @@ species_stats["temp_r"] = np.where(species_stats["temp_slope"] < 0, -np.sqrt(spe
 species_stats["lat_r"] = np.where(species_stats["lat_slope"] < 0, -np.sqrt(species_stats["lat_r_squared"]), np.sqrt(species_stats["lat_r_squared"]))
 
 # Save dataframes with final data and species statistics
-species_stats.to_csv("results/species_stats.csv")
-stats_data.to_csv("results/stats_data.csv")
+species_stats.to_csv("results_outliers/species_stats.csv")
+stats_data.to_csv("results_outliers/stats_data.csv")

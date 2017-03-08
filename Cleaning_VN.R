@@ -226,4 +226,4 @@ individual_data = subset_species(individual_data)
 # Add standard deviations
 individual_data = sd_col(individual_data)
 
-write.csv(individual_data, "CompleteDatasetVN.csv")
+write.csv(individual_data, "results_outliers/CompleteDatasetVN.csv")
