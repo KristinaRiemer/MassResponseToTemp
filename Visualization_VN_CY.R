@@ -216,6 +216,3 @@ for(citation in citations){
   print(cat(noquote(cite)))
   citation_number = citation_number + 1
 }
-
-
-

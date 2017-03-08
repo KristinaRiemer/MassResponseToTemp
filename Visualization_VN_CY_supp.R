@@ -194,7 +194,7 @@ for(i in 1:10){
   last = last + 96
 }
 
-last_sp_list = unique(species_stats$genus_species)[961:978]
+last_sp_list = unique(species_stats$genus_species)[961:967]
 last_inds = individuals_data[individuals_data$clean_genus_species %in% last_sp_list,]
 ggplot(last_inds, aes(x = temperature, y = massing)) +
   geom_point(color = "gray48", size = 0.3) +
@@ -206,4 +206,4 @@ ggplot(last_inds, aes(x = temperature, y = massing)) +
         strip.text = element_blank(),
         strip.background = element_blank(),
         axis.text = element_text(size = 5))
-ggsave("figures/961.jpg", width = 7, height = 2.32)
+ggsave("figures/961.jpg", width = 7, height = 1.25)
