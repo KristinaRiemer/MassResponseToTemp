@@ -7,7 +7,7 @@ library(dplyr)
 library(rdataretriever)
 
 #-------FUNCTIONS---------
-dowload_VN = function(raw_file_path){
+download_VN = function(raw_file_path){
   # Download organismal data (Vertnet)
   #
   # Args: 
