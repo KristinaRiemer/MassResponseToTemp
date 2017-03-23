@@ -131,53 +131,30 @@ def lin_reg(dataset, speciesID_col, lag_col):
     Returns: 
         For each species, many linear regression plots and one stats plot; stats dataframe
     """
-    stats_pdf = PdfPages("results_TL/temp_results/aall_LR.pdf")
     all_stats = pd.DataFrame()
     for species, species_data in dataset.groupby(speciesID_col):
-        linreg_pdf = PdfPages("results_TL/temp_results/" + species + "_LR.pdf")
         species_data["relmass"] = species_data["massing"] / np.mean(species_data["massing"])
         stats_list = []
         for lag, lag_data in species_data.groupby(lag_col): 
             if len(lag_data) > 15: 
                 linreg = smf.ols(formula = "relmass ~ temperature", data = lag_data).fit()
-                plt.figure()
-                plt.plot(lag_data["temperature"], lag_data["relmass"], "bo")
-                plt.plot(lag_data["temperature"], linreg.fittedvalues, "r-")
-                plt.xlabel("Mean annual temperature from year lag " + str(lag))
-                plt.ylabel("Relative mass")
-                linreg_pdf.savefig()
-                plt.close()
                 sp_class = lag_data["class"].unique()[0]
                 sp_order = lag_data["ordered"].unique()[0]
                 sp_family = lag_data["family"].unique()[0]
                 stats_list.append({"genus_species": species, "past_year": lag, "class": sp_class, "order": sp_order, "family": sp_family, "individuals": len(lag_data["row_index"].unique()), "r_squared": linreg.rsquared, "slope": linreg.params[1], "pvalue": linreg.f_pvalue})
-        linreg_pdf.close()
         stats_df = pd.DataFrame(stats_list)
-        plt.subplot(2, 1, 1)
-        plt.plot(stats_df["past_year"], stats_df["r_squared"], color = "purple", marker = "o", linestyle = "None")
-        plt.axhline(y = 1, color = "purple", linestyle = "--", linewidth = 3)
-        plt.ylabel("R^2")
-        plt.subplot(2, 1, 2)
-        plt.plot(stats_df["past_year"], stats_df["slope"], color = "yellow", marker = "o", linestyle = "None")
-        plt.axhline(y = 0, color = "yellow", linestyle = "--", linewidth = 3)
-        plt.suptitle(species)
-        plt.xlabel("Lag")
-        plt.ylabel("Slope")
-        stats_pdf.savefig()
-        plt.close()
         all_stats = all_stats.append(stats_df)
-    stats_pdf.close()
     return all_stats
 
 import time
 begin_time = time.time()
 
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
-#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing"])
+individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "citation", "license", "isfossil"])
+#full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "citation", "license", "isfossil"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
 #species_list = sorted(species_list)
-#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[18:20])]
+#individual_data = full_individual_data[full_individual_data["clean_genus_species"].isin(species_list[0:100])]
 
 gdal.AllRegister()
 driver = gdal.GetDriverByName("netCDF")
@@ -212,7 +189,7 @@ temp_data = temp_data[temp_data["temperature"] < 3276]
 # Remove species with less than 30 individuals
 stats_data = remove_species(temp_data, "clean_genus_species")
 
-# Linear regression for relative mass with temp for all species across all lags, both plots and df
+# Linear regression for relative mass with temp for all species across all lags
 species_stats = lin_reg(stats_data, "clean_genus_species", "lag")
 
 # Calculate correlation coefficient for linear regression
