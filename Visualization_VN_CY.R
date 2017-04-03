@@ -23,6 +23,7 @@ species_summary = individuals_data %>%
 species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
 
 species_stats_TL = read.csv("results_TL/species_stats.csv")
+species_stats_TL = species_stats_TL[species_stats_TL$class == "Mammalia" | species_stats_TL$class == "Aves",]
 
 # FIRST FIGURE
 species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
