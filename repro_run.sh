@@ -1,6 +1,7 @@
 #run entire project pipeline
 
 #download and clean data
+#time: 
 mkdir data
 R CMD BATCH Cleaning_VN.R
 
@@ -10,6 +11,7 @@ mkdir results_TL
 python Analysis_VN_TL.py
 
 #species relationships for current temperature
+#time: ~30 minutes
 mkdir results
 python Analysis_VN_CY.py
 
