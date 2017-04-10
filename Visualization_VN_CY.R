@@ -63,29 +63,34 @@ species_scatterplot = function(species){
   r_string = paste("r =", r)
   p_string = paste("p =", pval)
   ggplot(species_data, aes(temperature, massing)) +
-          geom_point() +
-          geom_smooth(method = "lm", se = FALSE) +
-          labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
-          theme(panel.grid.major = element_blank(), 
-                panel.grid.minor = element_blank()) +
-          annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 1.5, label = r_string) +
-          annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.2, vjust = 3.25, label = p_string)
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank()) +
+    annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 1.5, label = r_string) +
+    annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.2, vjust = 3.25, label = p_string)
 }
 
-all_species = lapply(species_list, species_scatterplot)
-plot_examples = plot_grid(plotlist = all_species, nrow = 1, labels = c("B", "C", "D"))
-
-ggdraw() +
-  draw_plot(plot_locations, 0, 0.25, 1, 0.75) +
-  draw_plot(plot_examples, 0, 0, 1, 0.3) +
-  draw_plot_label("A", 0, 1)
-ggsave("figures/figure1.jpg", width = 10, height = 8)
+if(length(unique(individuals_data$clean_genus_species)) < 900){
+  ggdraw() +
+    draw_plot(plot_locations)
+  ggsave("figures/figure1.jpg", width = 10, height = 6)
+} else {
+  all_species = lapply(species_list, species_scatterplot)
+  plot_examples = plot_grid(plotlist = all_species, nrow = 1, labels = c("B", "C", "D"))
+  ggdraw() +
+    draw_plot(plot_locations, 0, 0.25, 1, 0.75) +
+    draw_plot(plot_examples, 0, 0, 1, 0.3) +
+    draw_plot_label("A", 0, 1)
+  ggsave("figures/figure1.jpg", width = 10, height = 8)
+}
 
 # SECOND FIGURE
 species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
 species_stats = species_stats %>%
   mutate(temp_stat_sig = ifelse(temp_pvalue_adjust < 0.05 & temp_slope < 0, "neg", 
-                          ifelse(temp_pvalue_adjust < 0.05 & temp_slope > 0, "pos", "not")))
+                                ifelse(temp_pvalue_adjust < 0.05 & temp_slope > 0, "pos", "not")))
 
 species_stats$temp_stat_sig = factor(species_stats$temp_stat_sig, levels = c("neg", "pos", "not"))
 plot_stats = ggplot(species_stats, aes(temp_r, fill = temp_stat_sig)) +
@@ -134,18 +139,21 @@ plot_order = ggplot(orders_df, aes(temp_r, fill = class)) +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
   facet_wrap(~ order, scales = "free_y")
-ggsave("figures/figure3.jpg", plot = plot_order, width = 10, height = 7)
+
+if(nrow(orders_df) > 0){
+  ggsave("figures/figure3.jpg", plot = plot_order, width = 10, height = 7)
+}
 
 # FOURTH FIGURE
 past_year_hist = function(year){
   ggplot(subset(species_stats_TL, past_year %in% year)) +
-  geom_histogram(aes(r), breaks = seq(-1, 1, by = 0.05), fill = "white", col = "black", size = 0.2) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
-  labs(x = "r", y = "Number of species") +
-  geom_vline(xintercept = 0, size = 1) +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) +
-  annotate("text", x= 0.75, y = 75, label = paste(year, "years prior"))
+    geom_histogram(aes(r), breaks = seq(-1, 1, by = 0.05), fill = "white", col = "black", size = 0.2) +
+    coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
+    labs(x = "r", y = "Number of species") +
+    geom_vline(xintercept = 0, size = 1) +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank()) +
+    annotate("text", x= 0.75, y = 75, label = paste(year, "years prior"))
 }
 
 past_year_values = c("0", "25", "50")

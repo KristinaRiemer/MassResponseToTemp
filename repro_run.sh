@@ -5,6 +5,11 @@
 mkdir data
 R CMD BATCH Cleaning_VN.R
 
+#subset data to test
+head -n 501 CompleteDatasetVN.csv > CompleteDatasetVN_temporary.csv
+rm CompleteDatasetVN.csv
+mv CompleteDatasetVN_temporary.csv CompleteDatasetVN.csv
+
 #species relationships for past temperatures
 #time: ~42 hours
 mkdir results_TL

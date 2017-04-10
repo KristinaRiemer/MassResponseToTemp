@@ -22,6 +22,7 @@ species_stats_TL = read.csv("results_TL/species_stats.csv")
 species_stats_TL = species_stats_TL[species_stats_TL$class == "Mammalia" | species_stats_TL$class == "Aves",]
 
 # FIRST FIGURE
+species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
 species_scatterplot = function(species){
   species_data = individuals_data[individuals_data$clean_genus_species == species,]
   lr_mass = lm(massing ~ abs(decimallatitude), data = species_data)
@@ -40,16 +41,17 @@ species_scatterplot = function(species){
     annotate(geom = "text", x = -Inf, y = Inf, hjust = -0.25, vjust = 4, label = p_string)
 }
 
-species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
-all_species = lapply(species_list, species_scatterplot)
-plot_grid(plotlist = all_species, nrow = 1, labels = c("A", "B", "C"))
-ggsave("figures/figure1_supp.jpg", width = 10, height = 3)
+if(length(unique(individuals_data$clean_genus_species)) > 900){
+  all_species = lapply(species_list, species_scatterplot)
+  plot_grid(plotlist = all_species, nrow = 1, labels = c("A", "B", "C"))
+  ggsave("figures/figure1_supp.jpg", width = 10, height = 3)
+}
 
 # SECOND FIGURE
 species_stats$lat_pvalue_adjust = p.adjust(species_stats$lat_pvalue, method = "fdr")
 species_stats = species_stats %>%
   mutate(lat_stat_sig = ifelse(lat_pvalue_adjust < 0.05 & lat_slope < 0, "neg", 
-                           ifelse(lat_pvalue_adjust < 0.05 & lat_slope > 0, "pos", "not")))
+                               ifelse(lat_pvalue_adjust < 0.05 & lat_slope > 0, "pos", "not")))
 
 species_stats$lat_stat_sig = factor(species_stats$lat_stat_sig, levels = c("neg", "pos", "not"))
 plot_stats = ggplot(species_stats, aes(lat_r, fill = lat_stat_sig)) +
@@ -177,8 +179,30 @@ last = 96
 full_sp_list = c()
 for(i in 1:10){
   sp_list = unique(species_stats$genus_species)[first:last]
-  inds_df = individuals_data[individuals_data$clean_genus_species %in% sp_list,]
-  inds_plot = ggplot(inds_df, aes(x = temperature, y = massing)) +
+  if(!is.na(sp_list[96])){
+    inds_df = individuals_data[individuals_data$clean_genus_species %in% sp_list,]
+    inds_plot = ggplot(inds_df, aes(x = temperature, y = massing)) +
+      geom_point(color = "gray48", size = 0.3) +
+      facet_wrap(~clean_genus_species, scales = "free", ncol = 8) +
+      geom_smooth(method = "lm", se = FALSE, color = "black") +
+      labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            strip.text = element_blank(),
+            strip.background = element_blank(),
+            axis.text = element_text(size = 5))
+    ggsave(filename = paste("figures/", first, ".jpg", sep = ""), plot = inds_plot, width = 7, height = 9.25)
+    sp_list = noquote(paste(sp_list, collapse = ", "))
+    full_sp_list = append(full_sp_list, sp_list)
+    first = first + 96
+    last = last + 96
+  }
+}
+
+last_sp_list = unique(species_stats$genus_species)[961:967]
+if(!is.na(last_sp_list[1])){
+  last_inds = individuals_data[individuals_data$clean_genus_species %in% last_sp_list,]
+  ggplot(last_inds, aes(x = temperature, y = massing)) +
     geom_point(color = "gray48", size = 0.3) +
     facet_wrap(~clean_genus_species, scales = "free", ncol = 8) +
     geom_smooth(method = "lm", se = FALSE, color = "black") +
@@ -188,23 +212,5 @@ for(i in 1:10){
           strip.text = element_blank(),
           strip.background = element_blank(),
           axis.text = element_text(size = 5))
-  ggsave(filename = paste("figures/", first, ".jpg", sep = ""), plot = inds_plot, width = 7, height = 9.25)
-  sp_list = noquote(paste(sp_list, collapse = ", "))
-  full_sp_list = append(full_sp_list, sp_list)
-  first = first + 96
-  last = last + 96
+  ggsave("figures/961.jpg", width = 7, height = 1.25)
 }
-
-last_sp_list = unique(species_stats$genus_species)[961:967]
-last_inds = individuals_data[individuals_data$clean_genus_species %in% last_sp_list,]
-ggplot(last_inds, aes(x = temperature, y = massing)) +
-  geom_point(color = "gray48", size = 0.3) +
-  facet_wrap(~clean_genus_species, scales = "free", ncol = 8) +
-  geom_smooth(method = "lm", se = FALSE, color = "black") +
-  labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        strip.text = element_blank(),
-        strip.background = element_blank(),
-        axis.text = element_text(size = 5))
-ggsave("figures/961.jpg", width = 7, height = 1.25)
