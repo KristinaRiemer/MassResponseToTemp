@@ -23,14 +23,17 @@ Install following R packages:
 * cowplot
 
 Install following Python packages: 
+* retriever
 * matplotlib
 * pandas
 * numpy
-* calendar
-* osgeo
 * statsmodels
-* time
 * joblib
+* gdal (with conda, not pip)
+
+These come with Python: 
+* time
+* calendar
 
 Download .zip of entire repository, then run `bash repro_run.sh` in the command line. You will need internet access to download the raw data files. 
 
