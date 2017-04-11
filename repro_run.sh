@@ -3,7 +3,8 @@
 #download and clean data
 #time: 
 mkdir data
-R CMD BATCH Cleaning_VN.R
+retriever ls
+Rscript Cleaning_VN.R
 
 #subset data to test
 head -n 501 CompleteDatasetVN.csv > CompleteDatasetVN_temporary.csv
@@ -22,7 +23,7 @@ python Analysis_VN_CY.py
 
 #current temperature relationship viz
 mkdir figures
-R CMD BATCH Visualization_VN_CY.R
+Rscript Visualization_VN_CY.R
 
 #past temperatures relationship viz
-R CMD BATCH Visualization_VN_CY_supp.R
+Rscript Visualization_VN_CY_supp.R
