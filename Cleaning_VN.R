@@ -16,9 +16,12 @@ download_VN = function(raw_file_path){
   # Returns: 
   #   Single csv of four desired class-level datasets
   if(!file.exists(raw_file_path)){
-    rdataretriever::install("vertnet", "csv", data_dir = "data/")
-    VN_files = list("data/vertnet_amphibians.csv", "data/vertnet_birds.csv", "data/vertnet_mammals.csv", "data/vertnet_reptiles.csv")
-    VN_full = do.call(rbind, lapply(VN_files, read_csv))
+    rdataretriever::install("vertnet-amphibians", "csv", data_dir = "data/")
+    rdataretriever::install("vertnet-birds", "csv", data_dir = "data/")
+    rdataretriever::install("vertnet-mammals", "csv", data_dir = "data/")
+    rdataretriever::install("vertnet-reptiles", "csv", data_dir = "data/")
+    VN_files = list("data/vertnet_amphibians_amphibians.csv", "data/vertnet_birds_birds.csv", "data/vertnet_mammals_mammals.csv", "data/vertnet_reptiles_reptiles.csv")
+    VN_full = do.call(rbind, lapply(VN_files, read_csv, col_types = cols_only(scientificname = "?", class = "?", ordered = "?", family = "?", year = "?", decimallongitude = "?", decimallatitude = "?", massing = "?", citation = "?", license = "?", isfossil = "?")))
     write.csv(VN_full, file = raw_file_path)
   }
 }
