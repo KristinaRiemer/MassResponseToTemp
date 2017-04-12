@@ -17,7 +17,7 @@ download_VN = function(raw_file_path){
   #   Single csv of four desired class-level datasets
   if(!file.exists(raw_file_path)){
     rdataretriever::install("vertnet", "csv", data_dir = "data/")
-    VN_files = list("data/vernet_amphibians.csv", "data/vertnet_birds.csv", "data/vertnet_mammals.csv", "data/vertnet_reptiles.csv")
+    VN_files = list("data/vertnet_amphibians.csv", "data/vertnet_birds.csv", "data/vertnet_mammals.csv", "data/vertnet_reptiles.csv")
     VN_full = do.call(rbind, lapply(VN_files, read_csv))
     write.csv(VN_full, file = raw_file_path)
   }
