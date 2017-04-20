@@ -14,15 +14,21 @@ download_VN = function(raw_file_path){
   #   raw_file_path: file path to raw data
   #
   # Returns: 
-  #   Single csv of four desired class-level datasets
+  #   Single csv of four desired class-level datasets with only necessary columns
+  #   and only rows with mass values
   if(!file.exists(raw_file_path)){
-    rdataretriever::install("vertnet-amphibians", "csv", data_dir = "data/")
-    rdataretriever::install("vertnet-birds", "csv", data_dir = "data/")
-    rdataretriever::install("vertnet-mammals", "csv", data_dir = "data/")
-    rdataretriever::install("vertnet-reptiles", "csv", data_dir = "data/")
-    VN_files = list("data/vertnet_amphibians_amphibians.csv", "data/vertnet_birds_birds.csv", "data/vertnet_mammals_mammals.csv", "data/vertnet_reptiles_reptiles.csv")
-    VN_full = do.call(rbind, lapply(VN_files, read_csv, col_types = cols_only(scientificname = "?", class = "?", ordered = "?", family = "?", year = "?", decimallongitude = "?", decimallatitude = "?", massing = "?", citation = "?", license = "?", isfossil = "?")))
-    write.csv(VN_full, file = raw_file_path)
+    rdataretriever::install("vertnet-amphibians", "sqlite", db_file = "data/all_vertnet.db")
+    rdataretriever::install("vertnet-birds", "sqlite", db_file = "data/all_vertnet.db")
+    rdataretriever::install("vertnet-mammals", "sqlite", db_file = "data/all_vertnet.db")
+    rdataretriever::install("vertnet-reptiles", "sqlite", db_file = "data/all_vertnet.db")
+    database = src_sqlite("data/all_vertnet.db")
+    amphibians_query = "SELECT scientificname, class, ordered, family, year, decimallongitude, decimallatitude, massing, citation, license, isfossil FROM vertnet_amphibians_amphibians WHERE massing IS NOT NULL"
+    birds_query = "SELECT scientificname, class, ordered, family, year, decimallongitude, decimallatitude, massing, citation, license, isfossil FROM vertnet_birds_birds WHERE massing IS NOT NULL"
+    mammals_query = "SELECT scientificname, class, ordered, family, year, decimallongitude, decimallatitude, massing, citation, license, isfossil FROM vertnet_mammals_mammals WHERE massing IS NOT NULL"
+    reptiles_query = "SELECT scientificname, class, ordered, family, year, decimallongitude, decimallatitude, massing, citation, license, isfossil FROM vertnet_reptiles_reptiles WHERE massing IS NOT NULL"
+    query = paste(amphibians_query, "UNION ALL", birds_query, "UNION ALL", mammals_query, "UNION ALL", reptiles_query)
+    subset_data = tbl(database, sql(query))
+    write.csv(subset_data, file = raw_file_path)
   }
 }
 
