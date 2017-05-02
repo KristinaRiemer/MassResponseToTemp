@@ -184,8 +184,8 @@ temp_lookup = temp_lookup.drop_duplicates()
 temp_lookup["temperature"] = get_temps_list(temp_file, temp_lookup[["longitude", "decimallatitude"]], temp_lookup["stackID"])
 temp_data = lag_data.merge(temp_lookup)
 
-# Remove rows with missing data values (i.e., 3276.7)
-temp_data = temp_data[temp_data["temperature"] < 3276]
+# Remove rows with missing data values (i.e., -9.96921e+36)
+temp_data = temp_data[temp_data["temperature"] > -10000]
 
 # Remove species with less than 30 individuals
 stats_data = remove_species(temp_data, "clean_genus_species")
