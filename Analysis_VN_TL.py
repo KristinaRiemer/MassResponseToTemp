@@ -92,6 +92,7 @@ def get_temps_list(raster_file, coordinates, bands):
             packed_temp = band_array[y, x]
             add_offset = single_band.GetOffset()
             scale_factor = single_band.GetScale()
+            scale_factor = np.float32(scale_factor)
             unpacked_temp = add_offset + (packed_temp * scale_factor)                    
             each_ind_temps.append(unpacked_temp)
         year_avg = np.mean(each_ind_temps)
