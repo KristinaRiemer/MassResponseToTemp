@@ -12,24 +12,24 @@ Also of interest is if temperatures from years before individuals are collected 
 Using R 3.3.1 and Python 2.7.10
 
 Install following R packages: 
-* readr
-* stringr
-* taxize
-* spatstat
-* dplyr
-* rdataretriever
-* plyr
-* ggplot2
-* cowplot
+* cowplot_0.6.3
+* ggplot2_2.2.1       
+* plyr_1.8.4
+* rdataretriever_1.0.0
+* dplyr_0.5.0
+* spatstat_1.47-0          
+* taxize_0.8.4
+* stringr_1.2.0       
+* readr_1.0.0    
 
-Install following Python packages: 
-* retriever
-* matplotlib
-* pandas
-* numpy
-* statsmodels
-* joblib
-* gdal (with conda, not pip)
+Install following Python packages with `pip install [package]==[version]`: 
+* retriever==2.0.0
+* matplotlib==1.4.3
+* pandas==0.16.2
+* numpy==1.9.2
+* statsmodels==0.6.1
+* joblib==0.9.4
+* gdal==2.0.0 (with conda, not pip)
 
 These come with Python: 
 * time
