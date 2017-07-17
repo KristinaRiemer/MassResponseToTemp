@@ -3,7 +3,7 @@
 #download and clean data
 #time:
 mkdir -p data
-retriever ls
+retriever update
 Rscript Cleaning_VN.R
 
 #subset data to test
