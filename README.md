@@ -11,18 +11,30 @@ Also of interest is if temperatures from years before individuals are collected 
 #### To run code
 Using R 3.3.1 and Python 2.7.10
 
-Install following R packages: 
+Install the required R packages. This can be done automatically by running:
+
+```
+Rscript install-packages.R
+```
+
 * cowplot_0.6.3
-* ggplot2_2.2.1       
+* ggplot2_2.2.1
 * plyr_1.8.4
 * rdataretriever_1.0.0
 * dplyr_0.5.0
-* spatstat_1.47-0          
+* spatstat_1.47-0
 * taxize_0.8.4
-* stringr_1.2.0       
-* readr_1.0.0    
+* stringr_1.2.0
+* readr_1.0.0
 
-Install following Python packages with `pip install [package]==[version]`: 
+Install the required Python packages. This can be done automatically using
+`conda` by running:
+
+```
+conda env create --file environment.yml
+source activate MassResponseToTemp
+```
+
 * retriever==2.0.0
 * matplotlib==1.4.3
 * pandas==0.16.2
