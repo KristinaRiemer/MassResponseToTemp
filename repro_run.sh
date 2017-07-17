@@ -7,9 +7,15 @@ retriever update
 Rscript Cleaning_VN.R
 
 #subset data to test
-head -n 501 CompleteDatasetVN.csv > CompleteDatasetVN_temporary.csv
-rm CompleteDatasetVN.csv
-mv CompleteDatasetVN_temporary.csv CompleteDatasetVN.csv
+
+if [ "$1" != "all" ]
+then
+  echo "Running the example analysis on 500 amphibians..."
+  echo "If you want to run the full analysis use: bash repro_run.sh all"
+  head -n 501 CompleteDatasetVN.csv > CompleteDatasetVN_temporary.csv
+  rm CompleteDatasetVN.csv
+  mv CompleteDatasetVN_temporary.csv CompleteDatasetVN.csv
+fi
 
 #species relationships for past temperatures
 #time: ~42 hours
