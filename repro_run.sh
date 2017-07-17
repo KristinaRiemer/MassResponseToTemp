@@ -1,8 +1,8 @@
 #run entire project pipeline
 
 #download and clean data
-#time: 
-mkdir data
+#time:
+mkdir -p data
 retriever ls
 Rscript Cleaning_VN.R
 
@@ -13,16 +13,16 @@ mv CompleteDatasetVN_temporary.csv CompleteDatasetVN.csv
 
 #species relationships for past temperatures
 #time: ~42 hours
-mkdir results_TL
+mkdir -p results_TL
 python Analysis_VN_TL.py
 
 #species relationships for current temperature
 #time: ~30 minutes
-mkdir results
+mkdir -p results
 python Analysis_VN_CY.py
 
 #current temperature relationship viz
-mkdir figures
+mkdir -p figures
 Rscript Visualization_VN_CY.R
 
 #past temperatures relationship viz
