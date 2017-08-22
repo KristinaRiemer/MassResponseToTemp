@@ -26,7 +26,7 @@ species_stats_TL = read.csv("results_TL/species_stats.csv")
 species_stats_TL = species_stats_TL[species_stats_TL$class == "Mammalia" | species_stats_TL$class == "Aves",]
 
 # FIRST FIGURE
-species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
+species_list = c("Martes pennanti", "Tamias quadrivittatus", "Synaptomys cooperi")
 individuals_data$map_long = ifelse(individuals_data$longitude > 180, individuals_data$longitude - 360, individuals_data$longitude)
 locations = unique(individuals_data[c("map_long", "decimallatitude", "clean_genus_species")])
 locations$Species = ifelse(locations$clean_genus_species == species_list[1], species_list[1], 
@@ -36,10 +36,10 @@ locations$Species = factor(locations$Species, levels = c("All", species_list[1],
 locations = locations[order(locations$Species),]
 
 plot_locations = ggplot(data = locations, aes(x = map_long, y = decimallatitude)) +
-  borders("world") +
+  borders("world", colour = "grey70") +
   geom_point(aes(color = Species, shape = Species, size = Species)) +
-  scale_shape_manual(values = c(20, 0, 2, 4)) +
-  scale_color_manual(values = c("red", "black", "black", "black")) +
+  scale_shape_manual(values = c(20, 20, 20, 20)) +
+  scale_color_manual(values = c("black", "steelblue1", "yellow", "red")) +
   scale_size_manual(values = c(0.2, 1, 1, 1)) +
   theme(legend.position = c(0.1, 0.2), 
         legend.key = element_rect(colour = NA),
