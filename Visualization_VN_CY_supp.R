@@ -21,6 +21,8 @@ species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genu
 species_stats_TL = read.csv("results_TL/species_stats.csv")
 species_stats_TL = species_stats_TL[species_stats_TL$class == "Mammalia" | species_stats_TL$class == "Aves",]
 
+eol_migration = read.csv("birdlife_seasonality.csv")
+
 # FIRST FIGURE
 species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
 species_scatterplot = function(species){
@@ -223,3 +225,24 @@ for(i in 1:nrow(species_stats)){
   number_w_sp_w_comma = cat(paste(number_w_sp, ", ", sep = ""))
   sp_number = sp_number + 1
 }
+
+# SEVENTH FIGURE
+migration_ref = inner_join(species_stats, eol_migration, by = c("genus_species" = "sciname")) %>%
+  group_by(genus_species) %>%
+  tally %>%
+  mutate(migration = ifelse(n == 1, "nonmigrant", "migrant"))
+nonmigrant_list = c("Coereba flaveola", "Columbina passerina", "Poecile gambeli", "Tyto alba", "Aphelocoma californica", "Callipepla californica", "Collocalia esculenta", "Crotophaga ani", "Elaenia flavogaster", "Euplectes albonotatus", "Euplectes franciscanus", "Formicarius analis", "Mionectes oleagineus", "Nucifraga columbiana", "Pitangus sulphuratus", "Uraeginthus bengalus")
+migration_ref$migration[migration_ref$genus_species %in% nonmigrant_list] = "nonmigrant"
+species_stats = left_join(species_stats, migration_ref)
+
+facets = c("migrant", "nonmigrant")
+plot_migrants = ggplot(species_stats[species_stats$migration %in% facets,], aes(temp_r)) +
+  geom_histogram(breaks = seq(-1, 1, by = 0.05), fill = "grey70", col = "black", size = 0.2) +
+  labs(x = "r", y = "Number of species") +
+  geom_vline(xintercept = 0, size = 1) +
+  theme(legend.position = "top",
+        strip.background = element_rect(fill = "white"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  facet_wrap(~ migration, scales = "free_y")
+ggsave("figures/figure7_supp.jpg", plot = plot_migrants, width = 10, height = 8)
