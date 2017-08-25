@@ -2,7 +2,7 @@ library(plyr)
 library(dplyr)
 library(ggplot2)
 library(cowplot)
-
+library(XLConnect)
 theme_set(theme_bw())
 
 species_stats = read.csv("results/species_stats.csv")
@@ -21,7 +21,7 @@ species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genu
 species_stats_TL = read.csv("results_TL/species_stats.csv")
 species_stats_TL = species_stats_TL[species_stats_TL$class == "Mammalia" | species_stats_TL$class == "Aves",]
 
-eol_migration = read.csv("birdlife_seasonality.csv")
+eol_df = readWorksheetFromFile("MigStatus.xlsx", sheet = "ZZTblReviewAttributes")
 
 # FIRST FIGURE
 species_list = c("Martes pennanti", "Tamias quadrivittatus", "Synaptomys cooperi")
@@ -235,22 +235,29 @@ for(i in 1:nrow(species_stats)){
 }
 
 # SEVENTH FIGURE
-migration_ref = inner_join(species_stats, eol_migration, by = c("genus_species" = "sciname")) %>%
-  group_by(genus_species) %>%
-  tally %>%
-  mutate(migration = ifelse(n == 1, "nonmigrant", "migrant"))
-nonmigrant_list = c("Coereba flaveola", "Columbina passerina", "Poecile gambeli", "Tyto alba", "Aphelocoma californica", "Callipepla californica", "Collocalia esculenta", "Crotophaga ani", "Elaenia flavogaster", "Euplectes albonotatus", "Euplectes franciscanus", "Formicarius analis", "Mionectes oleagineus", "Nucifraga columbiana", "Pitangus sulphuratus", "Uraeginthus bengalus")
-migration_ref$migration[migration_ref$genus_species %in% nonmigrant_list] = "nonmigrant"
-species_stats = left_join(species_stats, migration_ref)
+eol_df$migration[eol_df$Migratory.status == "Altitudinal Migrant" | eol_df$Migratory.status == "Full Migrant" | eol_df$Migratory.status == "Nomadic"] <- "migrant"
+eol_df$migration[is.na(eol_df$migration)] <- "nonmigrant"
 
+species_stats = left_join(species_stats, eol_df, by = c("genus_species" = "Scientific.name")) %>%
+  select(-c(SIS.ID, Sequence, Family, X2016.IUCN.Red.List.Category, Possibly.Extinct., Possibly.Extinct.in.the.Wild., Migratory.status))
+
+species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
+species_stats = species_stats %>%
+  mutate(temp_stat_sig = ifelse(temp_pvalue_adjust < 0.05 & temp_slope < 0, "neg", 
+                                ifelse(temp_pvalue_adjust < 0.05 & temp_slope > 0, "pos", "not")))
+
+species_stats$temp_stat_sig = factor(species_stats$temp_stat_sig, levels = c("not", "neg", "pos"))
 facets = c("migrant", "nonmigrant")
-plot_migrants = ggplot(species_stats[species_stats$migration %in% facets,], aes(temp_r)) +
-  geom_histogram(breaks = seq(-1, 1, by = 0.05), fill = "grey70", col = "black", size = 0.2) +
-  labs(x = "r", y = "Number of species") +
+plot_migrants = ggplot(species_stats[species_stats$migration %in% facets,], aes(temp_r, fill = temp_stat_sig)) +
+  geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
+  scale_fill_manual(values = c("white", rgb(0, 0, 1, 0.5), rgb(0, 1, 0, 0.5)), 
+                    labels = c("Not", "Negative", "Positive")) +
+  labs(x = "r", y = "Number of species", fill = "Statistical significance: ") +
   geom_vline(xintercept = 0, size = 1) +
   theme(legend.position = "top",
         strip.background = element_rect(fill = "white"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  facet_wrap(~ migration, scales = "free_y")
+  facet_wrap(~ migration) +
+  geom_text(data = data.frame(x = c(-0.7, -0.7, -0.2, -0.3, 0.6, 0.6), y = c(5, 6, 45, 30, 3, 4), label = c("15%", "16%", "79%", "79%", "6%", "5%"), migration = c("migrant", "nonmigrant", "migrant", "nonmigrant", "migrant", "nonmigrant")), aes(x, y, label = label), inherit.aes = FALSE)
 ggsave("figures/figure7_supp.jpg", plot = plot_migrants, width = 10, height = 8)
