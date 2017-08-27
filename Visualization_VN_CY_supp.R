@@ -8,6 +8,12 @@ theme_set(theme_bw())
 species_stats = read.csv("results/species_stats.csv")
 individuals_data = read.csv("results/stats_data.csv")
 
+species_stats = species_stats[species_stats$class == "Mammalia" | species_stats$class == "Aves",]
+species_stats$class = factor(species_stats$class)
+individuals_data = individuals_data[individuals_data$class == "Mammalia" | individuals_data$class == "Aves",]
+individuals_data$class = factor(individuals_data$class)
+individuals_data$clean_genus_species = factor(individuals_data$clean_genus_species)
+
 species_summary = individuals_data %>%
   group_by(clean_genus_species) %>%
   summarise(
@@ -67,14 +73,12 @@ plot_stats = ggplot(species_stats, aes(lat_r_flipped, fill = lat_stat_sig)) +
   theme(legend.position = "top", 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  annotate("text", x = c(-0.75, -0.11, 0.6), y = c(15, 105, 28), label = c("20%", "70%", "10%"))
+  annotate("text", x = c(-0.75, -0.11, 0.6), y = c(15, 105, 28), label = c("19%", "71%", "10%"))
 
-species_stats$class_combine = as.character(species_stats$class)
-species_stats$class_combine[species_stats$class_combine == "Amphibia" | species_stats$class_combine == "Reptilia"] <- "Reptilia & Amphibia"
-species_stats$class_combine = factor(species_stats$class_combine, levels = c("Reptilia & Amphibia", "Mammalia", "Aves"))
-plot_class = ggplot(species_stats, aes(lat_r_flipped, fill = class_combine)) +
+species_stats$class = factor(species_stats$class, levels = c("Mammalia", "Aves"))
+plot_class = ggplot(species_stats, aes(lat_r_flipped, fill = class)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
-  scale_fill_manual(values = c("red", "white", "blue")) +
+  scale_fill_manual(values = c("white", "blue")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species", fill = "Class: ") +
   geom_vline(xintercept = 0, size = 1) +
@@ -172,17 +176,6 @@ ggdraw() +
   draw_plot_label("C", 0, 0.35)
 ggsave("figures/figure1_supp.jpg", width = 6, height = 12)
 
-# FIFTH FIGURE
-ectos_df = species_stats[species_stats$class_combine == "Reptilia & Amphibia",]
-plot_ectos = ggplot(ectos_df, aes(temp_r)) +
-  geom_histogram(breaks = seq(-1, 1, by = 0.1), col = "black", size = 0.2) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 5)) +
-  labs(x = "r", y = "Number of species") +
-  geom_vline(xintercept = 0, size = 1) +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
-ggsave("figures/figure5_supp.jpg", plot = plot_ectos, width = 5, height = 8)
-
 # SIXTH FIGURE
 individuals_data$sp_label = as.numeric(individuals_data$clean_genus_species)
 first = 1
@@ -208,22 +201,6 @@ for(i in 1:12){
     first = first + 80
     last = last + 80
   }
-}
-
-last_sp_list = unique(species_stats$genus_species)[961:967]
-if(!is.na(last_sp_list[1])){
-  last_inds = individuals_data[individuals_data$clean_genus_species %in% last_sp_list,]
-  ggplot(last_inds, aes(x = temperature, y = massing)) +
-    geom_point(color = "gray48", size = 0.3) +
-    facet_wrap(~sp_label, scales = "free", ncol = 8) +
-    geom_smooth(method = "lm", se = FALSE, color = "black") +
-    labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          strip.background = element_blank(),
-          strip.text.x = element_text(size = 6, margin = margin(.5, 0, .5, 0)),
-          axis.text = element_text(size = 5))
-  ggsave("figures/961.jpg", width = 7, height = 1.25)
 }
 
 sp_number = 1
@@ -260,4 +237,9 @@ plot_migrants = ggplot(species_stats[species_stats$migration %in% facets,], aes(
         panel.grid.minor = element_blank()) +
   facet_wrap(~ migration) +
   geom_text(data = data.frame(x = c(-0.7, -0.7, -0.2, -0.3, 0.6, 0.6), y = c(5, 6, 45, 30, 3, 4), label = c("15%", "16%", "79%", "79%", "6%", "5%"), migration = c("migrant", "nonmigrant", "migrant", "nonmigrant", "migrant", "nonmigrant")), aes(x, y, label = label), inherit.aes = FALSE)
-ggsave("figures/figure7_supp.jpg", plot = plot_migrants, width = 10, height = 8)
+
+ggdraw() +
+  draw_plot(plot_migrants) +
+  draw_plot_label(c("A", "B"), c(0.03, 0.53), c(0.955, 0.955))
+ggsave("figures/figure7_supp.jpg", width = 10, height = 8)
+
