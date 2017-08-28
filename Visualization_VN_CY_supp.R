@@ -86,28 +86,9 @@ plot_class = ggplot(species_stats, aes(lat_r_flipped, fill = class)) +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-order_plot_df = species_stats %>%
-  group_by(order) %>%
-  mutate(number_species = n())
-order_plot_df$order = factor(order_plot_df$order, levels = unique(order_plot_df$order[order(order_plot_df$number_species)]))
-order_plot_df$order = mapvalues(order_plot_df$order, from = "", to = "Unknown")
-order_colors = rainbow(35, s = 1, v = 0.9)[sample(1:35, 35)]
-plot_order = ggplot(order_plot_df, aes(lat_r_flipped, fill = order)) +
-  geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
-  scale_fill_manual(values = order_colors) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
-  labs(x = "r", y = "Number of species", fill = "Order: ") +
-  geom_vline(xintercept = 0, size = 1) +
-  theme(legend.position = "top", 
-        legend.key.size = unit(0.2, "cm"),
-        legend.text = element_text(size = 6.5),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
-
 plot_latitude = ggdraw() +
   draw_plot(plot_stats, 0, 0, 0.5, 1) +
-  draw_plot(plot_class, 0.5, 0.5, 0.5, 0.5) +
-  draw_plot(plot_order, 0.5, 0, 0.5, 0.5)
+  draw_plot(plot_class, 0.5, 0, 0.5, 1)
 
 # THIRD FIGURE
 #correlation coefficient for temperature-mass, not latitude-mass
