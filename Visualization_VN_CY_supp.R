@@ -243,3 +243,24 @@ ggdraw() +
   draw_plot_label(c("A", "B"), c(0.03, 0.53), c(0.955, 0.955))
 ggsave("figures/figure7_supp.jpg", width = 10, height = 8)
 
+# EIGHTH FIGURE
+orders_table = table(species_stats$order)
+orders_df = species_stats[species_stats$order %in% names(orders_table[orders_table <= 10]),]
+orders_df = orders_df[orders_df$order != "",]
+orders_df$order = factor(orders_df$order)
+
+plot_order = ggplot(orders_df, aes(temp_r, fill = class)) +
+  geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
+  coord_cartesian(xlim = c(-1, 1)) +
+  scale_fill_manual(values = c("white", "gray40")) +
+  labs(x = "r", y = "Number of species", fill = "Class: ") +
+  geom_vline(xintercept = 0, size = 1) +
+  theme(legend.position = "top", 
+        strip.background = element_rect(fill = "white"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  facet_wrap(~ order, scales = "free_y")
+
+if(nrow(orders_df) > 0){
+  ggsave("figures/figure8_supp.jpg", plot = plot_order, width = 10, height = 7)
+}

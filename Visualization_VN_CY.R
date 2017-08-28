@@ -92,11 +92,11 @@ species_stats = species_stats %>%
   mutate(temp_stat_sig = ifelse(temp_pvalue_adjust < 0.05 & temp_slope < 0, "neg", 
                                 ifelse(temp_pvalue_adjust < 0.05 & temp_slope > 0, "pos", "not")))
 
-species_stats$temp_stat_sig = factor(species_stats$temp_stat_sig, levels = c("neg", "pos", "not"))
+species_stats$temp_stat_sig = factor(species_stats$temp_stat_sig, levels = c("not", "neg", "pos"))
 plot_stats = ggplot(species_stats, aes(temp_r, fill = temp_stat_sig)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
-  scale_fill_manual(values = c(rgb(0, 0, 1, 0.5), rgb(0, 1, 0, 0.5), "white"), 
-                    labels = c("Negative", "Positive", "Not")) +
+  scale_fill_manual(values = c("white", rgb(0, 0, 1, 0.5), rgb(0, 1, 0, 0.5)), 
+                    labels = c("Not", "Negative", "Positive")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species", fill = "Statistical significance: ") +
   geom_vline(xintercept = 0, size = 1) +
@@ -105,11 +105,12 @@ plot_stats = ggplot(species_stats, aes(temp_r, fill = temp_stat_sig)) +
         panel.grid.minor = element_blank()) +
   annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 129, 9), label = c("15%", "78%", "7%"))
 
-species_stats$class_combine = as.character(species_stats$class)
-classes_df = species_stats[species_stats$class == "Mammalia" | species_stats$class == "Aves",]
-plot_class = ggplot(classes_df, aes(temp_r, fill = class_combine)) +
+#species_stats$class_combine = as.character(species_stats$class)
+#classes_df = species_stats[species_stats$class == "Mammalia" | species_stats$class == "Aves",]
+species_stats$class = factor(species_stats$class, levels = c("Mammalia", "Aves"))
+plot_class = ggplot(species_stats, aes(temp_r, fill = class)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
-  scale_fill_manual(values = c("blue", "white", "red")) +
+  scale_fill_manual(values = c("white", "blue")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 130)) +
   labs(x = "r", y = "Number of species", fill = "Class: ") +
   geom_vline(xintercept = 0, size = 1) +
