@@ -7,6 +7,10 @@ theme_set(theme_bw())
 
 species_stats = read.csv("results_outliers/species_stats.csv")
 individuals_data = read.csv("results_outliers/stats_data.csv")
+species_stats = species_stats[species_stats$class != "Amphibia" & species_stats$class != "Reptilia",]
+species_stats$class = factor(species_stats$class)
+individuals_data = individuals_data[individuals_data$class != "Amphibia" & individuals_data$class != "Reptilia",]
+individuals_data$class = factor(individuals_data$class)
 
 species_summary = individuals_data %>%
   group_by(clean_genus_species) %>%
@@ -18,10 +22,8 @@ species_summary = individuals_data %>%
   )
 species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
 
-species_stats_TL = read.csv("results_TL/species_stats.csv")
-
 # FIRST FIGURE
-species_list = c("Martes pennanti", "Spizella arborea", "Synaptomys cooperi")
+species_list = c("Martes pennanti", "Tamias quadrivittatus", "Synaptomys cooperi")
 individuals_data$map_long = ifelse(individuals_data$longitude > 180, individuals_data$longitude - 360, individuals_data$longitude)
 locations = unique(individuals_data[c("map_long", "decimallatitude", "clean_genus_species")])
 locations$Species = ifelse(locations$clean_genus_species == species_list[1], species_list[1], 
@@ -31,10 +33,10 @@ locations$Species = factor(locations$Species, levels = c("All", species_list[1],
 locations = locations[order(locations$Species),]
 
 plot_locations = ggplot(data = locations, aes(x = map_long, y = decimallatitude)) +
-  borders("world") +
+  borders("world", colour = "grey70") +
   geom_point(aes(color = Species, shape = Species, size = Species)) +
-  scale_shape_manual(values = c(20, 0, 2, 4)) +
-  scale_color_manual(values = c("red", "black", "black", "black")) +
+  scale_shape_manual(values = c(20, 20, 20, 20)) +
+  scale_color_manual(values = c("black", "steelblue1", "yellow", "red")) +
   scale_size_manual(values = c(0.2, 1, 1, 1)) +
   theme(legend.position = c(0.1, 0.2), 
         legend.key = element_rect(colour = NA),
@@ -68,13 +70,11 @@ species_scatterplot = function(species){
 }
 
 all_species = lapply(species_list, species_scatterplot)
-plot_examples = plot_grid(plotlist = all_species, nrow = 1, labels = c("B", "C", "D"))
+plot_examples = plot_grid(plotlist = all_species, nrow = 1)
 
-ggdraw() +
+plot_fig1 = ggdraw() +
   draw_plot(plot_locations, 0, 0.25, 1, 0.75) +
-  draw_plot(plot_examples, 0, 0, 1, 0.3) +
-  draw_plot_label("A", 0, 1)
-ggsave("results_outliers/figure1.jpg", width = 10, height = 8)
+  draw_plot(plot_examples, 0, 0, 1, 0.3)
 
 # SECOND FIGURE
 species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
@@ -82,24 +82,23 @@ species_stats = species_stats %>%
   mutate(temp_stat_sig = ifelse(temp_pvalue_adjust < 0.05 & temp_slope < 0, "neg", 
                           ifelse(temp_pvalue_adjust < 0.05 & temp_slope > 0, "pos", "not")))
 
-species_stats$temp_stat_sig = factor(species_stats$temp_stat_sig, levels = c("neg", "pos", "not"))
+species_stats$temp_stat_sig = factor(species_stats$temp_stat_sig, levels = c("not", "neg", "pos"))
 plot_stats = ggplot(species_stats, aes(temp_r, fill = temp_stat_sig)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
-  scale_fill_manual(values = c(rgb(0, 0, 1, 0.5), rgb(0, 1, 0, 0.5), "white"), 
-                    labels = c("Negative", "Positive", "Not")) +
+  scale_fill_manual(values = c("white", rgb(0, 0, 1, 0.5), rgb(0, 1, 0, 0.5)), 
+                    labels = c("Not", "Negative", "Positive")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 110)) +
   labs(x = "r", y = "Number of species", fill = "Statistical significance: ") +
   geom_vline(xintercept = 0, size = 1) +
   theme(legend.position = "top", 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 129, 9), label = c("20%", "71%", "9%"))
+  annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 110, 9), label = c("20%", "71%", "9%"))
 
-species_stats$class_combine = as.character(species_stats$class)
-species_stats$class_combine[species_stats$class_combine == "Amphibia" | species_stats$class_combine == "Reptilia"] <- "Reptilia & Amphibia"
-plot_class = ggplot(species_stats, aes(temp_r, fill = class_combine)) +
+species_stats$class = factor(species_stats$class, levels = c("Mammalia", "Aves"))
+plot_class = ggplot(species_stats, aes(temp_r, fill = class)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
-  scale_fill_manual(values = c("blue", "white", "red")) +
+  scale_fill_manual(values = c("white", "blue")) +
   coord_cartesian(xlim = c(-1, 1), ylim = c(0, 110)) +
   labs(x = "r", y = "Number of species", fill = "Class: ") +
   geom_vline(xintercept = 0, size = 1) +
@@ -107,47 +106,9 @@ plot_class = ggplot(species_stats, aes(temp_r, fill = class_combine)) +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-order_plot_df = species_stats %>%
-  group_by(order) %>%
-  mutate(number_species = n())
-order_plot_df$order = factor(order_plot_df$order, levels = unique(order_plot_df$order[order(order_plot_df$number_species, decreasing = TRUE)]))
-order_plot_df$order = mapvalues(order_plot_df$order, from = "", to = "Unknown")
-order_colors = rainbow(35, s = 1, v = 0.9)[sample(1:35, 35)]
-plot_order = ggplot(order_plot_df, aes(temp_r, fill = order)) +
-  geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +
-  scale_fill_manual(values = order_colors) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 110)) +
-  labs(x = "r", y = "Number of species", fill = "Order: ") +
-  geom_vline(xintercept = 0, size = 1) +
-  theme(legend.position = "top", 
-        legend.key.size = unit(0.2, "cm"),
-        legend.text = element_text(size = 6.5),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
-
-ggdraw() +
+plot_hists = ggdraw() +
   draw_plot(plot_stats, 0, 0, 0.5, 1) +
-  draw_plot(plot_class, 0.5, 0.5, 0.5, 0.5) +
-  draw_plot(plot_order, 0.5, 0, 0.5, 0.5) +
-  draw_plot_label(c("A", "B", "C"), c(0, 0.5, 0.5), c(1, 1, 0.5))
-ggsave("results_outliers/figure2.jpg", width = 10, height = 10)
-
-# THIRD FIGURE
-past_year_hist = function(year){
-  ggplot(subset(species_stats_TL, past_year %in% year)) +
-  geom_histogram(aes(r), breaks = seq(-1, 1, by = 0.05), fill = "white", col = "black", size = 0.2) +
-  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 110)) +
-  labs(x = "r", y = "Number of species") +
-  geom_vline(xintercept = 0, size = 1) +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) +
-  annotate("text", x= 0.75, y = 75, label = paste(year, "years prior"))
-}
-
-past_year_values = c("0", "25", "50")
-all_hists = lapply(past_year_values, past_year_hist)
-plot_grid(plotlist = all_hists, ncol = 1, labels = c("A", "B", "C"))
-ggsave("results_outliers/figure3.jpg", width = 4, height = 12)
+  draw_plot(plot_class, 0.5, 0, 0.5, 1)
 
 # FOURTH FIGURE
 plot_individuals = ggplot(species_stats, aes(x = individuals, y = temp_r)) +
@@ -193,5 +154,14 @@ plot_lat = ggplot(species_stats, aes(x = abs(lat_mean), y = temp_r)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-plot_grid(plot_individuals, plot_temp, plot_mass, plot_size, plot_lat, labels = c("A", "B", "C", "D", "E"))
-ggsave("results_outliers/figure4.jpg", width = 9.5, height = 6)
+plot_5 = plot_grid(plot_individuals, plot_temp, plot_mass, plot_size, plot_lat)
+-ggsave("results_lifestagefilter/figure4.jpg", width = 9.5, height = 6)
+
+ggdraw() +
+  draw_plot(plot_fig1, 0, 0.57, 1, 0.43) +
+  draw_plot(plot_hists, 0, 0.25, 1, 0.32) +
+  draw_plot(plot_5, 0, 0, 0.8, 0.25) + 
+  draw_plot_label("A", 0, 1) +
+  draw_plot_label("B", 0, 0.57) +
+  draw_plot_label("C", 0, 0.25)
+ggsave("results_outliers/fig_outliers.jpg", width = 6, height = 12)
