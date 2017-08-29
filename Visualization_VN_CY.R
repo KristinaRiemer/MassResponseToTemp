@@ -212,7 +212,6 @@ ggsave("figures/figure5.jpg", width = 9.5, height = 6)
 # DATA SOURCE CITATIONS
 
 citations = as.character(unique(individuals_data$citation))
-citation_number = 55
 for(citation in citations){
   cite = strsplit(citation, "[.]")
   cite[[1]][1] = paste("", cite[[1]][1])
@@ -222,7 +221,5 @@ for(citation in citations){
   cite = str_trim(cite, side = "left")
   cite = str_sub(cite, 1, str_length(cite) - 1)
   cite = paste(cite, ", accessed on 2017-10-19)", sep = "")
-  cite = paste(citation_number, ". ", cite, sep = "")
   print(cat(noquote(cite)))
-  citation_number = citation_number + 1
 }
