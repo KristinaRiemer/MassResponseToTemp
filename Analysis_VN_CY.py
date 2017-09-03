@@ -77,7 +77,7 @@ def get_temps_list(raster_file, coordinates, bands):
     return all_temps
 
 def remove_species(dataframe, species_col): 
-    """Remove species from dataframe that have fewer than 30 individuals due to
+    """Remove species from dataframe that have fewer than 60 individuals due to
     a lack of temperature data
     
     Args: 
@@ -85,20 +85,20 @@ def remove_species(dataframe, species_col):
         species_col: column that contains species names
     
     Returns: 
-        Dataframe that contains species with >30 individuals
+        Dataframe that contains species with >60 individuals
     
     """
     insufficient_species = []
     for species, species_data in dataframe.groupby(species_col): 
-        if len(species_data["row_index"].unique()) < 30: 
+        if len(species_data["row_index"].unique()) < 60: 
             insufficient_species.append(species)
     sufficient_species_df = dataframe[dataframe[species_col].isin(insufficient_species) == False]
     return sufficient_species_df
 
 def lin_reg(dataset, speciesID_col): 
     # TODO: Add docstring to match TL py script
-    temp_pdf = PdfPages("results/temp_currentyear.pdf")
-    lat_pdf = PdfPages("results/lat.pdf")
+    temp_pdf = PdfPages("results_expand_thresholds/temp_currentyear.pdf")
+    lat_pdf = PdfPages("results_expand_thresholds/lat.pdf")
     stats_list = []
     for species, species_data in dataset.groupby(speciesID_col): 
         sp_class = species_data["class"].unique()[0]
@@ -137,7 +137,7 @@ import time
 begin_time = time.time()
 
 # Datasets
-individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "citation", "license", "isfossil"])
+individual_data = pd.read_csv("results_expand_thresholds/CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "citation", "license", "isfossil"])
 individual_data = individual_data[individual_data["isfossil"] == 0]
 #full_individual_data = pd.read_csv("CompleteDatasetVN.csv", usecols = ["row_index", "clean_genus_species", "class", "ordered", "family", "year", "longitude", "decimallatitude", "massing", "citation", "license", "isfossil"])
 #species_list = full_individual_data["clean_genus_species"].unique().tolist()
@@ -165,7 +165,7 @@ temp_data = individual_data.merge(temp_lookup)
 # Remove rows with missing data values (i.e., -9.96921e+36)
 temp_data = temp_data[temp_data["temperature"] > -10000]
 
-# Remove species with less than 30 individuals
+# Remove species with less than 60 individuals
 stats_data = remove_species(temp_data, "clean_genus_species")
 
 # Linear regression for mass with temp and latitude for all species, both plots and df
@@ -179,5 +179,5 @@ end_time = time.time()
 total_time = (end_time - begin_time) / 60
 
 # Save dataframes with final data and species statistics
-species_stats.to_csv("results/species_stats.csv")
-stats_data.to_csv("results/stats_data.csv")
+species_stats.to_csv("results_expand_thresholds/species_stats.csv")
+stats_data.to_csv("results_expand_thresholds/stats_data.csv")

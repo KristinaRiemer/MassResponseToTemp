@@ -194,7 +194,7 @@ subset_species = function(dataset){
       year_range = max(year) - min(year), 
       lat_range = max(decimallatitude) - min(decimallatitude)
     ) %>%
-    filter(individuals >= 30, year_range >= 20, lat_range >= 5)
+    filter(individuals >= 60, year_range >= 40, lat_range >= 10)
   dataset = dataset[dataset$clean_genus_species %in% species_list$clean_genus_species,]
   return(dataset)
 }
@@ -252,4 +252,4 @@ individual_data = filter_first_adult(individual_data)
 # Subset again by species criteria
 individual_data = subset_species(individual_data)
 
-write.csv(individual_data, "CompleteDatasetVN.csv")
+write.csv(individual_data, "results_expand_thresholds/CompleteDatasetVN.csv")
