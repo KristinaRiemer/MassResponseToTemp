@@ -18,12 +18,19 @@ species_summary = individuals_data %>%
     temp_range = max(temperature) - min(temperature), 
     mass_range = max(massing) - min(massing), 
     mass_mean = mean(massing),
-    lat_mean = mean(decimallatitude)
+    lat_mean = mean(decimallatitude), 
+    year_range = max(year) - min(year), 
+    lat_range = max(decimallatitude) - min(decimallatitude)
   )
 species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
+species_stats = species_stats[species_stats$year_range >= 20 & species_stats$lat_range >= 5,]
+species_stats$genus_species = factor(species_stats$genus_species)
+individuals_data = individuals_data[individuals_data$clean_genus_species %in% species_stats$genus_species,]
+individuals_data$clean_genus_species = factor(individuals_data$clean_genus_species)
 
 species_stats_TL = read.csv("results_TL/species_stats.csv")
 species_stats_TL = species_stats_TL[species_stats_TL$class == "Mammalia" | species_stats_TL$class == "Aves",]
+species_stats_TL = species_stats_TL[species_stats_TL$genus_species %in% species_stats$genus_species,]
 
 # FIRST FIGURE
 species_list = c("Martes pennanti", "Tamias quadrivittatus", "Synaptomys cooperi")
@@ -103,10 +110,8 @@ plot_stats = ggplot(species_stats, aes(temp_r, fill = temp_stat_sig)) +
   theme(legend.position = "top", 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 129, 9), label = c("15%", "78%", "7%"))
+  annotate("text", x = c(-0.75, -0.15, 0.6), y = c(12, 129, 9), label = c("14%", "79%", "7%"))
 
-#species_stats$class_combine = as.character(species_stats$class)
-#classes_df = species_stats[species_stats$class == "Mammalia" | species_stats$class == "Aves",]
 species_stats$class = factor(species_stats$class, levels = c("Mammalia", "Aves"))
 plot_class = ggplot(species_stats, aes(temp_r, fill = class)) +
   geom_histogram(breaks = seq(-1, 1, by = 0.05), col = "black", size = 0.2) +

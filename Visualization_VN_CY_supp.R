@@ -20,12 +20,19 @@ species_summary = individuals_data %>%
     temp_range = max(temperature) - min(temperature), 
     mass_range = max(massing) - min(massing), 
     mass_mean = mean(massing),
-    lat_mean = mean(decimallatitude)
+    lat_mean = mean(decimallatitude), 
+    year_range = max(year) - min(year), 
+    lat_range = max(decimallatitude) - min(decimallatitude)
   )
 species_stats = merge(species_stats, species_summary, all.x = TRUE, by.x = "genus_species", by.y = "clean_genus_species")
+species_stats = species_stats[species_stats$year_range >= 20 & species_stats$lat_range >= 5,]
+species_stats$genus_species = factor(species_stats$genus_species)
+individuals_data = individuals_data[individuals_data$clean_genus_species %in% species_stats$genus_species,]
+individuals_data$clean_genus_species = factor(individuals_data$clean_genus_species)
 
 species_stats_TL = read.csv("results_TL/species_stats.csv")
 species_stats_TL = species_stats_TL[species_stats_TL$class == "Mammalia" | species_stats_TL$class == "Aves",]
+species_stats_TL = species_stats_TL[species_stats_TL$genus_species %in% species_stats$genus_species,]
 
 eol_df = readWorksheetFromFile("MigStatus.xlsx", sheet = "ZZTblReviewAttributes")
 
@@ -162,7 +169,7 @@ individuals_data$sp_label = as.numeric(individuals_data$clean_genus_species)
 first = 1
 last = 80
 full_sp_list = c()
-for(i in 1:12){
+for(i in 1:11){
   sp_list = unique(species_stats$genus_species)[first:last]
   if(!is.na(sp_list[80])){
     inds_df = individuals_data[individuals_data$clean_genus_species %in% sp_list,]
@@ -183,6 +190,20 @@ for(i in 1:12){
     last = last + 80
   }
 }
+
+last_sp_list = unique(species_stats$genus_species)[881:952]
+last_inds = individuals_data[individuals_data$clean_genus_species %in% last_sp_list,]
+ggplot(last_inds, aes(x = temperature, y = massing)) +
+  geom_point(color = "gray48", size = 0.3) +
+  facet_wrap(~sp_label, scales = "free", ncol = 8) +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text.x = element_text(size = 6, margin = margin(.5, 0, .5, 0)),
+        axis.text = element_text(size = 5))
+ggsave("figures/881.jpg", width = 7, height = 8.325)
 
 sp_number = 1
 for(i in 1:nrow(species_stats)){
@@ -217,7 +238,7 @@ plot_migrants = ggplot(species_stats[species_stats$migration %in% facets,], aes(
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   facet_wrap(~ migration) +
-  geom_text(data = data.frame(x = c(-0.7, -0.7, -0.2, -0.3, 0.6, 0.6), y = c(5, 6, 45, 30, 3, 4), label = c("15%", "16%", "79%", "79%", "6%", "5%"), migration = c("migrant", "nonmigrant", "migrant", "nonmigrant", "migrant", "nonmigrant")), aes(x, y, label = label), inherit.aes = FALSE)
+  geom_text(data = data.frame(x = c(-0.7, -0.7, -0.2, -0.3, 0.6, 0.6), y = c(5, 6, 45, 30, 3, 4), label = c("14%", "16%", "80%", "79%", "6%", "5%"), migration = c("migrant", "nonmigrant", "migrant", "nonmigrant", "migrant", "nonmigrant")), aes(x, y, label = label), inherit.aes = FALSE)
 
 ggdraw() +
   draw_plot(plot_migrants) +
