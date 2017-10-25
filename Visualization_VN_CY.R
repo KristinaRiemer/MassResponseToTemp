@@ -3,6 +3,7 @@ library(dplyr)
 library(ggplot2)
 library(cowplot)
 library(stringr)
+library(DescTools)
 
 theme_set(theme_bw())
 
@@ -92,6 +93,13 @@ if(length(unique(individuals_data$clean_genus_species)) < 900){
     draw_plot_label("A", 0, 1)
   ggsave("figures/figure1.jpg", width = 10, height = 8)
 }
+
+# New Z figure
+species_stats$temp_z = FisherZ(species_stats$temp_r)
+ggplot(species_stats, aes(temp_r)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0) +
+  xlim(-1, 1)
 
 # SECOND FIGURE
 species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
