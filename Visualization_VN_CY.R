@@ -94,13 +94,6 @@ if(length(unique(individuals_data$clean_genus_species)) < 900){
   ggsave("figures/figure1.jpg", width = 10, height = 8)
 }
 
-# New Z figure
-species_stats$temp_z = FisherZ(species_stats$temp_r)
-ggplot(species_stats, aes(temp_r)) +
-  geom_histogram() +
-  geom_vline(xintercept = 0) +
-  xlim(-1, 1)
-
 # SECOND FIGURE
 species_stats$temp_pvalue_adjust = p.adjust(species_stats$temp_pvalue, method = "fdr")
 species_stats = species_stats %>%
@@ -136,6 +129,50 @@ ggdraw() +
   draw_plot(plot_class, 0.5, 0, 0.5, 1) +
   draw_plot_label(c("A", "B"), c(0, 0.5), c(1, 1))
 ggsave("figures/figure2.jpg", width = 10, height = 8)
+
+# New Z figure
+#1
+
+plot_stats
+
+species_stats$temp_z_from_r = FisherZ(species_stats$temp_r)
+
+ggplot(species_stats, aes(x = temp_z_from_r)) +
+  stat_density(fill = "blue", aes(y = ..scaled..)) +
+  geom_vline(xintercept = 0) +
+  stat_function(data = data.frame(x = c(-1, 1)), aes(x), fun = dnorm, n = 101, args = list(mean = 0, sd = 1))
+
+stand_error = 1 / sqrt(30-3)
+
+ggplot(species_stats, aes(x = temp_z_from_r)) +
+  stat_density(fill = "blue") +
+  geom_vline(xintercept = 0) +
+  stat_function(data = data.frame(x = c(-1, 1)), aes(x), fun = dnorm, n = 101, args = list(mean = 0, sd = stand_error))
+
+#2
+species_stats$temp_z_from_slope = species_stats$temp_slope / species_stats$temp_slope_SE
+ggplot(species_stats, aes(x = temp_z_from_slope)) +
+  geom_density(color = "blue") +
+  stat_function(data = data.frame(x = c(-1, 1)), aes(x), fun = dnorm, n = 101, args = list(mean = 0, sd = 1))
+
+species_stats$z_se = 1 / sqrt(species_stats$individuals-3)
+species_stats$z_se_dist = species_stats$z_se * 1.96
+species_stats$z_se_dist_neg = -species_stats$z_se_dist
+length(which(species_stats$temp_z_from_r < species_stats$z_se_dist_neg)) / nrow(species_stats) * 100
+length(which(species_stats$temp_z_from_r > species_stats$z_se_dist)) / nrow(species_stats) * 100
+
+#3
+species_stats$temp_z_from_p = qnorm(species_stats$temp_pvalue_adjust / 2) * 2
+species_stats = species_stats %>% 
+  mutate(temp_z_from_p = ifelse(temp_slope > 0, -temp_z_from_p, temp_z_from_p))
+
+ggplot(species_stats, aes(x = temp_z_from_p)) +
+  geom_density(color = "blue") +
+  stat_function(data = data.frame(x = c(-1, 1)), aes(x), fun = dnorm, n = 101, args = list(mean = 0, sd = 1))
+
+plot(species_stats$temp_pvalue_adjust, species_stats$temp_z_from_p)
+abline(v = 0.05, h = -1.96, add = TRUE)
+abline(h = 1.96, add = TRUE)
 
 # THIRD FIGURE
 orders_table = table(species_stats$order)
