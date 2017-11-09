@@ -135,14 +135,16 @@ species_stats$temp_z = qnorm(species_stats$temp_pvalue_adjust / 2)
 species_stats = species_stats %>% 
   mutate(temp_z = ifelse(temp_slope > 0, -temp_z, temp_z))
 
-ggplot(species_stats, aes(x = temp_z)) +
+plot_z = ggplot(species_stats, aes(x = temp_z)) +
   geom_density(fill = "light blue", color = "light blue") +
   stat_function(fun = dnorm, n = 101, args = list(mean = 0, sd = 1)) +
   geom_vline(xintercept = 0, color = "dark grey") +
   xlim(-max(abs(species_stats$temp_z)), max(abs(species_stats$temp_z))) +
-  theme(legend.position = "top", 
-        panel.grid.major = element_blank(), 
+  labs(x = "z", y = "Density") +
+  theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
+
+ggsave("figures/figure2_supp.jpg", plot = plot_z, width = 8, height = 8)
 
 # THIRD FIGURE
 orders_table = table(species_stats$order)
