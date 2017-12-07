@@ -35,6 +35,7 @@ species_stats_TL = species_stats_TL[species_stats_TL$genus_species %in% species_
 
 # FIRST FIGURE
 species_list = c("Martes pennanti", "Tamias quadrivittatus", "Synaptomys cooperi")
+point_colors = c("steelblue1", "yellow", "red")
 individuals_data$map_long = ifelse(individuals_data$longitude > 180, individuals_data$longitude - 360, individuals_data$longitude)
 locations = unique(individuals_data[c("map_long", "decimallatitude", "clean_genus_species")])
 locations$Species = ifelse(locations$clean_genus_species == species_list[1], species_list[1], 
@@ -62,7 +63,7 @@ plot_locations = ggplot(data = locations, aes(x = map_long, y = decimallatitude)
         panel.border = element_blank()) +
   guides(colour = guide_legend(override.aes = list(size = 3)))
 
-species_scatterplot = function(species){
+species_scatterplot = function(species, point_color){
   species_data = individuals_data[individuals_data$clean_genus_species == species,]
   lr_mass = lm(massing ~ temperature, data = species_data)
   lr_summary = summary(lr_mass)
@@ -71,7 +72,7 @@ species_scatterplot = function(species){
   r_string = paste("r =", r)
   p_string = paste("p =", pval)
   ggplot(species_data, aes(temperature, massing)) +
-    geom_point() +
+    geom_point(color = point_color) +
     geom_smooth(method = "lm", se = FALSE) +
     labs(x = expression("Mean annual temperature " (degree~C)), y = "Mass (g)") +
     theme(panel.grid.major = element_blank(), 
@@ -85,7 +86,7 @@ if(length(unique(individuals_data$clean_genus_species)) < 900){
     draw_plot(plot_locations)
   ggsave("figures/figure1.jpg", width = 10, height = 6)
 } else {
-  all_species = lapply(species_list, species_scatterplot)
+  all_species = mapply(species_scatterplot, species_list, point_colors, SIMPLIFY = FALSE)
   plot_examples = plot_grid(plotlist = all_species, nrow = 1, labels = c("B", "C", "D"))
   ggdraw() +
     draw_plot(plot_locations, 0, 0.25, 1, 0.75) +
@@ -128,7 +129,7 @@ ggdraw() +
   draw_plot(plot_stats, 0, 0, 0.5, 1) +
   draw_plot(plot_class, 0.5, 0, 0.5, 1) +
   draw_plot_label(c("A", "B"), c(0, 0.5), c(1, 1))
-ggsave("figures/figure2.jpg", width = 10, height = 8)
+ggsave("figures/figure2.jpg", width = 10, height = 6)
 
 # THIRD FIGURE
 orders_table = table(species_stats$order)
